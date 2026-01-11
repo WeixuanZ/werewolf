@@ -1,0 +1,68 @@
+name: Tag Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version type to increment (patch, minor, major)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get current version
+        id: get_version
+        run: |
+          # Get the latest tag, or default to v0.0.0
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "current_version=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          
+          # Strip 'v' prefix
+          VERSION=${LATEST_TAG#v}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          
+          case "${{ github.event.inputs.version_type }}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="v$major.$minor.$patch"
+          echo "new_tag=${NEW_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.new_version.outputs.new_tag }}
+          git push origin ${{ steps.new_version.outputs.new_tag }}

@@ -1,0 +1,80 @@
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Trashes
+.Spotlight-V100
+.fseventsd
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+.venv/
+env/
+.env
+.env.*
+
+# Testing & Linting
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage.xml
+*.cover
+*.py,cover
+
+# Node / Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+
+# Build outputs (Frontend)
+dist/
+dist-ssr/
+*.local
+
+# Logs
+*.log
+logs/
+
+# Docker
+*.tar
+
+# Terraform (if needed later)
+.terraform/
+*.tfstate
+*.tfstate.backup

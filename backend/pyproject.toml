@@ -1,0 +1,58 @@
+[project]
+name = "werewolf-backend"
+version = "0.1.0"
+description = "Backend for Multiplayer Werewolf Game"
+authors = [{name = "Antigravity", email = "antigravity@gemini.com"}]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "redis",
+    "pydantic",
+    "pydantic-settings",
+    "websockets",
+    "pytest",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "ARG", # flake8-unused-arguments
+    "PTH", # flake8-use-pathlib
+    "ERA", # eradicate (commented out code)
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501", # Ignore line-length violations (let formatter handle it)
+    "B008", # Allow function calls in argument defaults (standard for FastAPI Depends)
+    "ERA001", # Allow commented-out code (often useful for documentation/future features)
+]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body", "fastapi.Header"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+useLibraryCodeForTypes = true
+exclude = ["**/node_modules", "**/__pycache__", "venv", ".venv"]

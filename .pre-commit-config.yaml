@@ -1,0 +1,16 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.11
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.347
+    hooks:
+      - id: pyright
+        args: [--project, backend]
+        files: ^backend/
