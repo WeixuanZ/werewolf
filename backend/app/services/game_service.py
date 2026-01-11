@@ -37,7 +37,14 @@ class GameService:
         is_game_over = full_schema.phase == GamePhase.GAME_OVER
 
         # Get list of players this player has revealed (via Seer CHECK)
-        revealed_to_me = set(game.seer_reveals.get(player_id, []))
+        # Only players with the SEER role should have a list of revealed players.
+        requesting_player = game.players.get(player_id)
+        is_seer = (
+            requesting_player
+            and requesting_player.role
+            and requesting_player.role.role_type == RoleType.SEER
+        )
+        revealed_to_me = set(game.seer_reveals.get(player_id, [])) if is_seer else set()
 
         # Check presence in Redis for all players
         redis = RedisClient.get_client()
