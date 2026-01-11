@@ -52,9 +52,9 @@ class ChatMessage(WSBaseMessage):
 
 
 class PresenceMessage(WSBaseMessage):
-    type: Literal[
-        MessageType.PLAYER_DISCONNECTED, MessageType.PLAYER_RECONNECTED
-    ] = MessageType.PLAYER_DISCONNECTED
+    type: Literal[MessageType.PLAYER_DISCONNECTED, MessageType.PLAYER_RECONNECTED] = (
+        MessageType.PLAYER_DISCONNECTED
+    )
     payload: PresencePayload
 
 
