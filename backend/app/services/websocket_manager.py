@@ -21,7 +21,7 @@ PRESENCE_TTL = 30  # seconds
 class ConnectionManager:
     def __init__(self):
         self.active_connections: dict[str, dict[str, WebSocket]] = {}
-        self.pubsub: "PubSub | None" = None
+        self.pubsub: PubSub | None = None
         self.listener_task: asyncio.Task | None = None
         self._tasks: set[asyncio.Task] = set()
 
