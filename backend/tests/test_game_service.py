@@ -36,7 +36,8 @@ async def test_join_room(mock_redis):
         "settings": {"role_distribution": {}, "phase_duration_seconds": 60},
         "turn_count": 0,
         "winners": null,
-        "night_actions": []
+        "seer_reveals": {},
+        "voted_out_this_round": null
     }
     """
 
@@ -59,7 +60,8 @@ async def test_duplicate_nickname_rejected(mock_redis):
         "settings": {"role_distribution": {}, "phase_duration_seconds": 60},
         "turn_count": 0,
         "winners": null,
-        "night_actions": []
+        "seer_reveals": {},
+        "voted_out_this_round": null
     }
     """
 
@@ -82,12 +84,13 @@ async def test_start_game_validates_role_count(mock_redis):
         "settings": {"role_distribution": {"WEREWOLF": 1, "VILLAGER": 3}, "phase_duration_seconds": 60},
         "turn_count": 0,
         "winners": null,
-        "night_actions": []
+        "seer_reveals": {},
+        "voted_out_this_round": null
     }
     """
 
     service = GameService()
-    with pytest.raises(ValueError, match="must equal player count"):
+    with pytest.raises(ValueError, match="must match player count"):
         await service.start_game("test", "p1", None)
 
 
@@ -104,9 +107,11 @@ async def test_player_view_hides_roles(mock_redis):
         "settings": {"role_distribution": {}, "phase_duration_seconds": 60},
         "turn_count": 1,
         "winners": null,
-        "night_actions": []
+        "seer_reveals": {},
+        "voted_out_this_round": null
     }
     """
+    mock_redis.mget.return_value = [None, None]  # Both players offline
 
     service = GameService()
     game = await service.get_game("test")
@@ -117,5 +122,3 @@ async def test_player_view_hides_roles(mock_redis):
     assert view.players["p1"].role == "WEREWOLF"
     # p1 does NOT see p2's role
     assert view.players["p2"].role is None
-    # Night actions are hidden
-    assert view.night_actions == []

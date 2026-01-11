@@ -26,6 +26,9 @@ class PlayerSchema(BaseModel):
     is_alive: bool = True
     is_admin: bool = False
     is_online: bool = False
+    vote_target: str | None = None
+    night_action_target: str | None = None  # Persisted night action
+    has_night_action: bool = False  # Computed field for frontend
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -47,13 +50,17 @@ class GameStateSchema(BaseModel):
     settings: GameSettingsSchema
     turn_count: int = 0
     winners: str | None = None
-    night_actions: list[dict] = []
     seer_reveals: dict[str, list[str]] = {}  # {seer_id: [checked_player_ids]}
+    voted_out_this_round: str | None = None
 
 
 class ActionRequest(BaseModel):
     action_type: str
     target_id: str | None = None
+
+
+class VoteRequest(BaseModel):
+    target_id: str
 
 
 class CreateRoomRequest(BaseModel):
@@ -68,3 +75,7 @@ class JoinRoomRequest(BaseModel):
 class StartGameRequest(BaseModel):
     player_id: str
     settings: GameSettingsSchema | None = None
+
+
+class PlayerIdRequest(BaseModel):
+    player_id: str

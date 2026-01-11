@@ -1,87 +1,109 @@
-import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import useWebSocket, { ReadyState } from 'react-use-websocket';
-import { WSMessageType, type SocketMessage, type GameState } from '../types';
-import { useCurrentSessionValue } from '../store/gameStore';
-import { API_BASE_URL, WS_BASE_URL } from '../config';
-import { message } from 'antd';
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import useWebSocket from "react-use-websocket";
+import { WSMessageType } from "../types";
+import type { SocketMessage, GameState } from "../types";
+import { useCurrentSessionValue } from "../store/gameStore";
+import { api } from "../api/client";
+import { WS_BASE_URL } from "../config";
+import { message } from "antd";
 
 export const useGameSocket = (roomId: string) => {
-    const session = useCurrentSessionValue();
-    const playerId = session?.playerId;
-    const queryClient = useQueryClient();
-    const [disconnectedPlayers, setDisconnectedPlayers] = useState<Set<string>>(new Set());
+  const session = useCurrentSessionValue();
+  const playerId = session?.playerId;
+  const queryClient = useQueryClient();
 
-    // Initial fetch via REST (with player_id for filtered view)
-    const {
-        data: gameState,
-        error,
-        isLoading,
-    } = useQuery({
-        queryKey: ['gameState', roomId, playerId],
-        queryFn: async () => {
-            const url = playerId
-                ? `${API_BASE_URL}/api/rooms/${roomId}?player_id=${playerId}`
-                : `${API_BASE_URL}/api/rooms/${roomId}`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error('Failed to fetch game state');
-            return res.json() as Promise<GameState>;
-        },
-        enabled: !!roomId,
-        refetchOnWindowFocus: true,
-    });
+  // Initial fetch via REST (with player_id for filtered view)
+  const {
+    data: gameState,
+    error,
+    isLoading,
+  } = useQuery<GameState>({
+    queryKey: ["gameState", roomId, playerId],
+    queryFn: () => api.rooms.get(roomId, playerId ?? undefined),
+    enabled: !!roomId,
+    refetchOnWindowFocus: true,
+  });
 
-    const url =
-        !roomId || !playerId ? null : `${WS_BASE_URL}/ws/${roomId}/${playerId}`;
+  // WebSocket connection for real-time updates
+  const wsUrl = playerId ? `${WS_BASE_URL}/ws/${roomId}/${playerId}` : null;
 
-    const { sendJsonMessage, readyState } = useWebSocket(url, {
-        onMessage: (event: MessageEvent) => {
-            try {
-                const msg = JSON.parse(event.data) as SocketMessage;
-                switch (msg.type) {
-                    case WSMessageType.PING:
-                        sendJsonMessage({ type: WSMessageType.PONG });
-                        break;
-                    case WSMessageType.STATE_UPDATE:
-                        queryClient.setQueryData(['gameState', roomId, playerId], msg.payload);
-                        break;
-                    case WSMessageType.PLAYER_DISCONNECTED:
-                        message.warning(`${msg.payload.nickname} disconnected`);
-                        setDisconnectedPlayers((prev) => new Set([...prev, msg.payload.player_id]));
-                        break;
-                    case WSMessageType.PLAYER_RECONNECTED:
-                        message.info(`${msg.payload.nickname} reconnected`);
-                        setDisconnectedPlayers((prev) => {
-                            const next = new Set(prev);
-                            next.delete(msg.payload.player_id);
-                            return next;
-                        });
-                        break;
-                    case WSMessageType.ERROR:
-                        message.error(msg.payload.message);
-                        break;
-                }
-            } catch (e) {
-                console.error('Failed to parse WS message', e);
-            }
-        },
-        shouldReconnect: () => true,
-        reconnectAttempts: 20,
-        reconnectInterval: (attempt: number) => Math.min(Math.pow(2, attempt) * 1000, 30000),
-    });
+  const { sendJsonMessage, readyState } = useWebSocket(wsUrl, {
+    onMessage: (event) => {
+      try {
+        const msg: SocketMessage = JSON.parse(event.data);
+        const queryKey = ["gameState", roomId, playerId];
 
-    const isConnected = readyState === ReadyState.OPEN;
+        switch (msg.type) {
+          case WSMessageType.STATE_UPDATE:
+            queryClient.setQueryData(queryKey, msg.payload);
+            break;
 
-    const sendAction = (action: Record<string, unknown>) => {
-        sendJsonMessage(action);
-    };
+          case WSMessageType.PLAYER_DISCONNECTED:
+            queryClient.setQueryData(queryKey, (old: GameState | undefined) => {
+              if (!old || !old.players[msg.payload.player_id]) return old;
+              return {
+                ...old,
+                players: {
+                  ...old.players,
+                  [msg.payload.player_id]: {
+                    ...old.players[msg.payload.player_id],
+                    is_online: false,
+                  },
+                },
+              };
+            });
+            message.warning(`${msg.payload.nickname} disconnected`);
+            break;
 
-    return {
-        gameState,
-        error,
-        isLoading,
-        sendAction,
-        isConnected,
-        disconnectedPlayers,
-    };
+          case WSMessageType.PLAYER_RECONNECTED:
+            queryClient.setQueryData(queryKey, (old: GameState | undefined) => {
+              if (!old || !old.players[msg.payload.player_id]) return old;
+              return {
+                ...old,
+                players: {
+                  ...old.players,
+                  [msg.payload.player_id]: {
+                    ...old.players[msg.payload.player_id],
+                    is_online: true,
+                  },
+                },
+              };
+            });
+            message.info(`${msg.payload.nickname} reconnected`);
+            break;
+
+          case WSMessageType.PING:
+            // Server sent PING, respond with PONG
+            sendJsonMessage({ type: "PONG" });
+            break;
+
+          case WSMessageType.ERROR:
+            message.error(msg.payload.message);
+            break;
+        }
+      } catch (e) {
+        console.error("WS message parse error:", e);
+      }
+    },
+    shouldReconnect: () => true,
+    reconnectAttempts: 10,
+    reconnectInterval: 3000,
+  });
+
+  // Also send periodic PONG as keepalive
+  const sendPong = useCallback(() => {
+    if (readyState === 1) {
+      // WebSocket.OPEN
+      sendJsonMessage({ type: "PONG" });
+    }
+  }, [sendJsonMessage, readyState]);
+
+  return {
+    gameState,
+    error,
+    isLoading,
+    isConnected: readyState === 1,
+    sendPong,
+  };
 };

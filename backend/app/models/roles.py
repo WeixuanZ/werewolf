@@ -2,6 +2,9 @@ from abc import ABC, abstractmethod
 
 from app.schemas.game import RoleType
 
+# Re-export for convenience
+__all__ = ["Role", "RoleType", "get_role_instance"]
+
 
 class Role(ABC):
     def __init__(self, role_type: RoleType):

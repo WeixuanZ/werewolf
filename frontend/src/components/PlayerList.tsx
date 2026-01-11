@@ -1,57 +1,96 @@
-import { Card, List, Tag } from 'antd';
-import type { Player } from '../types';
+import { Card, List, Tag, theme } from "antd";
+import type { Player } from "../types";
+
+const { useToken } = theme;
 
 interface PlayerCardProps {
   player: Player;
   isMe: boolean;
-  isDisconnected?: boolean;
 }
 
-function PlayerCard({ player, isMe, isDisconnected }: PlayerCardProps) {
+function PlayerCard({ player, isMe }: PlayerCardProps) {
+  const { token } = useToken();
+  const statusColor = player.is_online ? token.colorSuccess : token.colorError;
+
   return (
-    <Card
-      size="small"
-      title={player.nickname}
-      style={{ height: 120, display: 'flex', flexDirection: 'column' }}
-      styles={{
-        body: {
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-        },
+    <div
+      style={{
+        background: "rgba(255, 255, 255, 0.05)",
+        border: `1px solid ${token.colorBorder}`,
+        borderRadius: token.borderRadius,
+        padding: 12,
+        height: 100,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
       }}
     >
-      <div style={{ marginBottom: 8 }}>{player.is_alive ? '🟢 Alive' : '💀 Dead'}</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span
+          style={{
+            fontWeight: 600,
+            color: token.colorText,
+            fontSize: 14,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            flex: 1,
+          }}
+        >
+          {player.nickname}
+        </span>
+        <span
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            backgroundColor: statusColor,
+            flexShrink: 0,
+            marginLeft: 8,
+          }}
+          title={player.is_online ? "Online" : "Offline"}
+        />
+      </div>
+
+      <div
+        style={{
+          color: token.colorTextSecondary,
+          fontSize: 12,
+          marginBottom: 4,
+        }}
+      >
+        {player.is_alive ? "🟢 Alive" : "💀 Dead"}
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
         {player.role && <Tag color="purple">{player.role}</Tag>}
         {isMe && <Tag color="gold">YOU</Tag>}
         {player.is_admin && <Tag color="red">ADMIN</Tag>}
-        {isDisconnected && <Tag color="orange">OFFLINE</Tag>}
       </div>
-    </Card>
+    </div>
   );
 }
 
 interface PlayerListProps {
   players: Player[];
   myId: string | null;
-  offlineIds?: Set<string>;
 }
 
-export function PlayerList({ players, myId, offlineIds = new Set() }: PlayerListProps) {
+export function PlayerList({ players, myId }: PlayerListProps) {
   return (
-    <Card title={`Players (${players.length})`} style={{ marginBottom: 24 }}>
+    <Card title={`Players (${players.length})`} style={{ marginBottom: 16 }}>
       <List
-        grid={{ gutter: 16, xs: 2, sm: 3, md: 4, lg: 4 }}
+        grid={{ gutter: 12, xs: 2, sm: 3, md: 4, lg: 4 }}
         dataSource={players}
         renderItem={(player) => (
-          <List.Item>
-            <PlayerCard
-              player={player}
-              isMe={player.id === myId}
-              isDisconnected={offlineIds.has(player.id) || !player.is_online}
-            />
+          <List.Item style={{ marginBottom: 12 }}>
+            <PlayerCard player={player} isMe={player.id === myId} />
           </List.Item>
         )}
       />

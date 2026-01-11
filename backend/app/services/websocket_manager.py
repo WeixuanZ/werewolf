@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import logging
 from typing import TYPE_CHECKING, Any
 
 from fastapi import WebSocket
@@ -15,6 +16,7 @@ from app.schemas.socket import (
     StateUpdateMessage,
 )
 
+logger = logging.getLogger(__name__)
 PRESENCE_TTL = 30  # seconds
 
 
@@ -107,8 +109,45 @@ class ConnectionManager:
         await redis.publish(f"room:{room_id}", data)
 
     async def broadcast_game_state(self, room_id: str, game_state):
+        """Broadcast game state update to all players in room.
+
+        NOTE: This sends the SAME state to all players.
+        For role-filtered views, use broadcast_filtered_game_states instead.
+        """
+        logger.info(f"Broadcasting game state for room {room_id}, phase: {game_state.phase}")
         message = StateUpdateMessage(room_id=room_id, payload=game_state)
         await self.broadcast_to_room(room_id, message)
+
+    async def broadcast_filtered_game_states(self, room_id: str, get_player_view_fn):
+        """Send player-specific filtered game state to each connected player.
+
+        Args:
+            room_id: The room to broadcast to
+            get_player_view_fn: Async function that takes (game, player_id) and returns filtered state
+        """
+        if room_id not in self.active_connections:
+            return
+
+        for player_id, ws in list(self.active_connections[room_id].items()):
+            try:
+                filtered_state = await get_player_view_fn(player_id)
+                message = StateUpdateMessage(room_id=room_id, payload=filtered_state)
+                await ws.send_text(message.model_dump_json())
+            except Exception as e:
+                logger.warning(f"Failed to send filtered state to {player_id}: {e}")
+
+    async def send_to_player(self, room_id: str, player_id: str, message: Any):
+        """Send a message directly to a specific player."""
+        if room_id in self.active_connections:
+            ws = self.active_connections[room_id].get(player_id)
+            if ws:
+                data = (
+                    message.model_dump_json()
+                    if hasattr(message, "model_dump_json")
+                    else str(message)
+                )
+                with contextlib.suppress(Exception):
+                    await ws.send_text(data)
 
 
 manager = ConnectionManager()

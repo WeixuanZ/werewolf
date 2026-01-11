@@ -1,104 +1,105 @@
-import random
+"""
+Game state models using Pydantic for clean serialization.
 
-from app.models.player import Player
-from app.models.roles import RoleType
-from app.schemas.game import (
-    GamePhase,
-    GameSettingsSchema,
-    GameStateSchema,
-    PlayerSchema,
-)
+The Game class is the main domain object that holds game state.
+It uses Pydantic models internally for serialization to Redis.
+"""
+
+import logging
+import random
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict
+
+from app.models.phases import get_phase_state
+from app.models.roles import Role, RoleType, get_role_instance
+from app.schemas.game import GamePhase, GameSettingsSchema, GameStateSchema, PlayerSchema
+
+logger = logging.getLogger(__name__)
+
+
+class PlayerState(BaseModel):
+    """Pydantic model for player state - used for persistence."""
+
+    id: str
+    nickname: str
+    role: RoleType | None = None
+    is_alive: bool = True
+    is_admin: bool = False
+    vote_target: str | None = None
+    night_action_target: str | None = None
+
+    model_config = ConfigDict(extra="ignore")
+
+    @property
+    def role_instance(self) -> Role | None:
+        """Get role instance with behavior methods."""
+        return get_role_instance(self.role) if self.role else None
+
+    @property
+    def has_night_action(self) -> bool:
+        return self.night_action_target is not None
+
+    def can_act_at_night(self) -> bool:
+        role = self.role_instance
+        return role.can_act_at_night if role else False
+
+
+class GameState(BaseModel):
+    """Pydantic model for full game state - used for persistence."""
+
+    room_id: str
+    phase: GamePhase = GamePhase.WAITING
+    players: dict[str, PlayerState] = {}
+    settings: GameSettingsSchema = GameSettingsSchema()
+    turn_count: int = 0
+    winners: str | None = None
+    seer_reveals: dict[str, list[str]] = {}
+    voted_out_this_round: str | None = None
+
+    model_config = ConfigDict(extra="ignore")
 
 
 class Game:
-    def __init__(self, room_id: str, settings: GameSettingsSchema):
-        self.room_id = room_id
-        self.settings = settings
-        self.phase = GamePhase.WAITING
-        self.players: dict[str, Player] = {}
-        self.turn_count = 0
-        self.winners = None
-        self.night_actions: list[dict] = []
-        self.seer_reveals: dict[str, list[str]] = {}  # {seer_id: [checked_player_ids]}
+    """
+    Game domain object with behavior.
+
+    Internally uses GameState (Pydantic) for persistence.
+    Exposes methods for game logic while delegating serialization to Pydantic.
+    """
+
+    def __init__(self, state: GameState):
+        self._state = state
 
     @classmethod
-    def from_schema(cls, schema: GameStateSchema) -> "Game":
-        game = cls(schema.room_id, schema.settings)
-        game.phase = schema.phase
-        game.turn_count = schema.turn_count
-        game.winners = schema.winners
+    def create(cls, room_id: str, settings: GameSettingsSchema | None = None) -> "Game":
+        """Create a new game with default state."""
+        return cls(GameState(room_id=room_id, settings=settings or GameSettingsSchema()))
 
-        for pid, p_schema in schema.players.items():
-            player = Player(
-                id=p_schema.id,
-                nickname=p_schema.nickname,
-                is_admin=p_schema.is_admin,
-                role_type=p_schema.role,
-            )
-            player.is_alive = p_schema.is_alive
-            game.players[pid] = player
+    @classmethod
+    def from_json(cls, json_data: str | bytes) -> "Game":
+        """Deserialize game from JSON (Redis)."""
+        state = GameState.model_validate_json(json_data)
+        return cls(state)
 
-        game.night_actions = schema.night_actions.copy() if schema.night_actions else []
-        game.seer_reveals = schema.seer_reveals.copy() if schema.seer_reveals else {}
-        return game
-
-    def add_player(self, player: Player):
-        if self.phase != GamePhase.WAITING:
-            raise ValueError("Cannot join game in progress")
-        self.players[player.id] = player
-
-    def remove_player(self, player_id: str):
-        if player_id in self.players:
-            del self.players[player_id]
-
-    def start_game(self):
-        if len(self.players) < 4:  # Minimum players rule, customizable
-            # For testing, we might allow fewer, but standard mafia needs at least ~4-5
-            pass
-
-        self.phase = GamePhase.DAY  # Or Night, depending on preference. Usually Night 1.
-        self.assign_roles()
-        self.turn_count = 1
-
-    def assign_roles(self):
-        role_counts = self.settings.role_distribution
-        # Create list of roles to distribute
-        roles_to_assign = []
-        for role, count in role_counts.items():
-            roles_to_assign.extend([role] * count)
-
-        player_ids = list(self.players.keys())
-
-        # Fill rest with Villagers if not enough roles defined
-        while len(roles_to_assign) < len(player_ids):
-            roles_to_assign.append(RoleType.VILLAGER)
-
-        # If too many roles, trim excess, preferring to remove Villagers first
-        if len(roles_to_assign) > len(player_ids):
-            # Remove Villagers first
-            while len(roles_to_assign) > len(player_ids) and RoleType.VILLAGER in roles_to_assign:
-                roles_to_assign.remove(RoleType.VILLAGER)
-
-            # If still too many, just trim from end (assuming order matter or random outcome is acceptable fallback)
-            # Better to prioritize Special roles?
-            # For now, just slice to size if we still have excess
-            roles_to_assign = roles_to_assign[: len(player_ids)]
-
-        random.shuffle(roles_to_assign)
-
-        for i, pid in enumerate(player_ids):
-            self.players[pid].set_role(roles_to_assign[i])
+    def to_json(self) -> str:
+        """Serialize game to JSON (Redis)."""
+        return self._state.model_dump_json()
 
     def to_schema(self) -> GameStateSchema:
+        """Convert to API schema format."""
         player_schemas = {
             pid: PlayerSchema(
                 id=p.id,
                 nickname=p.nickname,
-                role=p.role.role_type if p.role else None,
+                role=p.role,
                 is_alive=p.is_alive,
                 is_admin=p.is_admin,
+                vote_target=p.vote_target,
+                night_action_target=p.night_action_target,
+                has_night_action=p.has_night_action,
             )
-            for pid, p in self.players.items()
+            for pid, p in self._state.players.items()
         }
         return GameStateSchema(
             room_id=self.room_id,
@@ -107,55 +108,146 @@ class Game:
             settings=self.settings,
             turn_count=self.turn_count,
             winners=self.winners,
-            night_actions=self.night_actions,
             seer_reveals=self.seer_reveals,
+            voted_out_this_round=self.voted_out_this_round,
         )
 
-    def process_night_action(self, action_type: str, target_id: str, actor_id: str):
-        if self.phase != GamePhase.NIGHT:
-            raise ValueError("Can only perform night actions during Night phase")
+    # ===== Property accessors to internal state =====
+    @property
+    def room_id(self) -> str:
+        return self._state.room_id
 
-        actor = self.players.get(actor_id)
-        if not actor or not actor.is_alive:
-            return
+    @property
+    def phase(self) -> GamePhase:
+        return self._state.phase
 
-        # Check if actor already acted this night (simple rule: one action per night)
-        # We might allow overwriting action if they change their mind
-        self.night_actions = [a for a in self.night_actions if a["actor_id"] != actor_id]
+    @phase.setter
+    def phase(self, value: GamePhase):
+        self._state.phase = value
 
-        self.night_actions.append(
-            {"actor_id": actor_id, "action_type": action_type, "target_id": target_id}
+    @property
+    def players(self) -> dict[str, PlayerState]:
+        return self._state.players
+
+    @property
+    def settings(self) -> GameSettingsSchema:
+        return self._state.settings
+
+    @property
+    def turn_count(self) -> int:
+        return self._state.turn_count
+
+    @turn_count.setter
+    def turn_count(self, value: int):
+        self._state.turn_count = value
+
+    @property
+    def winners(self) -> str | None:
+        return self._state.winners
+
+    @winners.setter
+    def winners(self, value: str | None):
+        self._state.winners = value
+
+    @property
+    def seer_reveals(self) -> dict[str, list[str]]:
+        return self._state.seer_reveals
+
+    @property
+    def voted_out_this_round(self) -> str | None:
+        return self._state.voted_out_this_round
+
+    @voted_out_this_round.setter
+    def voted_out_this_round(self, value: str | None):
+        self._state.voted_out_this_round = value
+
+    # ===== Game logic methods =====
+    def add_player(self, player_id: str, nickname: str, is_admin: bool = False):
+        if self.phase != GamePhase.WAITING:
+            raise ValueError("Cannot join game in progress")
+        self._state.players[player_id] = PlayerState(
+            id=player_id, nickname=nickname, is_admin=is_admin
         )
 
-        # Track Seer reveals
-        if action_type == "CHECK":
-            if actor_id not in self.seer_reveals:
-                self.seer_reveals[actor_id] = []
-            if target_id not in self.seer_reveals[actor_id]:
-                self.seer_reveals[actor_id].append(target_id)
+    def remove_player(self, player_id: str):
+        self._state.players.pop(player_id, None)
 
-    def resolve_night_phase(self):
-        kills = set()
-        protections = set()
+    def start_game(self):
+        """Start the game by assigning roles and transitioning to night."""
+        self.assign_roles()
+        self._state.turn_count = 1
+        self.transition_to(GamePhase.NIGHT)
 
-        for action in self.night_actions:
-            if action["action_type"] == "KILL":
-                kills.add(action["target_id"])
-            elif action["action_type"] == "SAVE":
-                protections.add(action["target_id"])
+    def assign_roles(self):
+        role_counts = self.settings.role_distribution
+        roles_to_assign: list[RoleType] = []
+        for role, count in role_counts.items():
+            roles_to_assign.extend([role] * count)
 
-        # Effective deaths: killed but not saved
-        dead_ids = kills - protections
+        player_ids = list(self.players.keys())
 
-        for pid in dead_ids:
-            if pid in self.players:
-                self.players[pid].die()
+        # Fill with Villagers if needed
+        while len(roles_to_assign) < len(player_ids):
+            roles_to_assign.append(RoleType.VILLAGER)
 
-        # Clear actions
-        self.night_actions = []
-        self.phase = GamePhase.DAY
-        self.turn_count += 1
-        return list(dead_ids)
+        # Trim excess (prefer removing Villagers first)
+        while len(roles_to_assign) > len(player_ids) and RoleType.VILLAGER in roles_to_assign:
+            roles_to_assign.remove(RoleType.VILLAGER)
+        roles_to_assign = roles_to_assign[: len(player_ids)]
 
-        # Optional: Check winners after deaths
-        # self.check_winners()
+        random.shuffle(roles_to_assign)
+
+        for i, pid in enumerate(player_ids):
+            self._state.players[pid].role = roles_to_assign[i]
+
+    def transition_to(self, new_phase: GamePhase):
+        """Transition to a new phase, calling on_enter for the new state."""
+        self._state.phase = new_phase
+        state = get_phase_state(new_phase)
+        state.on_enter(self)
+
+    def process_action(self, player_id: str, action: dict[str, Any]):
+        """Delegate action processing to current phase state."""
+        state = get_phase_state(self.phase)
+        state.process_action(self, player_id, action)
+
+    def check_and_advance(self) -> bool:
+        """Check if current phase is complete and advance if so."""
+        state = get_phase_state(self.phase)
+        is_complete = state.check_completion(self)
+        logger.info(f"Phase {self.phase}: check_completion={is_complete}")
+
+        if self.phase == GamePhase.NIGHT:
+            for pid, player in self.players.items():
+                if player.is_alive and player.can_act_at_night():
+                    logger.info(
+                        f"  Player {pid} ({player.role}): "
+                        f"night_action_target={player.night_action_target}"
+                    )
+
+        if is_complete:
+            next_phase = state.resolve(self)
+            logger.info(f"Phase resolved: {self.phase} -> {next_phase}")
+            if next_phase != self.phase:
+                self.transition_to(next_phase)
+                return True
+        return False
+
+    def check_winners(self) -> str | None:
+        """Check if there's a winner."""
+        alive_werewolves = sum(
+            1 for p in self.players.values() if p.is_alive and p.role == RoleType.WEREWOLF
+        )
+        alive_villagers = sum(
+            1 for p in self.players.values() if p.is_alive and p.role != RoleType.WEREWOLF
+        )
+
+        if alive_werewolves == 0:
+            return "VILLAGERS"
+        if alive_werewolves >= alive_villagers:
+            return "WEREWOLVES"
+        return None
+
+    def restart(self):
+        """Reset game to waiting state for a new round."""
+        self.transition_to(GamePhase.WAITING)

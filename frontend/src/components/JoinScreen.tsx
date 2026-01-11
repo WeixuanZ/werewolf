@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Card, Typography, Alert, Input, Button } from 'antd';
+import { useState } from "react";
+import { Card, Typography, Alert, Input, Button, theme } from "antd";
 
 const { Text } = Typography;
+const { useToken } = theme;
 
 interface JoinScreenProps {
   roomId: string;
@@ -10,7 +11,8 @@ interface JoinScreenProps {
 }
 
 export function JoinScreen({ roomId, onJoin, isSpectator }: JoinScreenProps) {
-  const [nickname, setNickname] = useState('');
+  const { token } = useToken();
+  const [nickname, setNickname] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -23,15 +25,18 @@ export function JoinScreen({ roomId, onJoin, isSpectator }: JoinScreenProps) {
   return (
     <div
       style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        padding: token.padding,
       }}
     >
       <Card
-        title={isSpectator ? `Spectate Room: ${roomId}` : `Join Room: ${roomId}`}
-        style={{ width: 400, textAlign: 'center' }}
+        title={
+          isSpectator ? `Spectate Room: ${roomId}` : `Join Room: ${roomId}`
+        }
+        style={{ width: "100%", maxWidth: 400, textAlign: "center" }}
       >
         {isSpectator && (
           <Alert
@@ -41,7 +46,9 @@ export function JoinScreen({ roomId, onJoin, isSpectator }: JoinScreenProps) {
             style={{ marginBottom: 16 }}
           />
         )}
-        <Text style={{ display: 'block', marginBottom: 16 }}>Enter your nickname to join.</Text>
+        <Text style={{ display: "block", marginBottom: 16 }}>
+          Enter your nickname to join.
+        </Text>
         <Input
           placeholder="Nickname"
           value={nickname}
@@ -51,8 +58,14 @@ export function JoinScreen({ roomId, onJoin, isSpectator }: JoinScreenProps) {
           onPressEnter={handleSubmit}
           disabled={loading}
         />
-        <Button type="primary" block size="large" onClick={handleSubmit} loading={loading}>
-          {isSpectator ? 'Spectate' : 'Join Game'}
+        <Button
+          type="primary"
+          block
+          size="large"
+          onClick={handleSubmit}
+          loading={loading}
+        >
+          {isSpectator ? "Spectate" : "Join Game"}
         </Button>
       </Card>
     </div>

@@ -6,7 +6,9 @@ from app.schemas.game import (
     GameSettingsSchema,
     GameStateSchema,
     JoinRoomRequest,
+    PlayerIdRequest,
     StartGameRequest,
+    VoteRequest,
 )
 from app.services.game_service import GameService, get_game_service
 from app.services.websocket_manager import manager as websocket_manager
@@ -14,10 +16,20 @@ from app.services.websocket_manager import manager as websocket_manager
 router = APIRouter()
 
 
+async def broadcast_filtered_states(room_id: str, service: GameService):
+    """Helper to broadcast player-specific filtered game states."""
+    game = await service.get_game(room_id)
+    if not game:
+        return
+
+    async def get_view(player_id: str):
+        return await service.get_player_view(game, player_id)
+
+    await websocket_manager.broadcast_filtered_game_states(room_id, get_view)
+
+
 @router.post("/rooms", response_model=GameStateSchema)
 async def create_room(request: CreateRoomRequest, service: GameService = Depends(get_game_service)):
-    # Default settings for now
-    # Default settings for now
     settings = request.settings or GameSettingsSchema()
     return await service.create_room(settings)
 
@@ -31,7 +43,6 @@ async def get_room(
     game = await service.get_game(room_id)
     if not game:
         raise HTTPException(status_code=404, detail="Room not found")
-    # Return filtered view if player_id provided
     if player_id:
         return await service.get_player_view(game, player_id)
     return game.to_schema()
@@ -47,6 +58,9 @@ async def join_room(
         result = await service.join_room(room_id, request.nickname, request.player_id)
         if not result:
             raise HTTPException(status_code=404, detail="Room not found")
+
+        # Broadcast filtered state to all players
+        await broadcast_filtered_states(room_id, service)
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -59,7 +73,13 @@ async def start_game(
     service: GameService = Depends(get_game_service),
 ):
     try:
-        return await service.start_game(room_id, request.player_id, request.settings)
+        result = await service.start_game(room_id, request.player_id, request.settings)
+        if not result:
+            raise HTTPException(status_code=404, detail="Room not found")
+
+        # Broadcast filtered state to each player (each sees their own role only)
+        await broadcast_filtered_states(room_id, service)
+        return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -71,19 +91,52 @@ async def submit_action(
     player_id: str,
     service: GameService = Depends(get_game_service),
 ):
-    game = await service.submit_action(room_id, player_id, request.action_type, request.target_id)
-    if not game:
-        raise HTTPException(status_code=404, detail="Room not found")
+    try:
+        result = await service.submit_action(
+            room_id, player_id, request.action_type, request.target_id
+        )
+        if not result:
+            raise HTTPException(status_code=404, detail="Room not found")
 
-    # Broadcast update
-    await websocket_manager.broadcast_game_state(room_id, game)
-    return game
+        # Broadcast filtered state (includes phase transitions, reveals)
+        await broadcast_filtered_states(room_id, service)
+
+        # Return the player's own filtered view
+        game = await service.get_game(room_id)
+        if game:
+            return await service.get_player_view(game, player_id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/rooms/{room_id}/vote", response_model=GameStateSchema)
+async def submit_vote(
+    room_id: str,
+    request: VoteRequest,
+    player_id: str,
+    service: GameService = Depends(get_game_service),
+):
+    try:
+        result = await service.submit_vote(room_id, player_id, request.target_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Room not found")
+
+        # Broadcast filtered state
+        await broadcast_filtered_states(room_id, service)
+
+        game = await service.get_game(room_id)
+        if game:
+            return await service.get_player_view(game, player_id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/rooms/{room_id}/end", response_model=GameStateSchema)
 async def end_game(
     room_id: str,
-    request: StartGameRequest,  # Reuse schema for player_id
+    request: PlayerIdRequest,
     service: GameService = Depends(get_game_service),
 ):
     try:
@@ -91,7 +144,26 @@ async def end_game(
         if not game_state:
             raise HTTPException(status_code=404, detail="Room not found")
 
-        await websocket_manager.broadcast_game_state(room_id, game_state)
+        # Broadcast filtered state
+        await broadcast_filtered_states(room_id, service)
+        return game_state
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/rooms/{room_id}/restart", response_model=GameStateSchema)
+async def restart_game(
+    room_id: str,
+    request: PlayerIdRequest,
+    service: GameService = Depends(get_game_service),
+):
+    try:
+        game_state = await service.restart_game(room_id, request.player_id)
+        if not game_state:
+            raise HTTPException(status_code=404, detail="Room not found")
+
+        # Broadcast filtered state
+        await broadcast_filtered_states(room_id, service)
         return game_state
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
