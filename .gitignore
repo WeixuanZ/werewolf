@@ -74,7 +74,11 @@ logs/
 # Docker
 *.tar
 
-# Terraform (if needed later)
+# Terraform
 .terraform/
 *.tfstate
-*.tfstate.backup
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+tfplan
+.terraform.lock.hcl

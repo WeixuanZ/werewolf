@@ -175,8 +175,6 @@ export default function GameRoom() {
             flexWrap: "wrap",
             gap: token.margin,
             marginBottom: token.marginLG,
-            gap: token.margin,
-            marginBottom: token.marginLG,
             padding: 16,
             background: "rgba(0, 0, 0, 0.8)",
             backdropFilter: "blur(10px)",

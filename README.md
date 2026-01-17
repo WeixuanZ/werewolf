@@ -9,35 +9,29 @@ Written by AI.
 - **Backend**: Python 3.11 with **FastAPI** (REST + WebSockets).
 - **Frontend**: React 19 + TypeScript with **Vite**, **TanStack Query**, and **Jotai**.
 - **Persistence**: **Redis** (Game state persistence).
-- **Infrastructure**: **Kubernetes** (Minikube compatible) & Docker.
+- **Infrastructure**: **Google Cloud (Terraform)** - Cloud Run & Compute Engine.
 
 ## Directory Structure
 
 - `backend/`: FastAPI application code (Modular router structure, Pydantic schemas).
 - `frontend/`: React application (Components, Store, Hooks).
-- `k8s/`: Kubernetes manifests (Deployments, Services).
-- `scripts/`: Helper scripts for local development.
+- `terraform/`: Infrastructure as Code (GCP resources).
+- `scripts/`: Helper scripts for local development and deployment.
 
 ## Getting Started
 
 ### Prerequisites
-- Docker & Minikube
+- Docker
 - Node.js & Python 3.11+
 - `uv` (Fast Python package installer)
 
 ### Local Development (Quick Start)
 
-**Option 1: Docker Compose (Recommended)**
+**Docker Compose (Recommended)**
 ```bash
 ./scripts/start_compose.sh
 ```
 Access the game at [http://localhost:3000](http://localhost:3000).
-
-**Option 2: Kubernetes (Minikube)**
-```bash
-./scripts/start_local.sh
-```
-Use this if you need to simulate the K8s production environment.
 
 ### Manual Setup
 

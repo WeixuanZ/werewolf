@@ -1,56 +1,44 @@
 # Deploying Werewolf to Google Cloud Platform
 
-This guide explains how to deploy the Werewolf game to Google Cloud Platform using **Cloud Run** (for the app) and **Compute Engine** (for the free Redis instance).
+This project uses **Terraform** to manage infrastructure as code. It deploys:
+1.  **Compute Engine (`main`)**: An `e2-micro` instance (Free Tier) running Redis and serving as a general utility server.
+2.  **Cloud Run**: Two services (`werewolf-backend` and `werewolf-frontend`) connected to the VM via **Direct VPC Egress**.
 
-## 1. Setup Redis (Free Tier)
+## Prerequisites
 
-Since GCP's Memorystore is not part of the free tier, we will run a Dockerized Redis on a tiny Compute Engine instance.
+1.  **Google Cloud SDK**: Installed and authenticated (`gcloud auth login`).
+2.  **Terraform**: Installed (`brew install terraform`).
+3.  **Project**: A GCP project (e.g., `tbd-project-82910`).
 
-1.  **Create a Compute Engine Instance**:
-    - Name: `werewolf-redis`
-    - Region: Same as your Cloud Run (e.g., `us-central1`)
-    - Machine Type: `e2-micro` (This is part of the GCP Free Tier!)
-    - Firewall: Allow HTTP/HTTPS traffic (optional, but good for management).
-    - **Crucial**: Under "Identity and API access" -> "Firewall", make sure you can access port `6379`. You might need to create a custom firewall rule in "VPC network" -> "Firewall" to allow ingress on `6379` from internal GCP ranges.
+## Deployment Guide
 
-2.  **Install Docker and Run Redis**:
-    SSH into the instance and run:
-    ```bash
-    sudo apt-get update
-    sudo apt-get install -y docker.io
-    sudo docker run -d --name redis -p 6379:6379 redis:7.0-alpine
-    ```
+### 1. Build and Push Images
+Ensure your latest code is built and pushed to GitHub Container Registry (GHCR). Usually done via GitHub Actions, but you can trigger it by tagging a release.
 
-3.  **Get Internal IP**:
-    Note the **Internal IP** of this instance. You will use it in the `REDIS_URL`.
+### 2. Deploy Infrastructure
+Run the helper script:
+```bash
+./scripts/deploy_infra.sh
+```
 
-## 2. Deploy to Cloud Run
+This script will:
+- Initialize Terraform.
+- Plan the deployment using images from `ghcr.io/WeixuanZ/...`.
+- Ask for confirmation before applying.
 
-1.  **Grant Permissions**:
-    Ensure the GitHub Action has permission to push to GHCR (already configured in the workflow).
+### 3. Verification
+After deployment, the script outputs the **Frontend URL**. Visit it to play the game.
 
-2.  **Tag and Push**:
-    - Go to your GitHub repository -> Actions -> "Tag Version".
-    - Run the workflow with `patch`.
-    - This will trigger the "Build and Publish" workflow, which pushes images to GHCR.
+## Infrastructure Details
 
-3.  **Run Deployment Script**:
-    Edit `scripts/deploy-cloud-run.sh`:
-    - Set `GHCR_OWNER` to your GitHub username.
-    - Set `<REDIS_IP>` to the internal IP of your `e2-micro` instance.
-    - Set `<FRONTEND_URL>` (you can run once to get the URL, then update and run again).
+### Networking
+- **VPC**: `werewolf-vpc`
+- **Subnet**: `werewolf-subnet` (Required for Direct VPC Egress)
+- **Firewall**: 
+    - Internal: Allows Cloud Run to talk to Redis (port 6379).
+    - SSH (IAP): Allows you to SSH into `main` safely using `gcloud compute ssh`.
 
-    Run the script:
-    ```bash
-    chmod +x scripts/deploy-cloud-run.sh
-    ./scripts/deploy-cloud-run.sh
-    ```
-
-## 3. Environment Variables Summary
-
-### Backend
-- `REDIS_URL`: `redis://<INTERNAL_REDIS_IP>:6379/0`
-- `BACKEND_CORS_ORIGINS`: `["https://your-frontend-url.a.run.app"]`
-
-### Frontend
-- `VITE_API_URL`: `https://your-backend-url.a.run.app`
+### Free Tier Strategy
+- **VM**: Uses `e2-micro` in `us-central1`. (Limit: 1 per billing account).
+- **Disk**: 30GB Standard PD.
+- **Cloud Run**: Scales to zero when not in use.
