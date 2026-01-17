@@ -177,6 +177,8 @@ export function GameOverScreen({ gameState, playerId }: GameOverScreenProps) {
             size="large"
             onClick={handleRestart}
             loading={restartGame.isPending}
+            block
+            style={{ height: 56, fontSize: 20, marginTop: token.margin }}
           >
             {restartGame.isPending ? "Restarting..." : "🔄 Play Again"}
           </Button>

@@ -54,7 +54,7 @@ export function JoinScreen({ roomId, onJoin, isSpectator }: JoinScreenProps) {
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           size="large"
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 16, height: 56, fontSize: 18 }}
           onPressEnter={handleSubmit}
           disabled={loading}
         />
@@ -64,6 +64,7 @@ export function JoinScreen({ roomId, onJoin, isSpectator }: JoinScreenProps) {
           size="large"
           onClick={handleSubmit}
           loading={loading}
+          style={{ height: 56, fontSize: 20 }}
         >
           {isSpectator ? "Spectate" : "Join Game"}
         </Button>

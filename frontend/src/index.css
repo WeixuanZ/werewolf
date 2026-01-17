@@ -23,3 +23,19 @@ body {
   width: 100%;
   min-height: 100vh;
 }
+
+/* Touch optimizations */
+button,
+a,
+input,
+[role="button"] {
+  touch-action: manipulation;
+  min-height: 44px; /* Accessible touch target size */
+}
+
+/* Prevent text selection on interactive elements */
+button,
+[role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}

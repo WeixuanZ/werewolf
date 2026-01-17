@@ -108,3 +108,8 @@ class StartGameRequest(BaseModel):
 
 class PlayerIdRequest(BaseModel):
     player_id: str
+
+
+class KickPlayerRequest(BaseModel):
+    player_id: str
+    target_id: str

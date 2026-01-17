@@ -156,6 +156,8 @@ export function NightPanel({
                 onClick={() =>
                   handleActionSubmit(NightActionType.HEAL, victimId)
                 }
+                size="large"
+                style={{ height: 56, fontSize: 20 }}
               >
                 Heal{" "}
                 {players.find((p) => p.id === victimId)?.nickname || "Victim"}
@@ -208,6 +210,8 @@ export function NightPanel({
                         handleActionSubmit(NightActionType.POISON, p.id)
                       }
                       danger
+                      size="large"
+                      style={{ height: 60, whiteSpace: "normal" }}
                     >
                       {p.nickname}
                     </Button>
@@ -223,6 +227,8 @@ export function NightPanel({
                 danger
                 disabled={!canPoison}
                 onClick={() => setSelectedAction(NightActionType.POISON)}
+                size="large"
+                style={{ height: 56, fontSize: 20 }}
               >
                 Use Poison...
               </Button>
@@ -231,6 +237,8 @@ export function NightPanel({
 
           <Button
             block
+            size="large"
+            style={{ height: 56, fontSize: 20 }}
             onClick={() => handleActionSubmit(NightActionType.SKIP, null)}
             disabled={submitAction.isPending}
           >
@@ -266,8 +274,8 @@ export function NightPanel({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-          gap: 12,
+          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+          gap: 16,
           marginBottom: token.margin,
         }}
       >
@@ -288,10 +296,10 @@ export function NightPanel({
               border: `2px solid ${targetId === p.id ? token.colorPrimary : "transparent"}`,
               borderRadius: token.borderRadiusLG,
               color: token.colorText,
-              fontSize: 16,
+              fontSize: 18,
               cursor: "pointer",
               transition: "all 0.2s",
-              minHeight: "80px",
+              minHeight: "100px",
             }}
           >
             <span style={{ fontSize: 24, marginBottom: 4 }}>👤</span>
@@ -306,6 +314,7 @@ export function NightPanel({
         type="primary"
         block
         size="large"
+        style={{ height: 56, fontSize: 20 }}
         onClick={() => handleActionSubmit(defaultAction, targetId)}
         disabled={!targetId}
         loading={submitAction.isPending}

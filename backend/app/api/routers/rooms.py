@@ -6,6 +6,7 @@ from app.schemas.game import (
     GameSettingsSchema,
     GameStateSchema,
     JoinRoomRequest,
+    KickPlayerRequest,
     PlayerIdRequest,
     StartGameRequest,
     VoteRequest,
@@ -159,6 +160,24 @@ async def restart_game(
 ):
     try:
         game_state = await service.restart_game(room_id, request.player_id)
+        if not game_state:
+            raise HTTPException(status_code=404, detail="Room not found")
+
+        # Broadcast filtered state
+        await broadcast_filtered_states(room_id, service)
+        return game_state
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/rooms/{room_id}/kick", response_model=GameStateSchema)
+async def kick_player(
+    room_id: str,
+    request: KickPlayerRequest,
+    service: GameService = Depends(get_game_service),
+):
+    try:
+        game_state = await service.kick_player(room_id, request.player_id, request.target_id)
         if not game_state:
             raise HTTPException(status_code=404, detail="Room not found")
 

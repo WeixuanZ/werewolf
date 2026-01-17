@@ -93,8 +93,8 @@ export function VotingPanel({ gameState, playerId }: VotingPanelProps) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-          gap: 12,
+          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+          gap: 16,
           marginBottom: token.margin,
         }}
       >
@@ -119,11 +119,11 @@ export function VotingPanel({ gameState, playerId }: VotingPanelProps) {
               }`,
               borderRadius: token.borderRadiusLG,
               color: token.colorText,
-              fontSize: 14,
+              fontSize: 18,
               cursor: "pointer",
               transition: "all 0.2s",
               position: "relative",
-              minHeight: "100px",
+              minHeight: "120px",
             }}
           >
             <span style={{ fontSize: 24, marginBottom: 8 }}>
@@ -157,6 +157,7 @@ export function VotingPanel({ gameState, playerId }: VotingPanelProps) {
         type="primary"
         block
         size="large"
+        style={{ height: 56, fontSize: 20 }}
         onClick={handleVote}
         disabled={!selectedTarget}
         loading={submitVote.isPending}

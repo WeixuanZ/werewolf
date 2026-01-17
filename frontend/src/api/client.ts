@@ -88,6 +88,12 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ player_id: playerId }),
       }),
+
+    kick: (roomId: string, playerId: string, targetId: string) =>
+      fetchApi<GameState>(`/rooms/${roomId}/kick`, {
+        method: "POST",
+        body: JSON.stringify({ player_id: playerId, target_id: targetId }),
+      }),
   },
 };
 
@@ -189,6 +195,23 @@ export function useRestartGame(roomId: string) {
   return useMutation({
     mutationFn: ({ playerId }: { playerId: string }) =>
       api.rooms.restart(roomId, playerId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["gameState", roomId], data);
+    },
+  });
+}
+
+export function useKickPlayer(roomId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      playerId,
+      targetId,
+    }: {
+      playerId: string;
+      targetId: string;
+    }) => api.rooms.kick(roomId, playerId, targetId),
     onSuccess: (data) => {
       queryClient.setQueryData(["gameState", roomId], data);
     },

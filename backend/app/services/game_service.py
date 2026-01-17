@@ -185,6 +185,31 @@ class GameService:
         await self._save_game(game)
         return game.to_schema()
 
+    async def kick_player(
+        self, room_id: str, player_id: str, target_id: str
+    ) -> GameStateSchema | None:
+        async with RedisClient.get_client().lock(f"game:{room_id}:lock", timeout=5):
+            game = await self.get_game(room_id)
+            if not game:
+                return None
+
+            player = game.players.get(player_id)
+            if not player or not player.is_admin:
+                raise ValueError("Only admin can kick players")
+
+            if game.phase not in [GamePhase.WAITING, GamePhase.GAME_OVER]:
+                raise ValueError("Cannot kick players while game is in progress")
+
+            if target_id not in game.players:
+                raise ValueError("Player not found")
+
+            if target_id == player_id:
+                raise ValueError("Cannot kick yourself")
+
+            game.remove_player(target_id)
+            await self._save_game(game)
+            return game.to_schema()
+
     async def restart_game(self, room_id: str, player_id: str) -> GameStateSchema | None:
         async with RedisClient.get_client().lock(f"game:{room_id}:lock", timeout=5):
             game = await self.get_game(room_id)

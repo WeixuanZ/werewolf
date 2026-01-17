@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import logging
+from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
 
 from fastapi import WebSocket
@@ -9,6 +10,7 @@ if TYPE_CHECKING:
     from redis.asyncio.client import PubSub
 
 from app.core.redis import RedisClient
+from app.schemas.game import GameStateSchema
 from app.schemas.socket import (
     MessageType,
     PresenceMessage,
@@ -108,7 +110,7 @@ class ConnectionManager:
         data = message.model_dump_json() if hasattr(message, "model_dump_json") else str(message)
         await redis.publish(f"room:{room_id}", data)
 
-    async def broadcast_game_state(self, room_id: str, game_state):
+    async def broadcast_game_state(self, room_id: str, game_state: GameStateSchema):
         """Broadcast game state update to all players in room.
 
         NOTE: This sends the SAME state to all players.
@@ -118,7 +120,9 @@ class ConnectionManager:
         message = StateUpdateMessage(room_id=room_id, payload=game_state)
         await self.broadcast_to_room(room_id, message)
 
-    async def broadcast_filtered_game_states(self, room_id: str, get_player_view_fn):
+    async def broadcast_filtered_game_states(
+        self, room_id: str, get_player_view_fn: Callable[[str], Awaitable[GameStateSchema]]
+    ):
         """Send player-specific filtered game state to each connected player.
 
         Args:
