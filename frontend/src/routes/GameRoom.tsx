@@ -1,5 +1,5 @@
-import { CopyOutlined } from "@ant-design/icons";
-import { useEffect } from "react";
+import { CopyOutlined, QrcodeOutlined } from "@ant-design/icons";
+import { useEffect, useState } from "react";
 import { useGameSocket } from "../hooks/useGameSocket";
 import { useSetCurrentRoomId, useCurrentSession } from "../store/gameStore";
 import {
@@ -11,6 +11,8 @@ import {
   Alert,
   message,
   theme,
+  QRCode,
+  Modal,
 } from "antd";
 import { v4 as uuidv4 } from "uuid";
 import { GamePhase } from "../types";
@@ -30,6 +32,7 @@ const { useToken } = theme;
 
 export default function GameRoom() {
   const { token } = useToken();
+  const [showQrCode, setShowQrCode] = useState(false);
   const roomId = window.location.pathname.split("/").pop() || "";
 
   // Set current room context for atoms
@@ -162,14 +165,42 @@ export default function GameRoom() {
             <Title level={3} style={{ margin: 0, color: token.colorText }}>
               Room: {roomId}
             </Title>
-            <Button
-              type="link"
-              icon={<CopyOutlined />}
-              onClick={handleCopyLink}
-              style={{ padding: 0, color: token.colorPrimary }}
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button
+                type="link"
+                icon={<CopyOutlined />}
+                onClick={handleCopyLink}
+                style={{ padding: 0, color: token.colorPrimary }}
+              >
+                Copy Invite Link
+              </Button>
+              <Button
+                type="link"
+                icon={<QrcodeOutlined />}
+                onClick={() => setShowQrCode(true)}
+                style={{ padding: 0, color: token.colorPrimary }}
+              >
+                Show QR Code
+              </Button>
+            </div>
+            <Modal
+              title="Join via QR Code"
+              open={showQrCode}
+              onCancel={() => setShowQrCode(false)}
+              footer={null}
+              centered
+              width="auto"
             >
-              Copy Invite Link
-            </Button>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  padding: 20,
+                }}
+              >
+                <QRCode value={window.location.href} size={250} />
+              </div>
+            </Modal>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {isGameInProgress && me?.is_admin && (
