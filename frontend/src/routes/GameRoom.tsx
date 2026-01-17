@@ -186,7 +186,7 @@ export default function GameRoom() {
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: token.marginLG,
+            gap: token.margin,
           }}
         >
           <PlayerList players={players} myId={playerId ?? null} />

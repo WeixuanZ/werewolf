@@ -20,7 +20,8 @@ function PlayerCard({ player, isMe }: PlayerCardProps) {
         border: `1px solid ${token.colorBorder}`,
         borderRadius: token.borderRadius,
         padding: 12,
-        height: 100,
+        minHeight: 100,
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
@@ -84,7 +85,7 @@ interface PlayerListProps {
 
 export function PlayerList({ players, myId }: PlayerListProps) {
   return (
-    <Card title={`Players (${players.length})`} style={{ marginBottom: 16 }}>
+    <Card title={`Players (${players.length})`}>
       <List
         grid={{ gutter: 12, xs: 2, sm: 3, md: 4, lg: 4 }}
         dataSource={players}

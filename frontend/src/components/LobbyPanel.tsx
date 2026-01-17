@@ -1,15 +1,7 @@
 import { useState } from "react";
 import { getRoleNameWithEmoji } from "../utils/roleUtils";
-import {
-  Card,
-  Form,
-  InputNumber,
-  Button,
-  Spin,
-  Typography,
-  message,
-  theme,
-} from "antd";
+import { PlusOutlined, MinusOutlined } from "@ant-design/icons";
+import { Card, Button, Spin, Typography, message, theme } from "antd";
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -82,10 +74,10 @@ export function LobbyPanel({
     }));
   }
 
-  const updateRole = (role: RoleType, count: number | null) => {
+  const updateRole = (role: RoleType, value: number) => {
     setSettings((prev) => ({
       ...prev,
-      role_distribution: { ...prev.role_distribution, [role]: count ?? 0 },
+      role_distribution: { ...prev.role_distribution, [role]: value },
     }));
   };
 
@@ -129,42 +121,111 @@ export function LobbyPanel({
 
   return (
     <div
-      style={{ display: "flex", flexDirection: "column", gap: token.marginLG }}
+      style={{ display: "flex", flexDirection: "column", gap: token.margin }}
     >
       <Card title="Game Configuration">
-        <Form layout="vertical">
-          <div style={{ display: "flex", gap: token.margin, flexWrap: "wrap" }}>
-            {roles.map((role) => (
-              <Form.Item
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+            gap: token.margin,
+          }}
+        >
+          {roles.map((role) => {
+            const count = settings.role_distribution[role];
+            return (
+              <div
                 key={role}
-                label={getRoleNameWithEmoji(role)}
-                style={{ flex: 1, minWidth: 100 }}
+                style={{
+                  background: "rgba(255, 255, 255, 0.04)",
+                  borderRadius: token.borderRadiusLG,
+                  padding: token.padding,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: token.marginSM,
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                }}
               >
-                <InputNumber
-                  min={0}
-                  value={settings.role_distribution[role]}
-                  onChange={(v) => updateRole(role, v)}
-                  style={{ width: "100%" }}
-                />
-              </Form.Item>
-            ))}
-          </div>
-          <Text type={isValid ? "success" : "danger"}>
+                <Text
+                  strong
+                  style={{
+                    fontSize: 14,
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {getRoleNameWithEmoji(role)}
+                </Text>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: token.marginSM,
+                    background: "rgba(0, 0, 0, 0.2)",
+                    borderRadius: token.borderRadius,
+                    padding: 4,
+                  }}
+                >
+                  <Button
+                    type="text"
+                    icon={<MinusOutlined />}
+                    onClick={() => updateRole(role, Math.max(0, count - 1))}
+                    disabled={count <= 0}
+                    style={{
+                      color: token.colorText,
+                      width: 32,
+                      height: 32,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: "bold",
+                      minWidth: 24,
+                      textAlign: "center",
+                    }}
+                  >
+                    {count}
+                  </Text>
+                  <Button
+                    type="text"
+                    icon={<PlusOutlined />}
+                    onClick={() => updateRole(role, count + 1)}
+                    style={{
+                      color: token.colorText,
+                      width: 32,
+                      height: 32,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ marginTop: token.marginLG, textAlign: "center" }}>
+          <Text
+            type={isValid ? "success" : "danger"}
+            style={{ fontSize: 16, display: "block", marginBottom: 8 }}
+          >
             Total: {totalRoles} / {playerCount} players
           </Text>
-        </Form>
+        </div>
       </Card>
-      <div style={{ textAlign: "center" }}>
-        <Button
-          type="primary"
-          size="large"
-          onClick={handleStart}
-          loading={loading}
-          disabled={!isValid}
-        >
-          Start Game
-        </Button>
-      </div>
+
+      <Button
+        type="primary"
+        size="large"
+        onClick={handleStart}
+        loading={loading}
+        disabled={!isValid}
+        block
+        style={{ height: 48, fontSize: 18 }}
+      >
+        Start Game
+      </Button>
     </div>
   );
 }
