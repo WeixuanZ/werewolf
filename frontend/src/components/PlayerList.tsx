@@ -1,4 +1,4 @@
-import { Card, List, Tag, theme } from "antd";
+import { Card, Tag, theme } from "antd";
 import { getRoleNameWithEmoji } from "../utils/roleUtils";
 import type { Player } from "../types";
 
@@ -86,15 +86,21 @@ interface PlayerListProps {
 export function PlayerList({ players, myId }: PlayerListProps) {
   return (
     <Card title={`Players (${players.length})`}>
-      <List
-        grid={{ gutter: 12, xs: 2, sm: 3, md: 4, lg: 4 }}
-        dataSource={players}
-        renderItem={(player) => (
-          <List.Item style={{ marginBottom: 12 }}>
-            <PlayerCard player={player} isMe={player.id === myId} />
-          </List.Item>
-        )}
-      />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+          gap: 12,
+        }}
+      >
+        {players.map((player) => (
+          <PlayerCard
+            key={player.id}
+            player={player}
+            isMe={player.id === myId}
+          />
+        ))}
+      </div>
     </Card>
   );
 }

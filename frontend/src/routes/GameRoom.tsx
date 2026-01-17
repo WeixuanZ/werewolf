@@ -1,3 +1,4 @@
+import { CopyOutlined } from "@ant-design/icons";
 import { useEffect } from "react";
 import { useGameSocket } from "../hooks/useGameSocket";
 import { useSetCurrentRoomId, useCurrentSession } from "../store/gameStore";
@@ -149,8 +150,12 @@ export default function GameRoom() {
             gap: token.margin,
             marginBottom: token.marginLG,
             padding: token.padding,
-            background: "rgba(0, 0, 0, 0.2)",
+            background: "rgba(0, 0, 0, 0.8)",
+            backdropFilter: "blur(10px)",
             borderRadius: token.borderRadiusLG,
+            position: "sticky",
+            top: 0,
+            zIndex: 100,
           }}
         >
           <div>
@@ -159,6 +164,7 @@ export default function GameRoom() {
             </Title>
             <Button
               type="link"
+              icon={<CopyOutlined />}
               onClick={handleCopyLink}
               style={{ padding: 0, color: token.colorPrimary }}
             >
