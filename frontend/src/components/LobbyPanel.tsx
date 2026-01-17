@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getRoleNameWithEmoji } from "../utils/roleUtils";
 import {
   Card,
   Form,
@@ -13,24 +14,45 @@ import {
 const { Text } = Typography;
 const { useToken } = theme;
 
-export interface GameSettings {
-  role_distribution: Record<string, number>;
-  phase_duration_seconds: number;
-}
+import { type GameSettings, RoleType } from "../types";
 
-function getDefaultRoles(playerCount: number): Record<string, number> {
-  if (playerCount <= 4)
-    return {
-      WEREWOLF: 1,
-      SEER: 1,
-      DOCTOR: 0,
-      VILLAGER: Math.max(0, playerCount - 2),
-    };
-  if (playerCount <= 6)
-    return { WEREWOLF: 1, SEER: 1, DOCTOR: 1, VILLAGER: playerCount - 3 };
-  if (playerCount <= 9)
-    return { WEREWOLF: 2, SEER: 1, DOCTOR: 1, VILLAGER: playerCount - 4 };
-  return { WEREWOLF: 3, SEER: 1, DOCTOR: 1, VILLAGER: playerCount - 5 };
+function getDefaultRoles(playerCount: number): Record<RoleType, number> {
+  const defaults: Record<RoleType, number> = {
+    [RoleType.WEREWOLF]: 1,
+    [RoleType.SEER]: 1,
+    [RoleType.DOCTOR]: 1,
+    [RoleType.WITCH]: 0,
+    [RoleType.HUNTER]: 0,
+    [RoleType.VILLAGER]: 0,
+    [RoleType.SPECTATOR]: 0,
+  };
+
+  if (playerCount <= 4) {
+    // 4 players: 1 Wolf, 1 Seer, 2 Villagers
+    defaults[RoleType.DOCTOR] = 0;
+    defaults[RoleType.VILLAGER] = Math.max(0, playerCount - 2);
+    return defaults;
+  }
+
+  // 5+ players: 1 Wolf, 1 Seer, 1 Doctor
+  if (playerCount <= 6) {
+    defaults[RoleType.VILLAGER] = playerCount - 3;
+    return defaults;
+  }
+
+  // 7+ players: Add Witch
+  if (playerCount <= 8) {
+    defaults[RoleType.WITCH] = 1;
+    defaults[RoleType.VILLAGER] = playerCount - 4;
+    return defaults;
+  }
+
+  // 9+ players: Add Hunter
+  defaults[RoleType.WITCH] = 1;
+  defaults[RoleType.HUNTER] = 1;
+  defaults[RoleType.WEREWOLF] = 2; // Extra wolf for balance
+  defaults[RoleType.VILLAGER] = Math.max(0, playerCount - 6);
+  return defaults;
 }
 
 interface LobbyPanelProps {
@@ -60,7 +82,7 @@ export function LobbyPanel({
     }));
   }
 
-  const updateRole = (role: string, count: number | null) => {
+  const updateRole = (role: RoleType, count: number | null) => {
     setSettings((prev) => ({
       ...prev,
       role_distribution: { ...prev.role_distribution, [role]: count ?? 0 },
@@ -96,7 +118,14 @@ export function LobbyPanel({
     );
   }
 
-  const roles = ["WEREWOLF", "SEER", "DOCTOR", "VILLAGER"];
+  const roles = [
+    RoleType.WEREWOLF,
+    RoleType.SEER,
+    RoleType.DOCTOR,
+    RoleType.WITCH,
+    RoleType.HUNTER,
+    RoleType.VILLAGER,
+  ];
 
   return (
     <div
@@ -108,7 +137,7 @@ export function LobbyPanel({
             {roles.map((role) => (
               <Form.Item
                 key={role}
-                label={role}
+                label={getRoleNameWithEmoji(role)}
                 style={{ flex: 1, minWidth: 100 }}
               >
                 <InputNumber

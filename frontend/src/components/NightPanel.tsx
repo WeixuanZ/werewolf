@@ -1,15 +1,10 @@
 import { useState } from "react";
-import { Typography, Select, Button } from "antd";
+import { getRoleNameWithEmoji } from "../utils/roleUtils";
+import { Typography, Button, theme, Space, Tag } from "antd";
 import { useSubmitAction } from "../api/client";
-import type { Player } from "../types";
+import { type Player, NightActionType } from "../types";
 
 const { Text } = Typography;
-
-const ACTION_MAP: Record<string, string> = {
-  WEREWOLF: "KILL",
-  DOCTOR: "SAVE",
-  SEER: "CHECK",
-};
 
 interface NightPanelProps {
   myRole: string;
@@ -26,51 +21,296 @@ export function NightPanel({
   roomId,
   hasSubmittedAction = false,
 }: NightPanelProps) {
+  const { token } = theme.useToken();
   const [targetId, setTargetId] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const submitAction = useSubmitAction(roomId);
 
-  if (!myRole || ["VILLAGER", "SPECTATOR"].includes(myRole)) {
-    return <Text>You are sleeping... 💤</Text>;
-  }
+  const me = players.find((p) => p.id === playerId);
+  const nightInfo = me?.night_info;
+  const actionsAvailable = nightInfo?.actions_available || [];
 
-  // Use server state or local state for submitted check
-  if (hasSubmittedAction || submitAction.isSuccess) {
-    return <Text>Waiting for night to end... 🌙</Text>;
-  }
+  const handleActionSubmit = (actionType: string, tid: string | null) => {
+    // Validation: Must have target unless it is SKIP or implicit HEAL
+    if (
+      !tid &&
+      actionType !== NightActionType.HEAL &&
+      actionType !== NightActionType.SKIP
+    )
+      return;
 
-  const alivePlayers = players.filter((p) => p.is_alive);
+    // For Witch HEAL, target is implied as victim if not provided, but mostly provided by button click context
+    const finalTarget =
+      actionType === NightActionType.HEAL ? tid || nightInfo?.victim_id : tid;
 
-  const handleSubmit = () => {
-    if (!targetId) return;
+    // Skip allows no target, send "SKIP" keyword to backend
+    if (actionType === NightActionType.SKIP) {
+      submitAction.mutate({ playerId, actionType, targetId: "SKIP" });
+      return;
+    }
+
+    if (!finalTarget) return;
+
     submitAction.mutate({
       playerId,
-      actionType: ACTION_MAP[myRole],
-      targetId,
+      actionType,
+      targetId: finalTarget,
     });
   };
 
+  if (!myRole || ["VILLAGER", "SPECTATOR"].includes(myRole)) {
+    return (
+      <div
+        style={{
+          background: "rgba(0, 0, 0, 0.3)",
+          borderRadius: token.borderRadiusLG,
+          padding: token.paddingLG,
+          border: `1px solid ${token.colorBorder}`,
+          textAlign: "center",
+        }}
+      >
+        <Text style={{ fontSize: 16 }}>You are sleeping... 💤</Text>
+      </div>
+    );
+  }
+
+  if (hasSubmittedAction || submitAction.isSuccess) {
+    return (
+      <div
+        style={{
+          background: "rgba(0, 0, 0, 0.3)",
+          borderRadius: token.borderRadiusLG,
+          padding: token.paddingLG,
+          border: `1px solid ${token.colorBorder}`,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{ color: token.colorSuccess, fontSize: 16, marginBottom: 8 }}
+        >
+          ✅ Action submitted
+        </div>
+        <div style={{ color: token.colorTextSecondary }}>
+          Waiting for night to end... 🌙
+        </div>
+      </div>
+    );
+  }
+
+  const alivePlayers = players.filter((p) => p.is_alive && p.id !== playerId);
+
+  // WITCH SPECIFIC UI
+  if (myRole === "WITCH") {
+    // Since actionsAvailable is explicitly typed now, we can check directly
+    const canHeal =
+      actionsAvailable.includes(NightActionType.HEAL) && me?.witch_has_heal;
+    const canPoison =
+      actionsAvailable.includes(NightActionType.POISON) && me?.witch_has_poison;
+    const victimId = nightInfo?.victim_id;
+
+    return (
+      <div
+        style={{
+          background: "rgba(0, 0, 0, 0.3)",
+          borderRadius: token.borderRadiusLG,
+          padding: token.paddingLG,
+          border: `1px solid ${token.colorBorder}`,
+        }}
+      >
+        <div style={{ textAlign: "center", marginBottom: token.margin }}>
+          <h3 style={{ color: token.colorText, margin: 0 }}>
+            {getRoleNameWithEmoji(myRole)}
+          </h3>
+          <p style={{ color: token.colorTextSecondary, marginTop: 8 }}>
+            {nightInfo?.prompt || me?.role_description}
+          </p>
+        </div>
+
+        <Space direction="vertical" style={{ width: "100%" }} size="large">
+          {/* HEAL SECTION */}
+          <div
+            style={{
+              border: `1px solid ${token.colorBorderSecondary}`,
+              padding: 12,
+              borderRadius: 8,
+            }}
+          >
+            <div
+              style={{
+                marginBottom: 8,
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              <Text strong>Potion of Healing</Text>
+              <Tag color={me?.witch_has_heal ? "green" : "red"}>
+                {me?.witch_has_heal ? "Available" : "Empty"}
+              </Tag>
+            </div>
+            {victimId ? (
+              <Button
+                block
+                type="primary"
+                ghost
+                disabled={!canHeal}
+                onClick={() =>
+                  handleActionSubmit(NightActionType.HEAL, victimId)
+                }
+              >
+                Heal{" "}
+                {players.find((p) => p.id === victimId)?.nickname || "Victim"}
+              </Button>
+            ) : (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                No victim to heal yet.
+              </Text>
+            )}
+          </div>
+
+          {/* POISON SECTION */}
+          <div
+            style={{
+              border: `1px solid ${token.colorBorderSecondary}`,
+              padding: 12,
+              borderRadius: 8,
+            }}
+          >
+            <div
+              style={{
+                marginBottom: 8,
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              <Text strong>Potion of Poison</Text>
+              <Tag color={me?.witch_has_poison ? "green" : "red"}>
+                {me?.witch_has_poison ? "Available" : "Empty"}
+              </Tag>
+            </div>
+
+            {selectedAction === NightActionType.POISON ? (
+              <div>
+                <Text style={{ display: "block", marginBottom: 8 }}>
+                  Select a player to poison:
+                </Text>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(100px, 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  {alivePlayers.map((p) => (
+                    <Button
+                      key={p.id}
+                      onClick={() =>
+                        handleActionSubmit(NightActionType.POISON, p.id)
+                      }
+                      danger
+                    >
+                      {p.nickname}
+                    </Button>
+                  ))}
+                  <Button onClick={() => setSelectedAction(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                block
+                danger
+                disabled={!canPoison}
+                onClick={() => setSelectedAction(NightActionType.POISON)}
+              >
+                Use Poison...
+              </Button>
+            )}
+          </div>
+
+          <Button
+            block
+            onClick={() => handleActionSubmit(NightActionType.SKIP, null)}
+            disabled={submitAction.isPending}
+          >
+            Skip Turn
+          </Button>
+        </Space>
+      </div>
+    );
+  }
+
+  // GENERIC UI (Werewolf, Seer, Doctor, Hunter)
+  // Assumes single action type available for these roles
+  const defaultAction = actionsAvailable[0] || "ACTION";
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <Text>Select a target ({myRole}):</Text>
-      <Select
-        style={{ width: "100%" }}
-        placeholder="Select target"
-        onChange={setTargetId}
-        value={targetId}
+    <div
+      style={{
+        background: "rgba(0, 0, 0, 0.3)",
+        borderRadius: token.borderRadiusLG,
+        padding: token.paddingLG,
+        border: `1px solid ${token.colorBorder}`,
+      }}
+    >
+      <div style={{ textAlign: "center", marginBottom: token.margin }}>
+        <h3 style={{ color: token.colorText, margin: 0 }}>
+          {getRoleNameWithEmoji(myRole)}
+        </h3>
+        <p style={{ color: token.colorTextSecondary, margin: "8px 0 0" }}>
+          {nightInfo?.prompt || "Select a target."}
+        </p>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+          gap: 12,
+          marginBottom: token.margin,
+        }}
       >
         {alivePlayers.map((p) => (
-          <Select.Option key={p.id} value={p.id}>
-            {p.nickname} {p.id === playerId ? "(You)" : ""}
-          </Select.Option>
+          <button
+            key={p.id}
+            onClick={() => setTargetId(p.id)}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              padding: "16px",
+              background:
+                targetId === p.id
+                  ? `${token.colorPrimary}33`
+                  : "rgba(255, 255, 255, 0.05)",
+              border: `2px solid ${targetId === p.id ? token.colorPrimary : "transparent"}`,
+              borderRadius: token.borderRadiusLG,
+              color: token.colorText,
+              fontSize: 16,
+              cursor: "pointer",
+              transition: "all 0.2s",
+              minHeight: "80px",
+            }}
+          >
+            <span style={{ fontSize: 24, marginBottom: 4 }}>👤</span>
+            <span style={{ fontWeight: 500, textAlign: "center" }}>
+              {p.nickname}
+            </span>
+          </button>
         ))}
-      </Select>
+      </div>
+
       <Button
         type="primary"
-        onClick={handleSubmit}
+        block
+        size="large"
+        onClick={() => handleActionSubmit(defaultAction, targetId)}
         disabled={!targetId}
         loading={submitAction.isPending}
       >
-        Submit Action
+        Confirm {defaultAction}
       </Button>
     </div>
   );

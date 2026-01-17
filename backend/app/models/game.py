@@ -26,8 +26,15 @@ class PlayerState(BaseModel):
     role: RoleType | None = None
     is_alive: bool = True
     is_admin: bool = False
+
+    # Role specific state
+    witch_has_heal: bool = True
+    witch_has_poison: bool = True
+    hunter_revenge_target: str | None = None
+
     vote_target: str | None = None
     night_action_target: str | None = None
+    night_action_type: str | None = None
 
     model_config = ConfigDict(extra="ignore")
 
@@ -95,8 +102,12 @@ class Game:
                 role=p.role,
                 is_alive=p.is_alive,
                 is_admin=p.is_admin,
+                witch_has_heal=p.witch_has_heal,
+                witch_has_poison=p.witch_has_poison,
+                hunter_revenge_target=p.hunter_revenge_target,
                 vote_target=p.vote_target,
                 night_action_target=p.night_action_target,
+                night_action_type=p.night_action_type,
                 has_night_action=p.has_night_action,
             )
             for pid, p in self._state.players.items()

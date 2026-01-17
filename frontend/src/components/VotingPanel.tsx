@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, theme } from "antd";
 import { useSubmitVote } from "../api/client";
 import type { GameState, Player } from "../types";
+import { getRoleEmoji } from "../utils/roleUtils";
 
 const { useToken } = theme;
 
@@ -91,9 +92,9 @@ export function VotingPanel({ gameState, playerId }: VotingPanelProps) {
 
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+          gap: 12,
           marginBottom: token.margin,
         }}
       >
@@ -103,9 +104,10 @@ export function VotingPanel({ gameState, playerId }: VotingPanelProps) {
             onClick={() => setSelectedTarget(player.id)}
             style={{
               display: "flex",
-              justifyContent: "space-between",
+              flexDirection: "column",
+              justifyContent: "center",
               alignItems: "center",
-              padding: "12px 16px",
+              padding: "16px",
               background:
                 selectedTarget === player.id
                   ? `${token.colorPrimary}33`
@@ -115,22 +117,33 @@ export function VotingPanel({ gameState, playerId }: VotingPanelProps) {
                   ? token.colorPrimary
                   : "transparent"
               }`,
-              borderRadius: token.borderRadius,
+              borderRadius: token.borderRadiusLG,
               color: token.colorText,
               fontSize: 14,
               cursor: "pointer",
               transition: "all 0.2s",
+              position: "relative",
+              minHeight: "100px",
             }}
           >
-            <span style={{ fontWeight: 500 }}>{player.nickname}</span>
+            <span style={{ fontSize: 24, marginBottom: 8 }}>
+              {player.role ? getRoleEmoji(player.role) : "👤"}
+            </span>
+            <span
+              style={{ fontWeight: 500, textAlign: "center", marginBottom: 4 }}
+            >
+              {player.nickname}
+            </span>
+
             {voteCounts[player.id] && (
               <span
                 style={{
                   fontSize: 12,
-                  color: token.colorTextSecondary,
-                  background: "rgba(0, 0, 0, 0.2)",
-                  padding: "4px 8px",
-                  borderRadius: 4,
+                  color: token.colorTextLightSolid,
+                  background: token.colorPrimary,
+                  padding: "2px 8px",
+                  borderRadius: 12,
+                  marginTop: 4,
                 }}
               >
                 {voteCounts[player.id]} votes

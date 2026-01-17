@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from app.models.game import Game
 
 from app.models.roles import RoleType
-from app.schemas.game import GamePhase
+from app.schemas.game import GamePhase, NightActionType
 
 
 class PhaseState(ABC):
@@ -71,6 +71,7 @@ class NightState(PhaseState):
         # Clear previous night actions
         for player in game.players.values():
             player.night_action_target = None
+            player.night_action_type = None
 
     def process_action(self, game: Game, player_id: str, action: dict) -> None:
         player = game.players.get(player_id)
@@ -83,17 +84,21 @@ class NightState(PhaseState):
         target_id = action.get("target_id")
         action_type = action.get("action_type")
 
-        if not target_id or target_id not in game.players:
+        if not action_type or not isinstance(action_type, str):
+            # Invalid action type
             return
 
-        player.night_action_target = target_id
+        if not player.role_instance:
+            return
 
-        # Track seer reveals immediately
-        if action_type == "CHECK" and player.role == RoleType.SEER:
-            if player_id not in game.seer_reveals:
-                game.seer_reveals[player_id] = []
-            if target_id not in game.seer_reveals[player_id]:
-                game.seer_reveals[player_id].append(target_id)
+        # Delegate validation and state updates to the Role instance
+        try:
+            player.role_instance.handle_night_action(game, player_id, action_type, target_id)
+        except ValueError as e:
+            # You might want to log this or return an error to the user
+            # For now, we just return safely without updating state
+            print(f"Invalid action for {player_id}: {e}")
+            return
 
     def check_completion(self, game: Game) -> bool:
         """All alive players with night actions must have acted."""
@@ -115,11 +120,29 @@ class NightState(PhaseState):
 
             if player.role == RoleType.WEREWOLF:
                 kills.add(player.night_action_target)
+            elif player.role == RoleType.WITCH:
+                if player.night_action_type == NightActionType.POISON:
+                    kills.add(player.night_action_target)
+                elif player.night_action_type == NightActionType.HEAL:
+                    saves.add(player.night_action_target)
             elif player.role == RoleType.DOCTOR:
                 saves.add(player.night_action_target)
 
-        # Apply deaths (killed but not saved)
-        for target_id in kills - saves:
+        # Calculate deaths (first pass)
+        dead_this_round = kills - saves
+
+        # Phase 2: Hunter Revenge (and any other death triggers)
+        # Check if any hunters died
+        final_deaths = set(dead_this_round)
+
+        hunters = [p for p in game.players.values() if p.role == RoleType.HUNTER]
+        for hunter in hunters:
+            if hunter.id in dead_this_round and hunter.night_action_target:
+                # Hunter died, so their target dies too (Revenge)
+                final_deaths.add(hunter.night_action_target)
+
+        # Apply deaths
+        for target_id in final_deaths:
             if target_id in game.players:
                 game.players[target_id].is_alive = False
 

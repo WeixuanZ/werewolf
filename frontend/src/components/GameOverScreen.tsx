@@ -2,6 +2,7 @@ import { Button, theme } from "antd";
 import { useRestartGame } from "../api/client";
 import type { GameState, Player } from "../types";
 import { RoleType } from "../types";
+import { getRoleEmoji } from "../utils/roleUtils";
 
 const { useToken } = theme;
 
@@ -35,21 +36,6 @@ export function GameOverScreen({ gameState, playerId }: GameOverScreenProps) {
   const villagers = Object.values(gameState.players).filter(
     (p) => p.role !== RoleType.WEREWOLF,
   );
-
-  const getRoleEmoji = (role: string | null) => {
-    switch (role) {
-      case RoleType.WEREWOLF:
-        return "🐺";
-      case RoleType.SEER:
-        return "🔮";
-      case RoleType.DOCTOR:
-        return "💉";
-      case RoleType.VILLAGER:
-        return "🧑‍🌾";
-      default:
-        return "❓";
-    }
-  };
 
   const bgColor = playerWon
     ? "rgba(46, 125, 50, 0.2)"

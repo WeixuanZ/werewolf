@@ -22,7 +22,7 @@ import {
   VotingPanel,
   GameOverScreen,
 } from "../components";
-import type { GameSettings } from "../components";
+import type { GameSettings } from "../types";
 
 const { Title } = Typography;
 const { useToken } = theme;

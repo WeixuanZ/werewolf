@@ -3,6 +3,8 @@ export const RoleType = {
   WEREWOLF: "WEREWOLF",
   SEER: "SEER",
   DOCTOR: "DOCTOR",
+  WITCH: "WITCH",
+  HUNTER: "HUNTER",
   SPECTATOR: "SPECTATOR",
 } as const;
 
@@ -18,15 +20,37 @@ export const GamePhase = {
 
 export type GamePhase = (typeof GamePhase)[keyof typeof GamePhase];
 
+export const NightActionType = {
+  KILL: "KILL",
+  SAVE: "SAVE",
+  CHECK: "CHECK",
+  HEAL: "HEAL",
+  POISON: "POISON",
+  REVENGE: "REVENGE",
+  SKIP: "SKIP",
+} as const;
+
+export type NightActionType =
+  (typeof NightActionType)[keyof typeof NightActionType];
+
 export interface Player {
   id: string;
   nickname: string;
   role: RoleType | null;
+  role_description?: string;
   is_alive: boolean;
   is_admin: boolean;
   is_online: boolean;
   vote_target?: string | null;
   has_night_action?: boolean;
+  night_info?: {
+    prompt?: string;
+    actions_available?: NightActionType[];
+    victim_id?: string;
+  };
+  witch_has_heal?: boolean;
+  witch_has_poison?: boolean;
+  hunter_revenge_target?: string | null;
 }
 
 export interface GameSettings {

@@ -8,7 +8,9 @@ class RoleType(str, Enum):
     WEREWOLF = "WEREWOLF"
     SEER = "SEER"
     DOCTOR = "DOCTOR"
-    SPECTATOR = "SPECTATOR"  # For dead players or late joiners if we support that
+    WITCH = "WITCH"
+    HUNTER = "HUNTER"
+    SPECTATOR = "SPECTATOR"
 
 
 class GamePhase(str, Enum):
@@ -19,16 +21,43 @@ class GamePhase(str, Enum):
     GAME_OVER = "GAME_OVER"
 
 
+class NightActionType(str, Enum):
+    KILL = "KILL"
+    SAVE = "SAVE"
+    CHECK = "CHECK"
+    HEAL = "HEAL"
+    POISON = "POISON"
+    REVENGE = "REVENGE"
+    SKIP = "SKIP"
+
+
+class NightInfoSchema(BaseModel):
+    prompt: str
+    actions_available: list[NightActionType]
+    victim_id: str | None = None
+
+
 class PlayerSchema(BaseModel):
     id: str
     nickname: str
     role: RoleType | None = None
+    role_description: str | None = None  # UI-ready description
     is_alive: bool = True
     is_admin: bool = False
     is_online: bool = False
+
+    # Role specific state
+    witch_has_heal: bool = True
+    witch_has_poison: bool = True
+    hunter_revenge_target: str | None = None
+
     vote_target: str | None = None
-    night_action_target: str | None = None  # Persisted night action
-    has_night_action: bool = False  # Computed field for frontend
+    night_action_target: str | None = None
+    night_action_type: str | None = None  # Persist action type (e.g., HEAL/POISON)
+    has_night_action: bool = False
+
+    # Dynamic context for frontend
+    night_info: NightInfoSchema | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

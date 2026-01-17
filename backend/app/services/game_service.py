@@ -63,6 +63,20 @@ class GameService:
 
         full_schema.players = filtered_players
         full_schema.seer_reveals = {}  # Don't expose reveal map to client
+
+        # Populate dynamic context for the requesting player
+        me = filtered_players.get(player_id)
+        if me and me.role:
+            # We need the role instance to get dynamic info
+            # Re-fetch from game state to get the Role object logic
+            p_state = game.players.get(player_id)
+            if p_state and p_state.role_instance:
+                role_inst = p_state.role_instance
+                me.role_description = role_inst.get_description()
+
+                if full_schema.phase == GamePhase.NIGHT and me.is_alive:
+                    me.night_info = role_inst.get_night_info(game, player_id)
+
         return full_schema
 
     async def create_room(self, settings: GameSettingsSchema) -> GameStateSchema:

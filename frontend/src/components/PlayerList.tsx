@@ -1,4 +1,5 @@
 import { Card, List, Tag, theme } from "antd";
+import { getRoleNameWithEmoji } from "../utils/roleUtils";
 import type { Player } from "../types";
 
 const { useToken } = theme;
@@ -47,29 +48,28 @@ function PlayerCard({ player, isMe }: PlayerCardProps) {
         </span>
         <span
           style={{
-            width: 8,
-            height: 8,
+            width: 10,
+            height: 10,
             borderRadius: "50%",
             backgroundColor: statusColor,
             flexShrink: 0,
             marginLeft: 8,
+            boxShadow: player.is_online
+              ? `0 0 8px ${token.colorSuccess}`
+              : "none",
+            transition: "all 0.3s ease",
           }}
           title={player.is_online ? "Online" : "Offline"}
         />
       </div>
 
-      <div
-        style={{
-          color: token.colorTextSecondary,
-          fontSize: 12,
-          marginBottom: 4,
-        }}
-      >
-        {player.is_alive ? "🟢 Alive" : "💀 Dead"}
-      </div>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-        {player.role && <Tag color="purple">{player.role}</Tag>}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+        <Tag color={player.is_alive ? "success" : "default"} bordered={false}>
+          {player.is_alive ? "Alive" : "Dead"}
+        </Tag>
+        {player.role && (
+          <Tag color="purple">{getRoleNameWithEmoji(player.role)}</Tag>
+        )}
         {isMe && <Tag color="gold">YOU</Tag>}
         {player.is_admin && <Tag color="red">ADMIN</Tag>}
       </div>
