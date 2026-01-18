@@ -1,7 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
+
 from app.schemas.game import GameSettingsSchema, RoleType
 from app.services.game_service import GameService
+
 
 @pytest.fixture
 def mock_redis():
@@ -11,6 +14,7 @@ def mock_redis():
         mock_redis.lock = MagicMock(return_value=AsyncMock())
         mock_get_client.return_value = mock_redis
         yield mock_redis
+
 
 @pytest.mark.asyncio
 async def test_update_settings_admin(mock_redis):
@@ -32,8 +36,7 @@ async def test_update_settings_admin(mock_redis):
 
     service = GameService()
     new_settings = GameSettingsSchema(
-        role_distribution={RoleType.WEREWOLF: 2, RoleType.VILLAGER: 1},
-        phase_duration_seconds=90
+        role_distribution={RoleType.WEREWOLF: 2, RoleType.VILLAGER: 1}, phase_duration_seconds=90
     )
 
     result = await service.update_settings("test", "p1", new_settings)
@@ -42,6 +45,7 @@ async def test_update_settings_admin(mock_redis):
     assert result.settings.phase_duration_seconds == 90
     assert result.settings.role_distribution[RoleType.WEREWOLF] == 2
     mock_redis.set.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_update_settings_non_admin(mock_redis):
@@ -63,8 +67,7 @@ async def test_update_settings_non_admin(mock_redis):
 
     service = GameService()
     new_settings = GameSettingsSchema(
-        role_distribution={RoleType.WEREWOLF: 2},
-        phase_duration_seconds=90
+        role_distribution={RoleType.WEREWOLF: 2}, phase_duration_seconds=90
     )
 
     with pytest.raises(ValueError, match="Only admin can update settings"):
