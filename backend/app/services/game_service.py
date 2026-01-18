@@ -86,6 +86,7 @@ class GameService:
     async def create_room(self, settings: GameSettingsSchema) -> GameStateSchema:
         room_id = str(uuid.uuid4())[:8]
         game = Game.create(room_id, settings)
+        game.auto_balance_roles()
         await self._save_game(game)
         return game.to_schema()
 
@@ -105,6 +106,9 @@ class GameService:
             pid = player_id or str(uuid.uuid4())
             is_admin = len(game.players) == 0
             game.add_player(pid, nickname, is_admin)
+
+            if game.phase == GamePhase.WAITING:
+                game.auto_balance_roles()
 
             await self._save_game(game)
             return game.to_schema()
@@ -227,6 +231,8 @@ class GameService:
                 raise ValueError("Cannot kick yourself")
 
             game.remove_player(target_id)
+            if game.phase == GamePhase.WAITING:
+                game.auto_balance_roles()
             await self._save_game(game)
             return game.to_schema()
 

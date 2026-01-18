@@ -259,9 +259,7 @@ class Game:
         alive_villagers = sum(
             1
             for p in self.players.values()
-            if p.is_alive
-            and p.role != RoleType.WEREWOLF
-            and p.role != RoleType.SPECTATOR
+            if p.is_alive and p.role != RoleType.WEREWOLF and p.role != RoleType.SPECTATOR
         )
 
         if alive_werewolves == 0:
@@ -273,3 +271,36 @@ class Game:
     def restart(self):
         """Reset game to waiting state for a new round."""
         self.transition_to(GamePhase.WAITING)
+
+    def auto_balance_roles(self):
+        """Automatically set default role distribution based on player count."""
+        player_count = len([p for p in self.players.values() if p.role != RoleType.SPECTATOR])
+        defaults = {
+            RoleType.WEREWOLF: 1,
+            RoleType.SEER: 1,
+            RoleType.DOCTOR: 1,
+            RoleType.WITCH: 0,
+            RoleType.HUNTER: 0,
+            RoleType.VILLAGER: 0,
+            RoleType.SPECTATOR: 0,
+        }
+
+        if player_count <= 4:
+            # 4 players: 1 Wolf, 1 Seer, 2 Villagers
+            defaults[RoleType.DOCTOR] = 0
+            defaults[RoleType.VILLAGER] = max(0, player_count - 2)
+        elif player_count <= 6:
+            # 5-6 players: 1 Wolf, 1 Seer, 1 Doctor, Rest Villagers
+            defaults[RoleType.VILLAGER] = player_count - 3
+        elif player_count <= 8:
+            # 7-8 players: Add Witch
+            defaults[RoleType.WITCH] = 1
+            defaults[RoleType.VILLAGER] = player_count - 4
+        else:
+            # 9+ players: Add Hunter, Extra Wolf
+            defaults[RoleType.WITCH] = 1
+            defaults[RoleType.HUNTER] = 1
+            defaults[RoleType.WEREWOLF] = 2
+            defaults[RoleType.VILLAGER] = max(0, player_count - 6)
+
+        self.settings.role_distribution = defaults
