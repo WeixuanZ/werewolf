@@ -47,8 +47,17 @@ class GameService:
 
         filtered_players = {}
         for pid, p in full_schema.players.items():
-            # Show role if: own role, game over, or Seer has checked this player
-            show_role = pid == player_id or is_game_over or pid in revealed_to_me
+            # Show role if: own role, game over, Seer has checked this player, OR requester is spectator/dead
+            is_spectator = requesting_player and (
+                requesting_player.role == RoleType.SPECTATOR
+                or not requesting_player.is_alive
+            )
+            show_role = (
+                pid == player_id
+                or is_game_over
+                or pid in revealed_to_me
+                or is_spectator
+            )
             filtered_players[pid] = PlayerSchema(
                 id=p.id,
                 nickname=p.nickname,

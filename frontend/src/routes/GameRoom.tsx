@@ -4,6 +4,7 @@ import {
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useGameSocket } from "../hooks/useGameSocket";
 import { useSetCurrentRoomId, useCurrentSession } from "../store/gameStore";
 import {
@@ -41,6 +42,7 @@ const { useToken } = theme;
 
 export default function GameRoom() {
   const { token } = useToken();
+  const navigate = useNavigate();
   const [showQrCode, setShowQrCode] = useState(false);
   const [showEndGameConfirm, setShowEndGameConfirm] = useState(false);
   const roomId = window.location.pathname.split("/").pop() || "";
@@ -52,6 +54,13 @@ export default function GameRoom() {
   }, [roomId, setCurrentRoomId]);
 
   const { gameState, error, isLoading } = useGameSocket(roomId);
+
+  useEffect(() => {
+    if (error || (!isLoading && !gameState)) {
+      message.error("Room not found or expired");
+      navigate({ to: "/" });
+    }
+  }, [error, gameState, isLoading, navigate]);
   const [session, setSession] = useCurrentSession();
   const playerId = session?.playerId;
 
@@ -129,7 +138,7 @@ export default function GameRoom() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || error || !gameState) {
     return (
       <div
         style={{
@@ -143,8 +152,6 @@ export default function GameRoom() {
       </div>
     );
   }
-  if (error) return <Alert message="Error loading game" type="error" />;
-  if (!gameState) return <Alert message="Game not found" type="warning" />;
 
   // Render GameOverScreen for game over state
   if (isGameOver && playerId) {

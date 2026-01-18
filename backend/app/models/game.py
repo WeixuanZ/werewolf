@@ -175,7 +175,14 @@ class Game:
     # ===== Game logic methods =====
     def add_player(self, player_id: str, nickname: str, is_admin: bool = False):
         if self.phase != GamePhase.WAITING:
-            raise ValueError("Cannot join game in progress")
+            self._state.players[player_id] = PlayerState(
+                id=player_id,
+                nickname=nickname,
+                is_admin=False,
+                role=RoleType.SPECTATOR,
+            )
+            return
+
         self._state.players[player_id] = PlayerState(
             id=player_id, nickname=nickname, is_admin=is_admin
         )
@@ -250,7 +257,11 @@ class Game:
             1 for p in self.players.values() if p.is_alive and p.role == RoleType.WEREWOLF
         )
         alive_villagers = sum(
-            1 for p in self.players.values() if p.is_alive and p.role != RoleType.WEREWOLF
+            1
+            for p in self.players.values()
+            if p.is_alive
+            and p.role != RoleType.WEREWOLF
+            and p.role != RoleType.SPECTATOR
         )
 
         if alive_werewolves == 0:

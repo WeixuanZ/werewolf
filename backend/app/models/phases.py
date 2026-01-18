@@ -170,6 +170,10 @@ class DayState(PhaseState):
         if not player or not player.is_alive:
             return
 
+        role = player.role_instance
+        if role and not role.can_vote:
+            return
+
         target_id = action.get("target_id")
         if target_id and target_id in game.players:
             player.vote_target = target_id
@@ -177,7 +181,14 @@ class DayState(PhaseState):
     def check_completion(self, game: Game) -> bool:
         """All alive players must have voted."""
         for player in game.players.values():
-            if player.is_alive and player.vote_target is None:
+            if not player.is_alive:
+                continue
+
+            role = player.role_instance
+            if role and not role.can_vote:
+                continue
+
+            if player.vote_target is None:
                 return False
         return True
 

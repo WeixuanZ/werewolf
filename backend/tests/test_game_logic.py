@@ -17,11 +17,15 @@ class TestGameInitialization:
         assert len(game.players) == 1
         assert game.players["id1"].nickname == "Alice"
 
-    def test_cannot_join_started_game(self):
+    def test_join_started_game_as_spectator(self):
         game = Game.create("room1")
         game.phase = GamePhase.NIGHT
-        with pytest.raises(ValueError, match="Cannot join game in progress"):
-            game.add_player("id1", "Alice")
+
+        game.add_player("id1", "Alice")
+
+        player = game.players["id1"]
+        assert player.role == RoleType.SPECTATOR
+        assert player.nickname == "Alice"
 
 
 class TestRoleAssignment:
@@ -58,6 +62,90 @@ class TestRoleAssignment:
         assert game.phase == GamePhase.NIGHT
         assert game.turn_count == 1
         assert all(p.role is not None for p in game.players.values())
+
+
+class TestGameEnd:
+    def test_check_winners_ignores_spectators(self):
+        settings = GameSettingsSchema(
+            role_distribution={
+                RoleType.WEREWOLF: 1,
+                RoleType.VILLAGER: 2,
+            }
+        )
+        game = Game.create("room1", settings)
+
+        game.add_player("wolf", "Wolf")
+        game.add_player("v1", "Villager 1")
+        game.add_player("v2", "Villager 2")
+
+        game.players["wolf"].role = RoleType.WEREWOLF
+        game.players["v1"].role = RoleType.VILLAGER
+        game.players["v2"].role = RoleType.VILLAGER
+
+        game.phase = GamePhase.NIGHT
+
+        # Add spectator
+        game.add_player("spec", "Spectator")
+        assert game.players["spec"].role == RoleType.SPECTATOR
+
+        # 1 Wolf, 2 Villagers, 1 Spectator
+        # 1 < 2 => No winner yet
+        assert game.check_winners() is None
+
+        # Kill one villager
+        game.players["v1"].is_alive = False
+
+        # 1 Wolf, 1 Villager, 1 Spectator
+        # If spectator counted as villager: 1 Wolf vs 2 "Villagers" => No win
+        # If spectator ignored: 1 Wolf vs 1 Villager => Wolf win
+        assert game.check_winners() == "WEREWOLVES"
+
+
+class TestSpectatorLogic:
+    def test_spectator_cannot_vote(self):
+        game = Game.create("room1")
+        game.phase = GamePhase.DAY
+
+        game.add_player("spec", "Spectator")
+        assert game.players["spec"].role == RoleType.SPECTATOR
+
+        # Spectator tries to vote
+        game.process_action("spec", {"target_id": "spec"})
+
+        # Vote should be ignored
+        assert game.players["spec"].vote_target is None
+
+    def test_day_phase_completes_without_spectator_vote(self):
+        settings = GameSettingsSchema(
+            role_distribution={RoleType.VILLAGER: 2, RoleType.WEREWOLF: 1}
+        )
+        game = Game.create("room1", settings)
+
+        game.add_player("v1", "Villager 1")
+        game.players["v1"].role = RoleType.VILLAGER
+
+        game.add_player("v2", "Villager 2")
+        game.players["v2"].role = RoleType.VILLAGER
+
+        game.add_player("w1", "Werewolf")
+        game.players["w1"].role = RoleType.WEREWOLF
+
+        game.phase = GamePhase.DAY
+
+        game.add_player("spec", "Spectator")
+        assert game.players["spec"].role == RoleType.SPECTATOR
+
+        # Everyone votes
+        game.process_action("v1", {"target_id": "spec"})
+        game.process_action("v2", {"target_id": "spec"})
+        game.process_action("w1", {"target_id": "spec"})
+
+        # Spectator does NOT vote
+
+        # Should complete
+        completed = game.check_and_advance()
+        assert completed
+        assert game.phase == GamePhase.NIGHT
 
 
 class TestNightPhase:
