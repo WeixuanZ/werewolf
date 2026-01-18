@@ -65,7 +65,7 @@ export function LobbyPanel({
   const { token } = useToken();
   const [session] = useCurrentSession();
   const roomId = window.location.pathname.split("/").pop() || "";
-  const updateSettingsMutation = useUpdateSettings(roomId);
+  const { mutate: updateSettings } = useUpdateSettings(roomId);
 
   const [settings, setSettings] = useState<GameSettings>(
     serverSettings || {
@@ -97,13 +97,13 @@ export function LobbyPanel({
   useEffect(() => {
     if (isAdmin && session?.playerId) {
       // settings is fresh here because of the immediate re-render triggered above
-      updateSettingsMutation.mutate({
+      updateSettings({
         playerId: session.playerId,
         settings,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerCount, isAdmin, session?.playerId, updateSettingsMutation]);
+  }, [playerCount, isAdmin, session?.playerId, updateSettings]);
 
   const updateRole = (role: RoleType, value: number) => {
     const newSettings = {
@@ -112,7 +112,7 @@ export function LobbyPanel({
     };
     setSettings(newSettings); // Optimistic update
     if (session?.playerId) {
-      updateSettingsMutation.mutate({
+      updateSettings({
         playerId: session.playerId,
         settings: newSettings,
       });
