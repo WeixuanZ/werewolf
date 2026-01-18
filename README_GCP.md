@@ -18,7 +18,7 @@ Ensure your latest code is built and pushed to GitHub Container Registry (GHCR).
 ### 2. Deploy Infrastructure
 Run the helper script:
 ```bash
-./scripts/deploy_infra.sh
+./scripts/deploy_infra.sh 0.1.1
 ```
 
 This script will:

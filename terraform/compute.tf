@@ -17,7 +17,7 @@ resource "google_compute_instance" "main" {
 
     # Ephemeral public IP is required for the instance to download docker images
     # We rely on Firewall rules to block incoming traffic to it
-    access_config {} 
+    access_config {}
   }
 
   tags = ["main-server"]
