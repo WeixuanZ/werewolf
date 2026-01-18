@@ -1,13 +1,13 @@
-// Dynamic URL based on current hostname for LAN access
+// In production (Cloud Run), we use Nginx proxy
+// In local dev, we might use Vite proxy or full URL.
 const getBaseUrl = () => {
-  const host = window.location.hostname;
-  const port = import.meta.env.VITE_API_PORT || "8000";
-
-  // Use env var if explicitly set, otherwise derive from hostname
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  if (import.meta.env.PROD) {
+    // In production, Nginx proxies /api -> Backend
+    return "/api";
   }
 
+  const host = window.location.hostname;
+  const port = import.meta.env.VITE_API_PORT || "8000";
   return `http://${host}:${port}/api`;
 };
 

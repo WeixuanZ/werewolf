@@ -1,0 +1,27 @@
+server {
+  listen 80;
+  server_name localhost;
+
+  root /usr/share/nginx/html;
+  index index.html;
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+
+  location /api/ {
+    # Proxy requests to the backend using the environment variable
+    # The trailing slash is important to strip /api/ from the upstream request if your backend expects it
+    # If your backend expects /api prefix, remove the trailing slash.
+    # Typically FastAPI with root_path="" expects the full path or stripped.
+    # Assuming backend expects /api prefix based on previous setup? 
+    # Wait, the config.ts said `${host}:${port}/api`.
+    # Let's assume backend is mounted at root but routes have /api prefix or we need to forward AS IS.
+    # If we do `proxy_pass ${VITE_API_URL};` and user requests /api/rooms
+    # and VITE_API_URL is https://backend.run.app
+    # default behavior passes /api/rooms.
+    
+    proxy_pass ${VITE_API_URL};
+    proxy_ssl_server_name on; # Required for Cloud Run HTTPS
+  }
+}
