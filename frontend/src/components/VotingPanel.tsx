@@ -20,7 +20,7 @@ export function VotingPanel({ gameState, playerId }: VotingPanelProps) {
   const hasVoted = currentPlayer?.vote_target != null;
 
   const alivePlayers = Object.values(gameState.players).filter(
-    (p) => p.is_alive && p.id !== playerId,
+    (p) => p.is_alive && !p.is_spectator && p.id !== playerId,
   );
 
   // Calculate vote counts (visible to all)

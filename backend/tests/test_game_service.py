@@ -122,3 +122,61 @@ async def test_player_view_hides_roles(mock_redis):
     assert view.players["p1"].role == "WEREWOLF"
     # p1 does NOT see p2's role
     assert view.players["p2"].role is None
+
+
+@pytest.mark.asyncio
+async def test_player_view_spectator_sees_roles(mock_redis):
+    mock_redis.get.return_value = """
+    {
+        "room_id": "test",
+        "phase": "NIGHT",
+        "players": {
+            "p1": {"id": "p1", "nickname": "Alice", "role": "SPECTATOR", "is_alive": true, "is_admin": false},
+            "p2": {"id": "p2", "nickname": "Bob", "role": "WEREWOLF", "is_alive": true, "is_admin": false},
+            "p3": {"id": "p3", "nickname": "Charlie", "role": "VILLAGER", "is_alive": true, "is_admin": false}
+        },
+        "settings": {"role_distribution": {}, "phase_duration_seconds": 60},
+        "turn_count": 1,
+        "winners": null,
+        "seer_reveals": {},
+        "voted_out_this_round": null
+    }
+    """
+    mock_redis.mget.return_value = [None, None, None]
+
+    service = GameService()
+    game = await service.get_game("test")
+    view = await service.get_player_view(game, "p1")
+
+    # Spectator sees everyone's role
+    assert view.players["p1"].role == "SPECTATOR"
+    assert view.players["p2"].role == "WEREWOLF"
+    assert view.players["p3"].role == "VILLAGER"
+
+
+@pytest.mark.asyncio
+async def test_player_view_dead_player_sees_roles(mock_redis):
+    mock_redis.get.return_value = """
+    {
+        "room_id": "test",
+        "phase": "NIGHT",
+        "players": {
+            "p1": {"id": "p1", "nickname": "Alice", "role": "VILLAGER", "is_alive": false, "is_admin": false},
+            "p2": {"id": "p2", "nickname": "Bob", "role": "WEREWOLF", "is_alive": true, "is_admin": false}
+        },
+        "settings": {"role_distribution": {}, "phase_duration_seconds": 60},
+        "turn_count": 1,
+        "winners": null,
+        "seer_reveals": {},
+        "voted_out_this_round": null
+    }
+    """
+    mock_redis.mget.return_value = [None, None]
+
+    service = GameService()
+    game = await service.get_game("test")
+    view = await service.get_player_view(game, "p1")
+
+    # Dead player sees everyone's role
+    assert view.players["p1"].role == "VILLAGER"
+    assert view.players["p2"].role == "WEREWOLF"

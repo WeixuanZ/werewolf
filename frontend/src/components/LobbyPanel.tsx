@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { getRoleNameWithEmoji } from "../utils/roleUtils";
 import { PlusOutlined, MinusOutlined } from "@ant-design/icons";
 import { Card, Button, Spin, Typography, message, theme } from "antd";
@@ -9,45 +9,6 @@ const { Text } = Typography;
 const { useToken } = theme;
 
 import { type GameSettings, RoleType } from "../types";
-
-function getDefaultRoles(playerCount: number): Record<RoleType, number> {
-  const defaults: Record<RoleType, number> = {
-    [RoleType.WEREWOLF]: 1,
-    [RoleType.SEER]: 1,
-    [RoleType.DOCTOR]: 1,
-    [RoleType.WITCH]: 0,
-    [RoleType.HUNTER]: 0,
-    [RoleType.VILLAGER]: 0,
-    [RoleType.SPECTATOR]: 0,
-  };
-
-  if (playerCount <= 4) {
-    // 4 players: 1 Wolf, 1 Seer, 2 Villagers
-    defaults[RoleType.DOCTOR] = 0;
-    defaults[RoleType.VILLAGER] = Math.max(0, playerCount - 2);
-    return defaults;
-  }
-
-  // 5+ players: 1 Wolf, 1 Seer, 1 Doctor
-  if (playerCount <= 6) {
-    defaults[RoleType.VILLAGER] = playerCount - 3;
-    return defaults;
-  }
-
-  // 7+ players: Add Witch
-  if (playerCount <= 8) {
-    defaults[RoleType.WITCH] = 1;
-    defaults[RoleType.VILLAGER] = playerCount - 4;
-    return defaults;
-  }
-
-  // 9+ players: Add Hunter
-  defaults[RoleType.WITCH] = 1;
-  defaults[RoleType.HUNTER] = 1;
-  defaults[RoleType.WEREWOLF] = 2; // Extra wolf for balance
-  defaults[RoleType.VILLAGER] = Math.max(0, playerCount - 6);
-  return defaults;
-}
 
 interface LobbyPanelProps {
   isAdmin: boolean;
@@ -65,11 +26,19 @@ export function LobbyPanel({
   const { token } = useToken();
   const [session] = useCurrentSession();
   const roomId = window.location.pathname.split("/").pop() || "";
-  const updateSettingsMutation = useUpdateSettings(roomId);
+  const { mutate: updateSettings } = useUpdateSettings(roomId);
 
   const [settings, setSettings] = useState<GameSettings>(
     serverSettings || {
-      role_distribution: getDefaultRoles(playerCount),
+      role_distribution: {
+        [RoleType.WEREWOLF]: 1,
+        [RoleType.SEER]: 1,
+        [RoleType.DOCTOR]: 1,
+        [RoleType.WITCH]: 0,
+        [RoleType.HUNTER]: 0,
+        [RoleType.VILLAGER]: 0,
+        [RoleType.SPECTATOR]: 0,
+      },
       phase_duration_seconds: 60,
     },
   );
@@ -84,27 +53,6 @@ export function LobbyPanel({
     }
   }
 
-  // Handle player count changes (Admin only auto-balance)
-  const [prevPlayerCount, setPrevPlayerCount] = useState(playerCount);
-  if (playerCount !== prevPlayerCount) {
-    setPrevPlayerCount(playerCount);
-    if (isAdmin) {
-      const newDefaults = getDefaultRoles(playerCount);
-      setSettings((s) => ({ ...s, role_distribution: newDefaults }));
-    }
-  }
-
-  useEffect(() => {
-    if (isAdmin && session?.playerId) {
-      // settings is fresh here because of the immediate re-render triggered above
-      updateSettingsMutation.mutate({
-        playerId: session.playerId,
-        settings,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerCount, isAdmin, session?.playerId, updateSettingsMutation]);
-
   const updateRole = (role: RoleType, value: number) => {
     const newSettings = {
       ...settings,
@@ -112,7 +60,7 @@ export function LobbyPanel({
     };
     setSettings(newSettings); // Optimistic update
     if (session?.playerId) {
-      updateSettingsMutation.mutate({
+      updateSettings({
         playerId: session.playerId,
         settings: newSettings,
       });

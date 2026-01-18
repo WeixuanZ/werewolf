@@ -282,6 +282,22 @@ class Hunter(Role):
         player.hunter_revenge_target = target_id
 
 
+class Spectator(Role):
+    def __init__(self):
+        super().__init__(RoleType.SPECTATOR)
+
+    @property
+    def can_vote(self) -> bool:
+        return False
+
+    @property
+    def can_act_at_night(self) -> bool:
+        return False
+
+    def get_description(self) -> str:
+        return "You are spectating the game."
+
+
 def get_role_instance(role_type: RoleType) -> Role:
     if role_type == RoleType.WEREWOLF:
         return Werewolf()
@@ -293,4 +309,6 @@ def get_role_instance(role_type: RoleType) -> Role:
         return Witch()
     elif role_type == RoleType.HUNTER:
         return Hunter()
+    elif role_type == RoleType.SPECTATOR:
+        return Spectator()
     return Villager()
