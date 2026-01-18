@@ -49,15 +49,9 @@ class GameService:
         for pid, p in full_schema.players.items():
             # Show role if: own role, game over, Seer has checked this player, OR requester is spectator/dead
             is_spectator = requesting_player and (
-                requesting_player.role == RoleType.SPECTATOR
-                or not requesting_player.is_alive
+                requesting_player.role == RoleType.SPECTATOR or not requesting_player.is_alive
             )
-            show_role = (
-                pid == player_id
-                or is_game_over
-                or pid in revealed_to_me
-                or is_spectator
-            )
+            show_role = pid == player_id or is_game_over or pid in revealed_to_me or is_spectator
             filtered_players[pid] = PlayerSchema(
                 id=p.id,
                 nickname=p.nickname,
@@ -111,6 +105,22 @@ class GameService:
             is_admin = len(game.players) == 0
             game.add_player(pid, nickname, is_admin)
 
+            await self._save_game(game)
+            return game.to_schema()
+
+    async def update_settings(
+        self, room_id: str, player_id: str, settings: GameSettingsSchema
+    ) -> GameStateSchema | None:
+        async with RedisClient.get_client().lock(f"game:{room_id}:lock", timeout=5):
+            game = await self.get_game(room_id)
+            if not game:
+                return None
+
+            player = game.players.get(player_id)
+            if not player or not player.is_admin:
+                raise ValueError("Only admin can update settings")
+
+            game._state.settings = settings
             await self._save_game(game)
             return game.to_schema()
 

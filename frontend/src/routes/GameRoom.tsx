@@ -21,6 +21,7 @@ import {
 } from "antd";
 import { v4 as uuidv4 } from "uuid";
 import { GamePhase } from "../types";
+import { useParams } from "@tanstack/react-router";
 import {
   useJoinRoom,
   useStartGame,
@@ -45,7 +46,7 @@ export default function GameRoom() {
   const navigate = useNavigate();
   const [showQrCode, setShowQrCode] = useState(false);
   const [showEndGameConfirm, setShowEndGameConfirm] = useState(false);
-  const roomId = window.location.pathname.split("/").pop() || "";
+  const { roomId = "" } = useParams({ strict: false });
 
   // Set current room context for atoms
   const setCurrentRoomId = useSetCurrentRoomId();
@@ -307,6 +308,7 @@ export default function GameRoom() {
               isAdmin={me?.is_admin ?? false}
               playerCount={players.length}
               onStartGame={handleStartGame}
+              serverSettings={gameState.settings}
             />
           )}
 
