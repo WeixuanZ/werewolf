@@ -198,21 +198,22 @@ export function LobbyPanel({
                     padding: 4,
                   }}
                 >
-                  <Button
-                    type="text"
-                    icon={<MinusOutlined style={{ fontSize: 20 }} />}
-                    onClick={() => updateRole(role, Math.max(0, count - 1))}
-                    disabled={!isAdmin || count <= 0}
-                    style={{
-                      color: token.colorText,
-                      width: 44,
-                      height: 44,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      opacity: isAdmin ? 1 : 0.5,
-                    }}
-                  />
+                  {isAdmin && (
+                    <Button
+                      type="text"
+                      icon={<MinusOutlined style={{ fontSize: 20 }} />}
+                      onClick={() => updateRole(role, Math.max(0, count - 1))}
+                      disabled={count <= 0}
+                      style={{
+                        color: token.colorText,
+                        width: 44,
+                        height: 44,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    />
+                  )}
                   <Text
                     style={{
                       fontSize: 24,
@@ -223,21 +224,21 @@ export function LobbyPanel({
                   >
                     {count}
                   </Text>
-                  <Button
-                    type="text"
-                    icon={<PlusOutlined style={{ fontSize: 20 }} />}
-                    onClick={() => updateRole(role, count + 1)}
-                    disabled={!isAdmin}
-                    style={{
-                      color: token.colorText,
-                      width: 44,
-                      height: 44,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      opacity: isAdmin ? 1 : 0.5,
-                    }}
-                  />
+                  {isAdmin && (
+                    <Button
+                      type="text"
+                      icon={<PlusOutlined style={{ fontSize: 20 }} />}
+                      onClick={() => updateRole(role, count + 1)}
+                      style={{
+                        color: token.colorText,
+                        width: 44,
+                        height: 44,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             );
