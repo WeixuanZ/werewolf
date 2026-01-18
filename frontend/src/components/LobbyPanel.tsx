@@ -76,37 +76,34 @@ export function LobbyPanel({
   const [loading, setLoading] = useState(false);
 
   // Sync with server settings
-  useEffect(() => {
+  const [prevServerSettings, setPrevServerSettings] = useState(serverSettings);
+  if (serverSettings !== prevServerSettings) {
+    setPrevServerSettings(serverSettings);
     if (serverSettings) {
       setSettings(serverSettings);
     }
-  }, [serverSettings]);
+  }
 
   // Handle player count changes (Admin only auto-balance)
   const [prevPlayerCount, setPrevPlayerCount] = useState(playerCount);
-  useEffect(() => {
-    if (playerCount !== prevPlayerCount) {
-      setPrevPlayerCount(playerCount);
-      if (isAdmin) {
-        const newDefaults = getDefaultRoles(playerCount);
-        const newSettings = { ...settings, role_distribution: newDefaults };
-        setSettings(newSettings);
-        if (session?.playerId) {
-          updateSettingsMutation.mutate({
-            playerId: session.playerId,
-            settings: newSettings,
-          });
-        }
-      }
+  if (playerCount !== prevPlayerCount) {
+    setPrevPlayerCount(playerCount);
+    if (isAdmin) {
+      const newDefaults = getDefaultRoles(playerCount);
+      setSettings((s) => ({ ...s, role_distribution: newDefaults }));
     }
-  }, [
-    playerCount,
-    prevPlayerCount,
-    isAdmin,
-    session?.playerId,
-    settings,
-    updateSettingsMutation,
-  ]);
+  }
+
+  useEffect(() => {
+    if (isAdmin && session?.playerId) {
+      // settings is fresh here because of the immediate re-render triggered above
+      updateSettingsMutation.mutate({
+        playerId: session.playerId,
+        settings,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerCount, isAdmin, session?.playerId, updateSettingsMutation]);
 
   const updateRole = (role: RoleType, value: number) => {
     const newSettings = {
