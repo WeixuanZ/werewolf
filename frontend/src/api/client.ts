@@ -54,6 +54,15 @@ export const api = {
         body: JSON.stringify({ nickname, player_id: playerId }),
       }),
 
+    updateSettings: (roomId: string, playerId: string, settings: GameSettings) =>
+      fetchApi<GameState>(
+        `/rooms/${roomId}/settings?player_id=${encodeURIComponent(playerId)}`,
+        {
+          method: "POST",
+          body: JSON.stringify(settings),
+        },
+      ),
+
     start: (roomId: string, playerId: string, settings?: GameSettings) =>
       fetchApi<GameState>(`/rooms/${roomId}/start`, {
         method: "POST",
@@ -123,6 +132,23 @@ export function useJoinRoom(roomId: string) {
       nickname: string;
       playerId: string;
     }) => api.rooms.join(roomId, nickname, playerId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["gameState", roomId], data);
+    },
+  });
+}
+
+export function useUpdateSettings(roomId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      playerId,
+      settings,
+    }: {
+      playerId: string;
+      settings: GameSettings;
+    }) => api.rooms.updateSettings(roomId, playerId, settings),
     onSuccess: (data) => {
       queryClient.setQueryData(["gameState", roomId], data);
     },

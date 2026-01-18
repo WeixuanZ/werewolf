@@ -301,6 +301,7 @@ export default function GameRoom() {
               isAdmin={me?.is_admin ?? false}
               playerCount={players.length}
               onStartGame={handleStartGame}
+              serverSettings={gameState.settings}
             />
           )}
 
