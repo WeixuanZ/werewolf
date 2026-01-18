@@ -58,6 +58,7 @@ class GameService:
                 role=p.role if show_role else None,
                 is_alive=p.is_alive,
                 is_admin=p.is_admin,
+                is_spectator=p.role == RoleType.SPECTATOR,
                 is_online=online_map.get(pid, False),
                 vote_target=p.vote_target if pid == player_id else None,
                 night_action_target=p.night_action_target if pid == player_id else None,

@@ -1,5 +1,3 @@
-import pytest
-
 from app.models.game import Game
 from app.schemas.game import GamePhase, GameSettingsSchema, RoleType
 
