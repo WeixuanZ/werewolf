@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getRoleNameWithEmoji } from "../utils/roleUtils";
 import { PlusOutlined, MinusOutlined } from "@ant-design/icons";
 import { Card, Button, Spin, Typography, message, theme } from "antd";
+import { useCurrentSession } from "../store/gameStore";
+import { useUpdateSettings } from "../api/client";
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -51,34 +53,73 @@ interface LobbyPanelProps {
   isAdmin: boolean;
   playerCount: number;
   onStartGame: (settings: GameSettings) => Promise<void>;
+  serverSettings?: GameSettings;
 }
 
 export function LobbyPanel({
   isAdmin,
   playerCount,
   onStartGame,
+  serverSettings,
 }: LobbyPanelProps) {
   const { token } = useToken();
-  const [settings, setSettings] = useState<GameSettings>({
-    role_distribution: getDefaultRoles(playerCount),
-    phase_duration_seconds: 60,
-  });
+  const [session] = useCurrentSession();
+  const roomId = window.location.pathname.split("/").pop() || "";
+  const updateSettingsMutation = useUpdateSettings(roomId);
+
+  const [settings, setSettings] = useState<GameSettings>(
+    serverSettings || {
+      role_distribution: getDefaultRoles(playerCount),
+      phase_duration_seconds: 60,
+    },
+  );
   const [loading, setLoading] = useState(false);
 
+  // Sync with server settings
+  useEffect(() => {
+    if (serverSettings) {
+      setSettings(serverSettings);
+    }
+  }, [serverSettings]);
+
+  // Handle player count changes (Admin only auto-balance)
   const [prevPlayerCount, setPrevPlayerCount] = useState(playerCount);
-  if (playerCount !== prevPlayerCount) {
-    setPrevPlayerCount(playerCount);
-    setSettings((prev) => ({
-      ...prev,
-      role_distribution: getDefaultRoles(playerCount),
-    }));
-  }
+  useEffect(() => {
+    if (playerCount !== prevPlayerCount) {
+      setPrevPlayerCount(playerCount);
+      if (isAdmin) {
+        const newDefaults = getDefaultRoles(playerCount);
+        const newSettings = { ...settings, role_distribution: newDefaults };
+        setSettings(newSettings);
+        if (session?.playerId) {
+          updateSettingsMutation.mutate({
+            playerId: session.playerId,
+            settings: newSettings,
+          });
+        }
+      }
+    }
+  }, [
+    playerCount,
+    prevPlayerCount,
+    isAdmin,
+    session?.playerId,
+    settings,
+    updateSettingsMutation,
+  ]);
 
   const updateRole = (role: RoleType, value: number) => {
-    setSettings((prev) => ({
-      ...prev,
-      role_distribution: { ...prev.role_distribution, [role]: value },
-    }));
+    const newSettings = {
+      ...settings,
+      role_distribution: { ...settings.role_distribution, [role]: value },
+    };
+    setSettings(newSettings); // Optimistic update
+    if (session?.playerId) {
+      updateSettingsMutation.mutate({
+        playerId: session.playerId,
+        settings: newSettings,
+      });
+    }
   };
 
   const totalRoles = Object.values(settings.role_distribution).reduce(
@@ -98,17 +139,6 @@ export function LobbyPanel({
     await onStartGame(settings);
     setLoading(false);
   };
-
-  if (!isAdmin) {
-    return (
-      <div style={{ textAlign: "center", padding: token.paddingLG }}>
-        <Spin />
-        <Text type="secondary" style={{ display: "block", marginTop: 10 }}>
-          Waiting for admin to start...
-        </Text>
-      </div>
-    );
-  }
 
   const roles = [
     RoleType.WEREWOLF,
@@ -172,7 +202,7 @@ export function LobbyPanel({
                     type="text"
                     icon={<MinusOutlined style={{ fontSize: 20 }} />}
                     onClick={() => updateRole(role, Math.max(0, count - 1))}
-                    disabled={count <= 0}
+                    disabled={!isAdmin || count <= 0}
                     style={{
                       color: token.colorText,
                       width: 44,
@@ -180,6 +210,7 @@ export function LobbyPanel({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      opacity: isAdmin ? 1 : 0.5,
                     }}
                   />
                   <Text
@@ -196,6 +227,7 @@ export function LobbyPanel({
                     type="text"
                     icon={<PlusOutlined style={{ fontSize: 20 }} />}
                     onClick={() => updateRole(role, count + 1)}
+                    disabled={!isAdmin}
                     style={{
                       color: token.colorText,
                       width: 44,
@@ -203,6 +235,7 @@ export function LobbyPanel({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      opacity: isAdmin ? 1 : 0.5,
                     }}
                   />
                 </div>
@@ -221,17 +254,26 @@ export function LobbyPanel({
         </div>
       </Card>
 
-      <Button
-        type="primary"
-        size="large"
-        onClick={handleStart}
-        loading={loading}
-        disabled={!isValid}
-        block
-        style={{ height: 56, fontSize: 20 }}
-      >
-        Start Game
-      </Button>
+      {isAdmin ? (
+        <Button
+          type="primary"
+          size="large"
+          onClick={handleStart}
+          loading={loading}
+          disabled={!isValid}
+          block
+          style={{ height: 56, fontSize: 20 }}
+        >
+          Start Game
+        </Button>
+      ) : (
+        <div style={{ textAlign: "center", padding: 12 }}>
+          <Spin />
+          <Text type="secondary" style={{ display: "block", marginTop: 8 }}>
+            Host is configuring the game...
+          </Text>
+        </div>
+      )}
     </div>
   );
 }

@@ -105,6 +105,22 @@ class GameService:
             await self._save_game(game)
             return game.to_schema()
 
+    async def update_settings(
+        self, room_id: str, player_id: str, settings: GameSettingsSchema
+    ) -> GameStateSchema | None:
+        async with RedisClient.get_client().lock(f"game:{room_id}:lock", timeout=5):
+            game = await self.get_game(room_id)
+            if not game:
+                return None
+
+            player = game.players.get(player_id)
+            if not player or not player.is_admin:
+                raise ValueError("Only admin can update settings")
+
+            game._state.settings = settings
+            await self._save_game(game)
+            return game.to_schema()
+
     async def start_game(
         self, room_id: str, player_id: str, settings: GameSettingsSchema | None = None
     ) -> GameStateSchema | None:

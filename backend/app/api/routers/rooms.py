@@ -67,6 +67,25 @@ async def join_room(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+@router.post("/rooms/{room_id}/settings", response_model=GameStateSchema)
+async def update_settings(
+    room_id: str,
+    settings: GameSettingsSchema,
+    player_id: str,
+    service: GameService = Depends(get_game_service),
+):
+    try:
+        result = await service.update_settings(room_id, player_id, settings)
+        if not result:
+            raise HTTPException(status_code=404, detail="Room not found")
+
+        # Broadcast filtered state
+        await broadcast_filtered_states(room_id, service)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @router.post("/rooms/{room_id}/start", response_model=GameStateSchema)
 async def start_game(
     room_id: str,
