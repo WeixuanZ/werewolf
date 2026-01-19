@@ -49,7 +49,13 @@ export function WerewolfPanel({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [phaseStartTime, phaseDurationSeconds, hasAutoSkipped, playerId, submitAction]);
+  }, [
+    phaseStartTime,
+    phaseDurationSeconds,
+    hasAutoSkipped,
+    playerId,
+    submitAction,
+  ]);
 
   const handleActionSubmit = (actionType: string, tid: string | null) => {
     if (actionType === NightActionType.SKIP) {
@@ -66,13 +72,15 @@ export function WerewolfPanel({
     });
   };
 
-  const alivePlayers = players.filter((p) => p.is_alive && p.id !== playerId);
+  const alivePlayers = players.filter(
+    (p) => p.is_alive && !p.is_spectator && p.id !== playerId,
+  );
   const myPlayer = players.find((p) => p.id === playerId);
   const myTarget = myPlayer?.night_action_target;
 
   // Identify other werewolves and their targets
   const otherWerewolves = players.filter(
-    (p) => p.role === RoleType.WEREWOLF && p.id !== playerId && p.is_alive
+    (p) => p.role === RoleType.WEREWOLF && p.id !== playerId && p.is_alive,
   );
 
   return (
@@ -96,9 +104,21 @@ export function WerewolfPanel({
       {/* Timer Bar */}
       {phaseStartTime && (
         <div style={{ marginBottom: token.marginLG }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <Text style={{ color: token.colorTextSecondary }}>Time Remaining</Text>
-            <Text style={{ color: timeLeft < 10 ? token.colorError : token.colorText }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: 4,
+            }}
+          >
+            <Text style={{ color: token.colorTextSecondary }}>
+              Time Remaining
+            </Text>
+            <Text
+              style={{
+                color: timeLeft < 10 ? token.colorError : token.colorText,
+              }}
+            >
               {Math.ceil(timeLeft)}s
             </Text>
           </div>
@@ -124,7 +144,7 @@ export function WerewolfPanel({
           const isSelected = myTarget === p.id;
           // Find which other werewolves are targeting this player
           const targetingWerewolves = otherWerewolves.filter(
-            (w) => w.night_action_target === p.id
+            (w) => w.night_action_target === p.id,
           );
 
           return (
@@ -153,12 +173,21 @@ export function WerewolfPanel({
             >
               <Avatar
                 size={48}
-                style={{ marginBottom: 8, backgroundColor: token.colorBgContainer }}
+                style={{
+                  marginBottom: 8,
+                  backgroundColor: token.colorBgContainer,
+                }}
                 icon={<UserOutlined />}
               >
                 {p.nickname[0]}
               </Avatar>
-              <span style={{ fontWeight: 500, textAlign: "center", wordBreak: "break-word" }}>
+              <span
+                style={{
+                  fontWeight: 500,
+                  textAlign: "center",
+                  wordBreak: "break-word",
+                }}
+              >
                 {p.nickname}
               </span>
 
@@ -172,17 +201,20 @@ export function WerewolfPanel({
                     display: "flex",
                     flexWrap: "wrap",
                     gap: 2,
-                    maxWidth: 80
+                    maxWidth: 80,
                   }}
                 >
-                  {targetingWerewolves.map(w => (
-                    <Tooltip key={w.id} title={`${w.nickname} chose this target`}>
+                  {targetingWerewolves.map((w) => (
+                    <Tooltip
+                      key={w.id}
+                      title={`${w.nickname} chose this target`}
+                    >
                       <Avatar
                         size="small"
                         style={{
                           backgroundColor: token.colorError,
                           border: `1px solid ${token.colorBgBase}`,
-                          fontSize: 10
+                          fontSize: 10,
                         }}
                       >
                         {w.nickname[0]}
@@ -199,13 +231,17 @@ export function WerewolfPanel({
       {/* Actions */}
       <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
         <div style={{ flex: 1 }}>
-            {myTarget === "SKIP" ? (
-                <Text style={{ color: token.colorWarning }}>You voted to SKIP.</Text>
-            ) : myTarget ? (
-                <Text style={{ color: token.colorSuccess }}>Target selected.</Text>
-            ) : (
-                <Text style={{ color: token.colorTextSecondary }}>Select a target...</Text>
-            )}
+          {myTarget === "SKIP" ? (
+            <Text style={{ color: token.colorWarning }}>
+              You voted to SKIP.
+            </Text>
+          ) : myTarget ? (
+            <Text style={{ color: token.colorSuccess }}>Target selected.</Text>
+          ) : (
+            <Text style={{ color: token.colorTextSecondary }}>
+              Select a target...
+            </Text>
+          )}
         </div>
 
         <Button
@@ -220,13 +256,18 @@ export function WerewolfPanel({
 
       {/* Consensus Info */}
       <div style={{ marginTop: 16, textAlign: "center" }}>
-        {otherWerewolves.map(w => (
-            <div key={w.id} style={{ fontSize: 12, color: token.colorTextSecondary }}>
-                {w.nickname} has selected: {
-                    w.night_action_target === "SKIP" ? "SKIP" :
-                    w.night_action_target ? players.find(p => p.id === w.night_action_target)?.nickname : "Nothing"
-                }
-            </div>
+        {otherWerewolves.map((w) => (
+          <div
+            key={w.id}
+            style={{ fontSize: 12, color: token.colorTextSecondary }}
+          >
+            {w.nickname} has selected:{" "}
+            {w.night_action_target === "SKIP"
+              ? "SKIP"
+              : w.night_action_target
+                ? players.find((p) => p.id === w.night_action_target)?.nickname
+                : "Nothing"}
+          </div>
         ))}
       </div>
     </div>

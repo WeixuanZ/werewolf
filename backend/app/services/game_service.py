@@ -61,7 +61,18 @@ class GameService:
                 is_spectator=p.role == RoleType.SPECTATOR,
                 is_online=online_map.get(pid, False),
                 vote_target=p.vote_target if pid == player_id else None,
-                night_action_target=p.night_action_target if pid == player_id else None,
+                night_action_target=(
+                    p.night_action_target
+                    if (
+                        pid == player_id
+                        or (
+                            requesting_player
+                            and requesting_player.role == RoleType.WEREWOLF
+                            and p.role == RoleType.WEREWOLF
+                        )
+                    )
+                    else None
+                ),
                 has_night_action=p.has_night_action if pid == player_id else False,
             )
 
