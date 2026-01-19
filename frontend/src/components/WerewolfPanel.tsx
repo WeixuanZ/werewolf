@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Typography, Button, theme, Progress, Avatar, Tooltip } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import { useSubmitAction } from "../api/client";
-import { type Player, NightActionType, RoleType } from "../types";
+import { NightActionType, RoleType } from "../types";
+import type { Player } from "../types";
 
 const { Text, Title } = Typography;
 

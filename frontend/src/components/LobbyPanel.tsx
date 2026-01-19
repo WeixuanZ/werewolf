@@ -8,7 +8,8 @@ import { useUpdateSettings } from "../api/client";
 const { Text } = Typography;
 const { useToken } = theme;
 
-import { type GameSettings, RoleType } from "../types";
+import { RoleType } from "../types";
+import type { GameSettings } from "../types";
 
 interface LobbyPanelProps {
   isAdmin: boolean;

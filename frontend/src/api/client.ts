@@ -54,7 +54,11 @@ export const api = {
         body: JSON.stringify({ nickname, player_id: playerId }),
       }),
 
-    updateSettings: (roomId: string, playerId: string, settings: GameSettings) =>
+    updateSettings: (
+      roomId: string,
+      playerId: string,
+      settings: GameSettings,
+    ) =>
       fetchApi<GameState>(
         `/rooms/${roomId}/settings?player_id=${encodeURIComponent(playerId)}`,
         {

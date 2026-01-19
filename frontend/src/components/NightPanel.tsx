@@ -2,7 +2,8 @@ import { useState } from "react";
 import { getRoleNameWithEmoji } from "../utils/roleUtils";
 import { Typography, Button, theme, Space, Tag } from "antd";
 import { useSubmitAction } from "../api/client";
-import { type Player, NightActionType, RoleType } from "../types";
+import { NightActionType, RoleType } from "../types";
+import type { Player } from "../types";
 import { WerewolfPanel } from "./WerewolfPanel";
 
 const { Text } = Typography;
