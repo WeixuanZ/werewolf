@@ -69,9 +69,7 @@ export function WerewolfPanel({
         background: "rgba(0, 0, 0, 0.3)",
         borderRadius: token.borderRadiusLG,
         padding: token.paddingLG,
-        border: `2px solid ${
-          isMyActionConfirmed ? token.colorSuccess : token.colorBorder
-        }`,
+        border: `2px solid ${isMyActionConfirmed ? token.colorSuccess : token.colorBorder}`,
         display: "flex",
         flexDirection: "column",
         height: "100%",
@@ -136,9 +134,7 @@ export function WerewolfPanel({
                 background: isSelected
                   ? `${token.colorPrimary}33`
                   : "rgba(255, 255, 255, 0.05)",
-                border: `2px solid ${
-                  isSelected ? token.colorPrimary : "transparent"
-                }`,
+                border: `2px solid ${isSelected ? token.colorPrimary : "transparent"}`,
                 borderRadius: token.borderRadiusLG,
                 color: token.colorText,
                 fontSize: 18,
