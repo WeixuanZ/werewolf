@@ -44,6 +44,7 @@ class PlayerSchema(BaseModel):
     role_description: str | None = None  # UI-ready description
     is_alive: bool = True
     is_admin: bool = False
+    is_spectator: bool = False
     is_online: bool = False
 
     # Role specific state

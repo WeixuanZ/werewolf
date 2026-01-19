@@ -96,14 +96,20 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-        <Tag
-          color={player.is_alive ? "success" : "default"}
-          bordered={false}
-          style={{ padding: "4px 8px", fontSize: 13 }}
-        >
-          {player.is_alive ? "Alive" : "Dead"}
-        </Tag>
-        {player.role && (
+        {player.is_spectator ? (
+          <Tag color="cyan" style={{ padding: "4px 8px", fontSize: 13 }}>
+            SPECTATOR
+          </Tag>
+        ) : (
+          <Tag
+            color={player.is_alive ? "success" : "default"}
+            bordered={false}
+            style={{ padding: "4px 8px", fontSize: 13 }}
+          >
+            {player.is_alive ? "Alive" : "Dead"}
+          </Tag>
+        )}
+        {player.role && !player.is_spectator && (
           <Tag color="purple" style={{ padding: "4px 8px", fontSize: 13 }}>
             {getRoleNameWithEmoji(player.role)}
           </Tag>

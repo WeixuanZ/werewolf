@@ -115,7 +115,9 @@ export function NightPanel({
     );
   }
 
-  const alivePlayers = players.filter((p) => p.is_alive && p.id !== playerId);
+  const alivePlayers = players.filter(
+    (p) => p.is_alive && !p.is_spectator && p.id !== playerId,
+  );
 
   // WITCH SPECIFIC UI
   if (myRole === "WITCH") {

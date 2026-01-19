@@ -4,6 +4,7 @@ import {
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useGameSocket } from "../hooks/useGameSocket";
 import { useSetCurrentRoomId, useCurrentSession } from "../store/gameStore";
 import {
@@ -12,7 +13,6 @@ import {
   Tag,
   Button,
   Spin,
-  Alert,
   message,
   theme,
   QRCode,
@@ -20,6 +20,7 @@ import {
 } from "antd";
 import { v4 as uuidv4 } from "uuid";
 import { GamePhase } from "../types";
+import { useParams } from "@tanstack/react-router";
 import {
   useJoinRoom,
   useStartGame,
@@ -41,9 +42,10 @@ const { useToken } = theme;
 
 export default function GameRoom() {
   const { token } = useToken();
+  const navigate = useNavigate();
   const [showQrCode, setShowQrCode] = useState(false);
   const [showEndGameConfirm, setShowEndGameConfirm] = useState(false);
-  const roomId = window.location.pathname.split("/").pop() || "";
+  const { roomId = "" } = useParams({ strict: false });
 
   // Set current room context for atoms
   const setCurrentRoomId = useSetCurrentRoomId();
@@ -52,6 +54,13 @@ export default function GameRoom() {
   }, [roomId, setCurrentRoomId]);
 
   const { gameState, error, isLoading } = useGameSocket(roomId);
+
+  useEffect(() => {
+    if (error || (!isLoading && !gameState)) {
+      message.error("Room not found or expired");
+      navigate({ to: "/" });
+    }
+  }, [error, gameState, isLoading, navigate]);
   const [session, setSession] = useCurrentSession();
   const playerId = session?.playerId;
 
@@ -129,7 +138,7 @@ export default function GameRoom() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || error || !gameState) {
     return (
       <div
         style={{
@@ -143,8 +152,6 @@ export default function GameRoom() {
       </div>
     );
   }
-  if (error) return <Alert message="Error loading game" type="error" />;
-  if (!gameState) return <Alert message="Game not found" type="warning" />;
 
   // Render GameOverScreen for game over state
   if (isGameOver && playerId) {
@@ -300,6 +307,7 @@ export default function GameRoom() {
               isAdmin={me?.is_admin ?? false}
               playerCount={players.length}
               onStartGame={handleStartGame}
+              serverSettings={gameState.settings}
             />
           )}
 
@@ -313,7 +321,9 @@ export default function GameRoom() {
                 roomId={roomId}
                 hasSubmittedAction={me.has_night_action}
                 phaseStartTime={gameState.phase_start_time}
-                phaseDurationSeconds={gameState.settings?.phase_duration_seconds}
+                phaseDurationSeconds={
+                  gameState.settings?.phase_duration_seconds
+                }
               />
             </Card>
           )}

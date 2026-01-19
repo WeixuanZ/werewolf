@@ -47,14 +47,18 @@ class GameService:
 
         filtered_players = {}
         for pid, p in full_schema.players.items():
-            # Show role if: own role, game over, or Seer has checked this player
-            show_role = pid == player_id or is_game_over or pid in revealed_to_me
+            # Show role if: own role, game over, Seer has checked this player, OR requester is spectator/dead
+            is_spectator = requesting_player and (
+                requesting_player.role == RoleType.SPECTATOR or not requesting_player.is_alive
+            )
+            show_role = pid == player_id or is_game_over or pid in revealed_to_me or is_spectator
             filtered_players[pid] = PlayerSchema(
                 id=p.id,
                 nickname=p.nickname,
                 role=p.role if show_role else None,
                 is_alive=p.is_alive,
                 is_admin=p.is_admin,
+                is_spectator=p.role == RoleType.SPECTATOR,
                 is_online=online_map.get(pid, False),
                 vote_target=p.vote_target if pid == player_id else None,
                 night_action_target=p.night_action_target if pid == player_id else None,
@@ -82,6 +86,7 @@ class GameService:
     async def create_room(self, settings: GameSettingsSchema) -> GameStateSchema:
         room_id = str(uuid.uuid4())[:8]
         game = Game.create(room_id, settings)
+        game.auto_balance_roles()
         await self._save_game(game)
         return game.to_schema()
 
@@ -102,6 +107,25 @@ class GameService:
             is_admin = len(game.players) == 0
             game.add_player(pid, nickname, is_admin)
 
+            if game.phase == GamePhase.WAITING:
+                game.auto_balance_roles()
+
+            await self._save_game(game)
+            return game.to_schema()
+
+    async def update_settings(
+        self, room_id: str, player_id: str, settings: GameSettingsSchema
+    ) -> GameStateSchema | None:
+        async with RedisClient.get_client().lock(f"game:{room_id}:lock", timeout=5):
+            game = await self.get_game(room_id)
+            if not game:
+                return None
+
+            player = game.players.get(player_id)
+            if not player or not player.is_admin:
+                raise ValueError("Only admin can update settings")
+
+            game._state.settings = settings
             await self._save_game(game)
             return game.to_schema()
 
@@ -207,6 +231,8 @@ class GameService:
                 raise ValueError("Cannot kick yourself")
 
             game.remove_player(target_id)
+            if game.phase == GamePhase.WAITING:
+                game.auto_balance_roles()
             await self._save_game(game)
             return game.to_schema()
 

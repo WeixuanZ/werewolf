@@ -2,83 +2,69 @@ import { useState } from "react";
 import { getRoleNameWithEmoji } from "../utils/roleUtils";
 import { PlusOutlined, MinusOutlined } from "@ant-design/icons";
 import { Card, Button, Spin, Typography, message, theme } from "antd";
+import { useCurrentSession } from "../store/gameStore";
+import { useUpdateSettings } from "../api/client";
 
 const { Text } = Typography;
 const { useToken } = theme;
 
 import { type GameSettings, RoleType } from "../types";
 
-function getDefaultRoles(playerCount: number): Record<RoleType, number> {
-  const defaults: Record<RoleType, number> = {
-    [RoleType.WEREWOLF]: 1,
-    [RoleType.SEER]: 1,
-    [RoleType.DOCTOR]: 1,
-    [RoleType.WITCH]: 0,
-    [RoleType.HUNTER]: 0,
-    [RoleType.VILLAGER]: 0,
-    [RoleType.SPECTATOR]: 0,
-  };
-
-  if (playerCount <= 4) {
-    // 4 players: 1 Wolf, 1 Seer, 2 Villagers
-    defaults[RoleType.DOCTOR] = 0;
-    defaults[RoleType.VILLAGER] = Math.max(0, playerCount - 2);
-    return defaults;
-  }
-
-  // 5+ players: 1 Wolf, 1 Seer, 1 Doctor
-  if (playerCount <= 6) {
-    defaults[RoleType.VILLAGER] = playerCount - 3;
-    return defaults;
-  }
-
-  // 7+ players: Add Witch
-  if (playerCount <= 8) {
-    defaults[RoleType.WITCH] = 1;
-    defaults[RoleType.VILLAGER] = playerCount - 4;
-    return defaults;
-  }
-
-  // 9+ players: Add Hunter
-  defaults[RoleType.WITCH] = 1;
-  defaults[RoleType.HUNTER] = 1;
-  defaults[RoleType.WEREWOLF] = 2; // Extra wolf for balance
-  defaults[RoleType.VILLAGER] = Math.max(0, playerCount - 6);
-  return defaults;
-}
-
 interface LobbyPanelProps {
   isAdmin: boolean;
   playerCount: number;
   onStartGame: (settings: GameSettings) => Promise<void>;
+  serverSettings?: GameSettings;
 }
 
 export function LobbyPanel({
   isAdmin,
   playerCount,
   onStartGame,
+  serverSettings,
 }: LobbyPanelProps) {
   const { token } = useToken();
-  const [settings, setSettings] = useState<GameSettings>({
-    role_distribution: getDefaultRoles(playerCount),
-    phase_duration_seconds: 60,
-  });
+  const [session] = useCurrentSession();
+  const roomId = window.location.pathname.split("/").pop() || "";
+  const { mutate: updateSettings } = useUpdateSettings(roomId);
+
+  const [settings, setSettings] = useState<GameSettings>(
+    serverSettings || {
+      role_distribution: {
+        [RoleType.WEREWOLF]: 1,
+        [RoleType.SEER]: 1,
+        [RoleType.DOCTOR]: 1,
+        [RoleType.WITCH]: 0,
+        [RoleType.HUNTER]: 0,
+        [RoleType.VILLAGER]: 0,
+        [RoleType.SPECTATOR]: 0,
+      },
+      phase_duration_seconds: 60,
+    },
+  );
   const [loading, setLoading] = useState(false);
 
-  const [prevPlayerCount, setPrevPlayerCount] = useState(playerCount);
-  if (playerCount !== prevPlayerCount) {
-    setPrevPlayerCount(playerCount);
-    setSettings((prev) => ({
-      ...prev,
-      role_distribution: getDefaultRoles(playerCount),
-    }));
+  // Sync with server settings
+  const [prevServerSettings, setPrevServerSettings] = useState(serverSettings);
+  if (serverSettings !== prevServerSettings) {
+    setPrevServerSettings(serverSettings);
+    if (serverSettings) {
+      setSettings(serverSettings);
+    }
   }
 
   const updateRole = (role: RoleType, value: number) => {
-    setSettings((prev) => ({
-      ...prev,
-      role_distribution: { ...prev.role_distribution, [role]: value },
-    }));
+    const newSettings = {
+      ...settings,
+      role_distribution: { ...settings.role_distribution, [role]: value },
+    };
+    setSettings(newSettings); // Optimistic update
+    if (session?.playerId) {
+      updateSettings({
+        playerId: session.playerId,
+        settings: newSettings,
+      });
+    }
   };
 
   const totalRoles = Object.values(settings.role_distribution).reduce(
@@ -98,17 +84,6 @@ export function LobbyPanel({
     await onStartGame(settings);
     setLoading(false);
   };
-
-  if (!isAdmin) {
-    return (
-      <div style={{ textAlign: "center", padding: token.paddingLG }}>
-        <Spin />
-        <Text type="secondary" style={{ display: "block", marginTop: 10 }}>
-          Waiting for admin to start...
-        </Text>
-      </div>
-    );
-  }
 
   const roles = [
     RoleType.WEREWOLF,
@@ -168,20 +143,22 @@ export function LobbyPanel({
                     padding: 4,
                   }}
                 >
-                  <Button
-                    type="text"
-                    icon={<MinusOutlined style={{ fontSize: 20 }} />}
-                    onClick={() => updateRole(role, Math.max(0, count - 1))}
-                    disabled={count <= 0}
-                    style={{
-                      color: token.colorText,
-                      width: 44,
-                      height: 44,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  />
+                  {isAdmin && (
+                    <Button
+                      type="text"
+                      icon={<MinusOutlined style={{ fontSize: 20 }} />}
+                      onClick={() => updateRole(role, Math.max(0, count - 1))}
+                      disabled={count <= 0}
+                      style={{
+                        color: token.colorText,
+                        width: 44,
+                        height: 44,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    />
+                  )}
                   <Text
                     style={{
                       fontSize: 24,
@@ -192,19 +169,21 @@ export function LobbyPanel({
                   >
                     {count}
                   </Text>
-                  <Button
-                    type="text"
-                    icon={<PlusOutlined style={{ fontSize: 20 }} />}
-                    onClick={() => updateRole(role, count + 1)}
-                    style={{
-                      color: token.colorText,
-                      width: 44,
-                      height: 44,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  />
+                  {isAdmin && (
+                    <Button
+                      type="text"
+                      icon={<PlusOutlined style={{ fontSize: 20 }} />}
+                      onClick={() => updateRole(role, count + 1)}
+                      style={{
+                        color: token.colorText,
+                        width: 44,
+                        height: 44,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             );
@@ -221,17 +200,26 @@ export function LobbyPanel({
         </div>
       </Card>
 
-      <Button
-        type="primary"
-        size="large"
-        onClick={handleStart}
-        loading={loading}
-        disabled={!isValid}
-        block
-        style={{ height: 56, fontSize: 20 }}
-      >
-        Start Game
-      </Button>
+      {isAdmin ? (
+        <Button
+          type="primary"
+          size="large"
+          onClick={handleStart}
+          loading={loading}
+          disabled={!isValid}
+          block
+          style={{ height: 56, fontSize: 20 }}
+        >
+          Start Game
+        </Button>
+      ) : (
+        <div style={{ textAlign: "center", padding: 12 }}>
+          <Spin />
+          <Text type="secondary" style={{ display: "block", marginTop: 8 }}>
+            Host is configuring the game...
+          </Text>
+        </div>
+      )}
     </div>
   );
 }

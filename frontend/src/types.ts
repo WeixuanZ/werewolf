@@ -40,6 +40,7 @@ export interface Player {
   role_description?: string;
   is_alive: boolean;
   is_admin: boolean;
+  is_spectator: boolean;
   is_online: boolean;
   vote_target?: string | null;
   has_night_action?: boolean;
