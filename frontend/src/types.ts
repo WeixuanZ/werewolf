@@ -44,6 +44,7 @@ export interface Player {
   is_online: boolean;
   vote_target?: string | null;
   night_action_target?: string | null;
+  night_action_confirmed?: boolean;
   has_night_action?: boolean;
   night_info?: {
     prompt?: string;
@@ -58,6 +59,7 @@ export interface Player {
 export interface GameSettings {
   role_distribution: Record<RoleType, number>;
   phase_duration_seconds: number;
+  timer_enabled: boolean;
 }
 
 export interface GameState {
@@ -68,6 +70,7 @@ export interface GameState {
   turn_count: number;
   winners: string | null;
   voted_out_this_round?: string | null;
+  phase_start_time?: number;
 }
 
 export const WSMessageType = {

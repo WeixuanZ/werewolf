@@ -78,10 +78,15 @@ export const api = {
       playerId: string,
       actionType: string,
       targetId: string,
+      confirmed: boolean = true,
     ) =>
       fetchApi<GameState>(`/rooms/${roomId}/action?player_id=${playerId}`, {
         method: "POST",
-        body: JSON.stringify({ action_type: actionType, target_id: targetId }),
+        body: JSON.stringify({
+          action_type: actionType,
+          target_id: targetId,
+          confirmed,
+        }),
       }),
 
     submitVote: (roomId: string, playerId: string, targetId: string) =>
@@ -184,11 +189,14 @@ export function useSubmitAction(roomId: string) {
       playerId,
       actionType,
       targetId,
+      confirmed,
     }: {
       playerId: string;
       actionType: string;
       targetId: string;
-    }) => api.rooms.submitAction(roomId, playerId, actionType, targetId),
+      confirmed?: boolean;
+    }) =>
+      api.rooms.submitAction(roomId, playerId, actionType, targetId, confirmed),
     onSuccess: (data) => {
       queryClient.setQueryData(["gameState", roomId], data);
     },

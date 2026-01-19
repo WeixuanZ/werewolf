@@ -4,14 +4,21 @@ import { useSubmitVote } from "../api/client";
 import type { GameState, Player } from "../types";
 import { getRoleEmoji } from "../utils/roleUtils";
 
+import { PhaseTimer } from "./PhaseTimer";
+
 const { useToken } = theme;
 
 interface VotingPanelProps {
   gameState: GameState;
   playerId: string;
+  timerEnabled: boolean;
 }
 
-export function VotingPanel({ gameState, playerId }: VotingPanelProps) {
+export function VotingPanel({
+  gameState,
+  playerId,
+  timerEnabled,
+}: VotingPanelProps) {
   const { token } = useToken();
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const submitVote = useSubmitVote(gameState.room_id);
@@ -20,7 +27,7 @@ export function VotingPanel({ gameState, playerId }: VotingPanelProps) {
   const hasVoted = currentPlayer?.vote_target != null;
 
   const alivePlayers = Object.values(gameState.players).filter(
-    (p) => p.is_alive && !p.is_spectator && p.id !== playerId,
+    (p) => p.is_alive && !p.is_spectator,
   );
 
   // Calculate vote counts (visible to all)
@@ -71,6 +78,11 @@ export function VotingPanel({ gameState, playerId }: VotingPanelProps) {
 
   return (
     <div style={panelStyle}>
+      <PhaseTimer
+        phaseStartTime={gameState.phase_start_time}
+        phaseDurationSeconds={gameState.settings.phase_duration_seconds}
+        timerEnabled={timerEnabled}
+      />
       <div style={{ textAlign: "center", marginBottom: token.margin }}>
         <h2 style={{ color: token.colorText, margin: 0 }}>
           🗳️ Day Phase - Voting

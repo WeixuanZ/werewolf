@@ -8,6 +8,8 @@ import { WerewolfPanel } from "./WerewolfPanel";
 
 const { Text } = Typography;
 
+import { PhaseTimer } from "./PhaseTimer";
+
 interface NightPanelProps {
   myRole: string;
   players: Player[];
@@ -16,6 +18,7 @@ interface NightPanelProps {
   hasSubmittedAction?: boolean;
   phaseStartTime?: number | null;
   phaseDurationSeconds?: number;
+  timerEnabled?: boolean;
 }
 
 export function NightPanel({
@@ -26,6 +29,7 @@ export function NightPanel({
   hasSubmittedAction = false,
   phaseStartTime,
   phaseDurationSeconds = 60,
+  timerEnabled = true,
 }: NightPanelProps) {
   const { token } = theme.useToken();
   const [targetId, setTargetId] = useState<string | null>(null);
@@ -41,6 +45,7 @@ export function NightPanel({
         roomId={roomId}
         phaseStartTime={phaseStartTime}
         phaseDurationSeconds={phaseDurationSeconds}
+        timerEnabled={timerEnabled}
       />
     );
   }
@@ -88,6 +93,12 @@ export function NightPanel({
           textAlign: "center",
         }}
       >
+        <PhaseTimer
+          key={phaseStartTime}
+          phaseStartTime={phaseStartTime}
+          phaseDurationSeconds={phaseDurationSeconds}
+          timerEnabled={timerEnabled}
+        />
         <Text style={{ fontSize: 16 }}>You are sleeping... 💤</Text>
       </div>
     );
@@ -104,6 +115,12 @@ export function NightPanel({
           textAlign: "center",
         }}
       >
+        <PhaseTimer
+          key={phaseStartTime}
+          phaseStartTime={phaseStartTime}
+          phaseDurationSeconds={phaseDurationSeconds}
+          timerEnabled={timerEnabled}
+        />
         <div
           style={{ color: token.colorSuccess, fontSize: 16, marginBottom: 8 }}
         >
@@ -116,9 +133,7 @@ export function NightPanel({
     );
   }
 
-  const alivePlayers = players.filter(
-    (p) => p.is_alive && !p.is_spectator && p.id !== playerId,
-  );
+  const alivePlayers = players.filter((p) => p.is_alive && !p.is_spectator);
 
   // WITCH SPECIFIC UI
   if (myRole === "WITCH") {
@@ -145,6 +160,13 @@ export function NightPanel({
           <p style={{ color: token.colorTextSecondary, marginTop: 8 }}>
             {nightInfo?.prompt || me?.role_description}
           </p>
+          <PhaseTimer
+            key={phaseStartTime}
+            phaseStartTime={phaseStartTime}
+            phaseDurationSeconds={phaseDurationSeconds}
+            timerEnabled={timerEnabled}
+            onExpire={() => handleActionSubmit(NightActionType.SKIP, null)}
+          />
         </div>
 
         <Space direction="vertical" style={{ width: "100%" }} size="large">
@@ -281,6 +303,9 @@ export function NightPanel({
         borderRadius: token.borderRadiusLG,
         padding: token.paddingLG,
         border: `1px solid ${token.colorBorder}`,
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
       }}
     >
       <div style={{ textAlign: "center", marginBottom: token.margin }}>
@@ -290,14 +315,22 @@ export function NightPanel({
         <p style={{ color: token.colorTextSecondary, margin: "8px 0 0" }}>
           {nightInfo?.prompt || "Select a target."}
         </p>
+        <PhaseTimer
+          key={phaseStartTime}
+          phaseStartTime={phaseStartTime}
+          phaseDurationSeconds={phaseDurationSeconds}
+          timerEnabled={timerEnabled}
+          onExpire={() => handleActionSubmit(NightActionType.SKIP, null)}
+        />
       </div>
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
           gap: 16,
-          marginBottom: token.margin,
+          marginBottom: token.marginLG,
+          flex: 1,
         }}
       >
         {alivePlayers.map((p) => (
@@ -320,10 +353,10 @@ export function NightPanel({
               fontSize: 18,
               cursor: "pointer",
               transition: "all 0.2s",
-              minHeight: "100px",
+              minHeight: "160px",
             }}
           >
-            <span style={{ fontSize: 24, marginBottom: 4 }}>👤</span>
+            <span style={{ fontSize: 32, marginBottom: 8 }}>👤</span>
             <span style={{ fontWeight: 500, textAlign: "center" }}>
               {p.nickname}
             </span>
@@ -341,6 +374,17 @@ export function NightPanel({
         loading={submitAction.isPending}
       >
         Confirm {defaultAction}
+      </Button>
+
+      <Button
+        type="default"
+        block
+        size="large"
+        style={{ height: 56, fontSize: 20, marginTop: 16 }}
+        onClick={() => handleActionSubmit(NightActionType.SKIP, null)}
+        disabled={submitAction.isPending}
+      >
+        Skip Action
       </Button>
     </div>
   );

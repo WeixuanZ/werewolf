@@ -324,12 +324,17 @@ export default function GameRoom() {
                 phaseDurationSeconds={
                   gameState.settings?.phase_duration_seconds
                 }
+                timerEnabled={gameState.settings?.timer_enabled ?? true}
               />
             </Card>
           )}
 
           {isDay && playerId && (
-            <VotingPanel gameState={gameState} playerId={playerId} />
+            <VotingPanel
+              gameState={gameState}
+              playerId={playerId}
+              timerEnabled={gameState.settings?.timer_enabled ?? true}
+            />
           )}
         </div>
       </div>

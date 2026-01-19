@@ -113,7 +113,11 @@ async def submit_action(
 ):
     try:
         result = await service.submit_action(
-            room_id, player_id, request.action_type, request.target_id
+            room_id,
+            player_id,
+            request.action_type,
+            request.target_id,
+            request.confirmed,
         )
         if not result:
             raise HTTPException(status_code=404, detail="Room not found")

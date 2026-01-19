@@ -72,6 +72,7 @@ class NightState(PhaseState):
         for player in game.players.values():
             player.night_action_target = None
             player.night_action_type = None
+            player.night_action_confirmed = False
 
     def process_action(self, game: Game, player_id: str, action: dict) -> None:
         player = game.players.get(player_id)
@@ -91,6 +92,10 @@ class NightState(PhaseState):
         if not player.role_instance:
             return
 
+        # Validate confirmed flag
+        confirmed = action.get("confirmed", True)
+        player.night_action_confirmed = confirmed
+
         # Delegate validation and state updates to the Role instance
         try:
             player.role_instance.handle_night_action(game, player_id, action_type, target_id)
@@ -107,8 +112,11 @@ class NightState(PhaseState):
         for player in game.players.values():
             if not player.is_alive or not player.role:
                 continue
-            if player.can_act_at_night() and player.night_action_target is None:
-                return False
+            if player.can_act_at_night():
+                if player.night_action_target is None:
+                    return False
+                if not player.night_action_confirmed:
+                    return False
 
         # Enforce Werewolf Consensus
         werewolves = [

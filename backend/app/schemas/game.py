@@ -55,6 +55,7 @@ class PlayerSchema(BaseModel):
     vote_target: str | None = None
     night_action_target: str | None = None
     night_action_type: str | None = None  # Persist action type (e.g., HEAL/POISON)
+    night_action_confirmed: bool = False
     has_night_action: bool = False
 
     # Dynamic context for frontend
@@ -71,6 +72,7 @@ class GameSettingsSchema(BaseModel):
         RoleType.VILLAGER: 1,
     }
     phase_duration_seconds: int = 60
+    timer_enabled: bool = True
 
 
 class GameStateSchema(BaseModel):
@@ -82,11 +84,13 @@ class GameStateSchema(BaseModel):
     winners: str | None = None
     seer_reveals: dict[str, list[str]] = {}  # {seer_id: [checked_player_ids]}
     voted_out_this_round: str | None = None
+    phase_start_time: float | None = None
 
 
 class ActionRequest(BaseModel):
     action_type: str
     target_id: str | None = None
+    confirmed: bool = True
 
 
 class VoteRequest(BaseModel):

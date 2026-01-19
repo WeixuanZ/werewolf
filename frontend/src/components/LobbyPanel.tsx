@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { getRoleNameWithEmoji } from "../utils/roleUtils";
 import { PlusOutlined, MinusOutlined } from "@ant-design/icons";
-import { Card, Button, Spin, Typography, message, theme } from "antd";
+import { Card, Button, Spin, Typography, message, theme, Switch } from "antd";
 import { useCurrentSession } from "../store/gameStore";
 import { useUpdateSettings } from "../api/client";
 
@@ -41,6 +41,7 @@ export function LobbyPanel({
         [RoleType.SPECTATOR]: 0,
       },
       phase_duration_seconds: 60,
+      timer_enabled: true,
     },
   );
   const [loading, setLoading] = useState(false);
@@ -100,6 +101,95 @@ export function LobbyPanel({
       style={{ display: "flex", flexDirection: "column", gap: token.margin }}
     >
       <Card title="Game Configuration">
+        <div
+          style={{
+            marginBottom: token.marginLG,
+            padding: 12,
+            background: "rgba(255,255,255,0.04)",
+            borderRadius: 8,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: settings.timer_enabled ? 12 : 0,
+            }}
+          >
+            <Text strong>Enable Phase Timer</Text>
+            <Switch
+              checked={settings.timer_enabled}
+              disabled={!isAdmin}
+              onChange={(checked) => {
+                const newSettings = { ...settings, timer_enabled: checked };
+                setSettings(newSettings);
+                if (session?.playerId) {
+                  updateSettings({
+                    playerId: session.playerId,
+                    settings: newSettings,
+                  });
+                }
+              }}
+            />
+          </div>
+
+          {settings.timer_enabled && isAdmin && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderTop: "1px solid rgba(255,255,255,0.1)",
+                paddingTop: 12,
+              }}
+            >
+              <Text>Phase Duration (seconds)</Text>
+              <div style={{ display: "flex", gap: 8 }}>
+                {[30, 60, 90, 120].map((seconds) => (
+                  <Button
+                    key={seconds}
+                    size="small"
+                    type={
+                      settings.phase_duration_seconds === seconds
+                        ? "primary"
+                        : "default"
+                    }
+                    onClick={() => {
+                      const newSettings = {
+                        ...settings,
+                        phase_duration_seconds: seconds,
+                      };
+                      setSettings(newSettings);
+                      if (session?.playerId) {
+                        updateSettings({
+                          playerId: session.playerId,
+                          settings: newSettings,
+                        });
+                      }
+                    }}
+                  >
+                    {seconds}s
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {settings.timer_enabled && !isAdmin && (
+            <div
+              style={{
+                borderTop: "1px solid rgba(255,255,255,0.1)",
+                paddingTop: 12,
+              }}
+            >
+              <Text type="secondary">
+                Phase duration: {settings.phase_duration_seconds}s
+              </Text>
+            </div>
+          )}
+        </div>
+
         <div
           style={{
             display: "grid",

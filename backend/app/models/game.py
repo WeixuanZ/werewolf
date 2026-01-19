@@ -7,6 +7,7 @@ It uses Pydantic models internally for serialization to Redis.
 
 import logging
 import random
+import time
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
@@ -35,6 +36,7 @@ class PlayerState(BaseModel):
     vote_target: str | None = None
     night_action_target: str | None = None
     night_action_type: str | None = None
+    night_action_confirmed: bool = False
 
     model_config = ConfigDict(extra="ignore")
 
@@ -63,6 +65,7 @@ class GameState(BaseModel):
     winners: str | None = None
     seer_reveals: dict[str, list[str]] = {}
     voted_out_this_round: str | None = None
+    phase_start_time: float | None = None
 
     model_config = ConfigDict(extra="ignore")
 
@@ -108,6 +111,7 @@ class Game:
                 vote_target=p.vote_target,
                 night_action_target=p.night_action_target,
                 night_action_type=p.night_action_type,
+                night_action_confirmed=p.night_action_confirmed,
                 has_night_action=p.has_night_action,
             )
             for pid, p in self._state.players.items()
@@ -121,9 +125,116 @@ class Game:
             winners=self.winners,
             seer_reveals=self.seer_reveals,
             voted_out_this_round=self.voted_out_this_round,
+            phase_start_time=self.phase_start_time,
         )
 
-    # ===== Property accessors to internal state =====
+    # ===== View Logic =====
+    def get_view_for_player(self, viewer_id: str) -> GameStateSchema:
+        """
+        Create a filtered view of the game state for a specific player.
+        Hides roles and actions based on game rules.
+        """
+        full_schema = self.to_schema()
+        is_game_over = full_schema.phase == GamePhase.GAME_OVER
+
+        viewer = self.players.get(viewer_id)
+        is_spectator = viewer and (viewer.role == RoleType.SPECTATOR or not viewer.is_alive)
+
+        # Viewer specific context
+        revealed_to_viewer = set()
+        if viewer and viewer.role == RoleType.SEER:
+            revealed_to_viewer = set(self.seer_reveals.get(viewer_id, []))
+
+        filtered_players = {}
+        for pid, p in full_schema.players.items():
+            # Determine visibility
+            is_self = pid == viewer_id
+
+            # Wolf logic: Wolves see other wolves
+            are_werewolves = (
+                viewer and viewer.role == RoleType.WEREWOLF and p.role == RoleType.WEREWOLF
+            )
+
+            should_show_role = (
+                is_self
+                or is_game_over
+                or pid in revealed_to_viewer
+                or is_spectator
+                or are_werewolves
+            )
+
+            # Action visibility
+            # Generally, actions are private unless it's yourself OR you are wolves acting together
+            should_show_action = is_self or (are_werewolves and p.role == RoleType.WEREWOLF)
+
+            filtered_players[pid] = PlayerSchema(
+                id=p.id,
+                nickname=p.nickname,
+                role=p.role if should_show_role else None,
+                is_alive=p.is_alive,
+                is_admin=p.is_admin,
+                is_spectator=p.role == RoleType.SPECTATOR,
+                # is_online is merged later by service layer
+                is_online=False,
+                vote_target=p.vote_target if is_self else None,
+                night_action_target=p.night_action_target if should_show_action else None,
+                night_action_type=p.night_action_type if should_show_action else None,
+                night_action_confirmed=p.night_action_confirmed,
+                has_night_action=p.has_night_action if is_self else False,
+            )
+
+            # Dynamic Role Info (Prompts, available actions)
+            if is_self and p.role and viewer and viewer.is_alive:
+                # We need the behavior instance from the internal state, not the schema
+                p_internal = self.players.get(pid)
+                if p_internal and p_internal.role_instance:
+                    role_inst = p_internal.role_instance
+                    filtered_players[pid].role_description = role_inst.get_description()
+
+                    if self.phase == GamePhase.NIGHT:
+                        filtered_players[pid].night_info = role_inst.get_night_info(
+                            self._state, pid
+                        )
+
+        full_schema.players = filtered_players
+        # Never expose the raw seer reveal map
+        full_schema.seer_reveals = {}
+
+        return full_schema
+
+    def auto_balance_roles(self):
+        """Automatically set default role distribution based on player count."""
+        active_players = len([p for p in self.players.values() if p.role != RoleType.SPECTATOR])
+
+        # Base config: 1 Wolf, 1 Seer, rest Villagers
+        defaults = {
+            RoleType.WEREWOLF: 1,
+            RoleType.SEER: 1,
+            RoleType.DOCTOR: 0,
+            RoleType.WITCH: 0,
+            RoleType.HUNTER: 0,
+            RoleType.VILLAGER: 0,
+            RoleType.SPECTATOR: 0,
+        }
+
+        # Progressive complexity
+        if active_players >= 5:
+            defaults[RoleType.DOCTOR] = 1
+
+        if active_players >= 7:
+            defaults[RoleType.WITCH] = 1
+
+        if active_players >= 9:
+            defaults[RoleType.HUNTER] = 1
+            defaults[RoleType.WEREWOLF] = 2
+
+        # Calculate villagers
+        special_roles = sum(defaults.values())
+        villagers = max(0, active_players - special_roles)
+        defaults[RoleType.VILLAGER] = villagers
+
+        self.settings.role_distribution = defaults
+
     @property
     def room_id(self) -> str:
         return self._state.room_id
@@ -131,6 +242,10 @@ class Game:
     @property
     def phase(self) -> GamePhase:
         return self._state.phase
+
+    @property
+    def phase_start_time(self) -> float | None:
+        return self._state.phase_start_time
 
     @phase.setter
     def phase(self, value: GamePhase):
@@ -221,6 +336,7 @@ class Game:
     def transition_to(self, new_phase: GamePhase):
         """Transition to a new phase, calling on_enter for the new state."""
         self._state.phase = new_phase
+        self._state.phase_start_time = time.time()
         state = get_phase_state(new_phase)
         state.on_enter(self)
 
@@ -272,35 +388,4 @@ class Game:
         """Reset game to waiting state for a new round."""
         self.transition_to(GamePhase.WAITING)
 
-    def auto_balance_roles(self):
-        """Automatically set default role distribution based on player count."""
-        player_count = len([p for p in self.players.values() if p.role != RoleType.SPECTATOR])
-        defaults = {
-            RoleType.WEREWOLF: 1,
-            RoleType.SEER: 1,
-            RoleType.DOCTOR: 1,
-            RoleType.WITCH: 0,
-            RoleType.HUNTER: 0,
-            RoleType.VILLAGER: 0,
-            RoleType.SPECTATOR: 0,
-        }
-
-        if player_count <= 4:
-            # 4 players: 1 Wolf, 1 Seer, 2 Villagers
-            defaults[RoleType.DOCTOR] = 0
-            defaults[RoleType.VILLAGER] = max(0, player_count - 2)
-        elif player_count <= 6:
-            # 5-6 players: 1 Wolf, 1 Seer, 1 Doctor, Rest Villagers
-            defaults[RoleType.VILLAGER] = player_count - 3
-        elif player_count <= 8:
-            # 7-8 players: Add Witch
-            defaults[RoleType.WITCH] = 1
-            defaults[RoleType.VILLAGER] = player_count - 4
-        else:
-            # 9+ players: Add Hunter, Extra Wolf
-            defaults[RoleType.WITCH] = 1
-            defaults[RoleType.HUNTER] = 1
-            defaults[RoleType.WEREWOLF] = 2
-            defaults[RoleType.VILLAGER] = max(0, player_count - 6)
-
-        self.settings.role_distribution = defaults
+    # Old implementation removed
