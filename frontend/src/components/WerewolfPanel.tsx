@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Typography, Button, theme, Progress, Avatar, Tooltip } from "antd";
-import { UserOutlined } from "@ant-design/icons";
+import { getRoleEmoji } from "../utils/roleUtils";
 import { useSubmitAction } from "../api/client";
-import { NightActionType, RoleType } from "../types";
+import { RoleType, NightActionType } from "../types";
 import type { Player } from "../types";
 
 const { Text, Title } = Typography;
@@ -143,7 +143,6 @@ export function WerewolfPanel({
       >
         {alivePlayers.map((p) => {
           const isSelected = myTarget === p.id;
-          // Find which other werewolves are targeting this player
           const targetingWerewolves = otherWerewolves.filter(
             (w) => w.night_action_target === p.id,
           );
@@ -154,7 +153,6 @@ export function WerewolfPanel({
               onClick={() => handleActionSubmit(NightActionType.KILL, p.id)}
               disabled={submitAction.isPending}
               style={{
-                position: "relative",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "center",
@@ -166,64 +164,62 @@ export function WerewolfPanel({
                 border: `2px solid ${isSelected ? token.colorPrimary : "transparent"}`,
                 borderRadius: token.borderRadiusLG,
                 color: token.colorText,
-                fontSize: 16,
+                fontSize: 18,
                 cursor: "pointer",
                 transition: "all 0.2s",
-                minHeight: "120px",
+                position: "relative",
+                minHeight: "160px",
               }}
             >
-              <Avatar
-                size={48}
-                style={{
-                  marginBottom: 8,
-                  backgroundColor: token.colorBgContainer,
-                }}
-                icon={<UserOutlined />}
-              >
-                {p.nickname[0]}
-              </Avatar>
+              <span style={{ fontSize: 32, marginBottom: 8 }}>
+                {p.role ? getRoleEmoji(p.role) : "👤"}
+              </span>
               <span
                 style={{
                   fontWeight: 500,
                   textAlign: "center",
-                  wordBreak: "break-word",
+                  marginBottom: 12, // More space before avatars
+                  lineHeight: 1.2,
                 }}
               >
                 {p.nickname}
               </span>
 
-              {/* Badges for other werewolves */}
-              {targetingWerewolves.length > 0 && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: -8,
-                    right: -8,
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 2,
-                    maxWidth: 80,
-                  }}
-                >
-                  {targetingWerewolves.map((w) => (
-                    <Tooltip
-                      key={w.id}
-                      title={`${w.nickname} chose this target`}
-                    >
-                      <Avatar
-                        size="small"
-                        style={{
-                          backgroundColor: token.colorError,
-                          border: `1px solid ${token.colorBgBase}`,
-                          fontSize: 10,
-                        }}
+              {/* Collaborative Avatars Footer - Fixed height container */}
+              <div
+                style={{
+                  height: 32,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%",
+                }}
+              >
+                {targetingWerewolves.length > 0 ? (
+                  <Avatar.Group maxCount={3} size="small">
+                    {targetingWerewolves.map((w) => (
+                      <Tooltip
+                        key={w.id}
+                        title={`${w.nickname} chose this target`}
                       >
-                        {w.nickname[0]}
-                      </Avatar>
-                    </Tooltip>
-                  ))}
-                </div>
-              )}
+                        <Avatar
+                          style={{
+                            backgroundColor: token.colorError,
+                            border: `2px solid ${token.colorBgBase}`,
+                            cursor: "help",
+                          }}
+                        >
+                          {w.nickname[0].toUpperCase()}
+                        </Avatar>
+                      </Tooltip>
+                    ))}
+                  </Avatar.Group>
+                ) : (
+                  <div
+                    style={{ height: 24 }}
+                  /> /* Spacer to prevent layout jump */
+                )}
+              </div>
             </button>
           );
         })}
@@ -255,22 +251,37 @@ export function WerewolfPanel({
         </Button>
       </div>
 
-      {/* Consensus Info */}
-      <div style={{ marginTop: 16, textAlign: "center" }}>
-        {otherWerewolves.map((w) => (
-          <div
-            key={w.id}
-            style={{ fontSize: 12, color: token.colorTextSecondary }}
-          >
-            {w.nickname} has selected:{" "}
-            {w.night_action_target === "SKIP"
-              ? "SKIP"
-              : w.night_action_target
-                ? players.find((p) => p.id === w.night_action_target)?.nickname
-                : "Nothing"}
-          </div>
-        ))}
-      </div>
+      {/* SKIP Voters (if any) */}
+      {otherWerewolves.some((w) => w.night_action_target === "SKIP") && (
+        <div
+          style={{
+            marginTop: 16,
+            textAlign: "center",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Text type="secondary">Skipping:</Text>
+          <Avatar.Group maxCount={5} size="small">
+            {otherWerewolves
+              .filter((w) => w.night_action_target === "SKIP")
+              .map((w) => (
+                <Tooltip key={w.id} title={`${w.nickname} is skipping`}>
+                  <Avatar
+                    style={{
+                      backgroundColor: token.colorWarning,
+                      color: token.colorTextLightSolid,
+                    }}
+                  >
+                    {w.nickname[0]}
+                  </Avatar>
+                </Tooltip>
+              ))}
+          </Avatar.Group>
+        </div>
+      )}
     </div>
   );
 }
