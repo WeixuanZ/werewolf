@@ -2,7 +2,8 @@ import { useState } from "react";
 import { getRoleNameWithEmoji } from "../utils/roleUtils";
 import { Typography, Button, theme, Space, Tag } from "antd";
 import { useSubmitAction } from "../api/client";
-import { type Player, NightActionType } from "../types";
+import { type Player, NightActionType, RoleType } from "../types";
+import { WerewolfPanel } from "./WerewolfPanel";
 
 const { Text } = Typography;
 
@@ -12,6 +13,8 @@ interface NightPanelProps {
   playerId: string;
   roomId: string;
   hasSubmittedAction?: boolean;
+  phaseStartTime?: number | null;
+  phaseDurationSeconds?: number;
 }
 
 export function NightPanel({
@@ -20,11 +23,26 @@ export function NightPanel({
   playerId,
   roomId,
   hasSubmittedAction = false,
+  phaseStartTime,
+  phaseDurationSeconds = 60,
 }: NightPanelProps) {
   const { token } = theme.useToken();
   const [targetId, setTargetId] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const submitAction = useSubmitAction(roomId);
+
+  // Special handling for Werewolf role (live voting)
+  if (myRole === RoleType.WEREWOLF) {
+    return (
+      <WerewolfPanel
+        players={players}
+        playerId={playerId}
+        roomId={roomId}
+        phaseStartTime={phaseStartTime}
+        phaseDurationSeconds={phaseDurationSeconds}
+      />
+    );
+  }
 
   const me = players.find((p) => p.id === playerId);
   const nightInfo = me?.night_info;

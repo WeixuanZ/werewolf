@@ -43,6 +43,7 @@ export interface Player {
   is_spectator: boolean;
   is_online: boolean;
   vote_target?: string | null;
+  night_action_target?: string | null;
   has_night_action?: boolean;
   night_info?: {
     prompt?: string;

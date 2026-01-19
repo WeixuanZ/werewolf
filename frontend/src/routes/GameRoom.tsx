@@ -320,6 +320,10 @@ export default function GameRoom() {
                 playerId={playerId ?? ""}
                 roomId={roomId}
                 hasSubmittedAction={me.has_night_action}
+                phaseStartTime={gameState.phase_start_time}
+                phaseDurationSeconds={
+                  gameState.settings?.phase_duration_seconds
+                }
               />
             </Card>
           )}

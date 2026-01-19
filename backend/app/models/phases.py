@@ -101,12 +101,25 @@ class NightState(PhaseState):
             return
 
     def check_completion(self, game: Game) -> bool:
-        """All alive players with night actions must have acted."""
+        """All alive players with night actions must have acted. Werewolves must agree."""
+
+        # Check general completion first (everyone acted)
         for player in game.players.values():
             if not player.is_alive or not player.role:
                 continue
             if player.can_act_at_night() and player.night_action_target is None:
                 return False
+
+        # Enforce Werewolf Consensus
+        werewolves = [
+            p for p in game.players.values() if p.is_alive and p.role == RoleType.WEREWOLF
+        ]
+
+        if werewolves:
+            targets = {p.night_action_target for p in werewolves}
+            if len(targets) > 1:
+                return False
+
         return True
 
     def resolve(self, game: Game) -> GamePhase:
