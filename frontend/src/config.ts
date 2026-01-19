@@ -3,11 +3,11 @@
 const getBaseUrl = () => {
   if (import.meta.env.PROD) {
     // In production, Nginx proxies /api -> Backend
-    return "/api";
+    return '/api';
   }
 
   const host = window.location.hostname;
-  const port = import.meta.env.VITE_API_PORT || "8000";
+  const port = import.meta.env.VITE_API_PORT || '8000';
   return `http://${host}:${port}/api`;
 };
 
@@ -17,14 +17,14 @@ const getWsUrl = () => {
   }
 
   if (import.meta.env.PROD) {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${protocol}//${window.location.host}`;
   }
 
   const host = window.location.hostname;
-  const port = import.meta.env.VITE_API_PORT || "8000";
+  const port = import.meta.env.VITE_API_PORT || '8000';
 
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${host}:${port}`;
 };
 

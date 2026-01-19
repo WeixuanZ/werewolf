@@ -1,4 +1,4 @@
-@import "antd/dist/reset.css";
+@import 'antd/dist/reset.css';
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -28,14 +28,14 @@ body {
 button,
 a,
 input,
-[role="button"] {
+[role='button'] {
   touch-action: manipulation;
   min-height: 44px; /* Accessible touch target size */
 }
 
 /* Prevent text selection on interactive elements */
 button,
-[role="button"] {
+[role='button'] {
   user-select: none;
   -webkit-user-select: none;
 }

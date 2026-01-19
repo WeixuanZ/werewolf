@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { getRoleNameWithEmoji } from "../utils/roleUtils";
-import { Typography, Button, theme, Space, Tag } from "antd";
-import { useSubmitAction } from "../api/client";
-import { NightActionType, RoleType } from "../types";
-import type { Player } from "../types";
-import { WerewolfPanel } from "./WerewolfPanel";
+import { useState } from 'react';
+import { getRoleNameWithEmoji } from '../utils/roleUtils';
+import { Typography, Button, theme, Space, Tag } from 'antd';
+import { useSubmitAction } from '../api/client';
+import { NightActionType, RoleType } from '../types';
+import type { Player } from '../types';
+import { WerewolfPanel } from './WerewolfPanel';
 
 const { Text } = Typography;
 
-import { PhaseTimer } from "./PhaseTimer";
+import { PhaseTimer } from './PhaseTimer';
 
 interface NightPanelProps {
   myRole: string;
@@ -56,20 +56,14 @@ export function NightPanel({
 
   const handleActionSubmit = (actionType: string, tid: string | null) => {
     // Validation: Must have target unless it is SKIP or implicit HEAL
-    if (
-      !tid &&
-      actionType !== NightActionType.HEAL &&
-      actionType !== NightActionType.SKIP
-    )
-      return;
+    if (!tid && actionType !== NightActionType.HEAL && actionType !== NightActionType.SKIP) return;
 
     // For Witch HEAL, target is implied as victim if not provided, but mostly provided by button click context
-    const finalTarget =
-      actionType === NightActionType.HEAL ? tid || nightInfo?.victim_id : tid;
+    const finalTarget = actionType === NightActionType.HEAL ? tid || nightInfo?.victim_id : tid;
 
     // Skip allows no target, send "SKIP" keyword to backend
     if (actionType === NightActionType.SKIP) {
-      submitAction.mutate({ playerId, actionType, targetId: "SKIP" });
+      submitAction.mutate({ playerId, actionType, targetId: 'SKIP' });
       return;
     }
 
@@ -82,15 +76,15 @@ export function NightPanel({
     });
   };
 
-  if (!myRole || ["VILLAGER", "SPECTATOR"].includes(myRole)) {
+  if (!myRole || ['VILLAGER', 'SPECTATOR'].includes(myRole)) {
     return (
       <div
         style={{
-          background: "rgba(0, 0, 0, 0.3)",
+          background: 'rgba(0, 0, 0, 0.3)',
           borderRadius: token.borderRadiusLG,
           padding: token.paddingLG,
           border: `1px solid ${token.colorBorder}`,
-          textAlign: "center",
+          textAlign: 'center',
         }}
       >
         <PhaseTimer
@@ -108,11 +102,11 @@ export function NightPanel({
     return (
       <div
         style={{
-          background: "rgba(0, 0, 0, 0.3)",
+          background: 'rgba(0, 0, 0, 0.3)',
           borderRadius: token.borderRadiusLG,
           padding: token.paddingLG,
           border: `1px solid ${token.colorBorder}`,
-          textAlign: "center",
+          textAlign: 'center',
         }}
       >
         <PhaseTimer
@@ -121,14 +115,10 @@ export function NightPanel({
           phaseDurationSeconds={phaseDurationSeconds}
           timerEnabled={timerEnabled}
         />
-        <div
-          style={{ color: token.colorSuccess, fontSize: 16, marginBottom: 8 }}
-        >
+        <div style={{ color: token.colorSuccess, fontSize: 16, marginBottom: 8 }}>
           ✅ Action submitted
         </div>
-        <div style={{ color: token.colorTextSecondary }}>
-          Waiting for night to end... 🌙
-        </div>
+        <div style={{ color: token.colorTextSecondary }}>Waiting for night to end... 🌙</div>
       </div>
     );
   }
@@ -136,27 +126,23 @@ export function NightPanel({
   const alivePlayers = players.filter((p) => p.is_alive && !p.is_spectator);
 
   // WITCH SPECIFIC UI
-  if (myRole === "WITCH") {
+  if (myRole === 'WITCH') {
     // Since actionsAvailable is explicitly typed now, we can check directly
-    const canHeal =
-      actionsAvailable.includes(NightActionType.HEAL) && me?.witch_has_heal;
-    const canPoison =
-      actionsAvailable.includes(NightActionType.POISON) && me?.witch_has_poison;
+    const canHeal = actionsAvailable.includes(NightActionType.HEAL) && me?.witch_has_heal;
+    const canPoison = actionsAvailable.includes(NightActionType.POISON) && me?.witch_has_poison;
     const victimId = nightInfo?.victim_id;
 
     return (
       <div
         style={{
-          background: "rgba(0, 0, 0, 0.3)",
+          background: 'rgba(0, 0, 0, 0.3)',
           borderRadius: token.borderRadiusLG,
           padding: token.paddingLG,
           border: `1px solid ${token.colorBorder}`,
         }}
       >
-        <div style={{ textAlign: "center", marginBottom: token.margin }}>
-          <h3 style={{ color: token.colorText, margin: 0 }}>
-            {getRoleNameWithEmoji(myRole)}
-          </h3>
+        <div style={{ textAlign: 'center', marginBottom: token.margin }}>
+          <h3 style={{ color: token.colorText, margin: 0 }}>{getRoleNameWithEmoji(myRole)}</h3>
           <p style={{ color: token.colorTextSecondary, marginTop: 8 }}>
             {nightInfo?.prompt || me?.role_description}
           </p>
@@ -169,7 +155,7 @@ export function NightPanel({
           />
         </div>
 
-        <Space direction="vertical" style={{ width: "100%" }} size="large">
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
           {/* HEAL SECTION */}
           <div
             style={{
@@ -181,13 +167,13 @@ export function NightPanel({
             <div
               style={{
                 marginBottom: 8,
-                display: "flex",
-                justifyContent: "space-between",
+                display: 'flex',
+                justifyContent: 'space-between',
               }}
             >
               <Text strong>Potion of Healing</Text>
-              <Tag color={me?.witch_has_heal ? "green" : "red"}>
-                {me?.witch_has_heal ? "Available" : "Empty"}
+              <Tag color={me?.witch_has_heal ? 'green' : 'red'}>
+                {me?.witch_has_heal ? 'Available' : 'Empty'}
               </Tag>
             </div>
             {victimId ? (
@@ -196,14 +182,11 @@ export function NightPanel({
                 type="primary"
                 ghost
                 disabled={!canHeal}
-                onClick={() =>
-                  handleActionSubmit(NightActionType.HEAL, victimId)
-                }
+                onClick={() => handleActionSubmit(NightActionType.HEAL, victimId)}
                 size="large"
                 style={{ height: 56, fontSize: 20 }}
               >
-                Heal{" "}
-                {players.find((p) => p.id === victimId)?.nickname || "Victim"}
+                Heal {players.find((p) => p.id === victimId)?.nickname || 'Victim'}
               </Button>
             ) : (
               <Text type="secondary" style={{ fontSize: 12 }}>
@@ -223,45 +206,40 @@ export function NightPanel({
             <div
               style={{
                 marginBottom: 8,
-                display: "flex",
-                justifyContent: "space-between",
+                display: 'flex',
+                justifyContent: 'space-between',
               }}
             >
               <Text strong>Potion of Poison</Text>
-              <Tag color={me?.witch_has_poison ? "green" : "red"}>
-                {me?.witch_has_poison ? "Available" : "Empty"}
+              <Tag color={me?.witch_has_poison ? 'green' : 'red'}>
+                {me?.witch_has_poison ? 'Available' : 'Empty'}
               </Tag>
             </div>
 
             {selectedAction === NightActionType.POISON ? (
               <div>
-                <Text style={{ display: "block", marginBottom: 8 }}>
+                <Text style={{ display: 'block', marginBottom: 8 }}>
                   Select a player to poison:
                 </Text>
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "repeat(auto-fill, minmax(100px, 1fr))",
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
                     gap: 8,
                   }}
                 >
                   {alivePlayers.map((p) => (
                     <Button
                       key={p.id}
-                      onClick={() =>
-                        handleActionSubmit(NightActionType.POISON, p.id)
-                      }
+                      onClick={() => handleActionSubmit(NightActionType.POISON, p.id)}
                       danger
                       size="large"
-                      style={{ height: 60, whiteSpace: "normal" }}
+                      style={{ height: 60, whiteSpace: 'normal' }}
                     >
                       {p.nickname}
                     </Button>
                   ))}
-                  <Button onClick={() => setSelectedAction(null)}>
-                    Cancel
-                  </Button>
+                  <Button onClick={() => setSelectedAction(null)}>Cancel</Button>
                 </div>
               </div>
             ) : (
@@ -294,26 +272,24 @@ export function NightPanel({
 
   // GENERIC UI (Werewolf, Seer, Doctor, Hunter)
   // Assumes single action type available for these roles
-  const defaultAction = actionsAvailable[0] || "ACTION";
+  const defaultAction = actionsAvailable[0] || 'ACTION';
 
   return (
     <div
       style={{
-        background: "rgba(0, 0, 0, 0.3)",
+        background: 'rgba(0, 0, 0, 0.3)',
         borderRadius: token.borderRadiusLG,
         padding: token.paddingLG,
         border: `1px solid ${token.colorBorder}`,
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
       }}
     >
-      <div style={{ textAlign: "center", marginBottom: token.margin }}>
-        <h3 style={{ color: token.colorText, margin: 0 }}>
-          {getRoleNameWithEmoji(myRole)}
-        </h3>
-        <p style={{ color: token.colorTextSecondary, margin: "8px 0 0" }}>
-          {nightInfo?.prompt || "Select a target."}
+      <div style={{ textAlign: 'center', marginBottom: token.margin }}>
+        <h3 style={{ color: token.colorText, margin: 0 }}>{getRoleNameWithEmoji(myRole)}</h3>
+        <p style={{ color: token.colorTextSecondary, margin: '8px 0 0' }}>
+          {nightInfo?.prompt || 'Select a target.'}
         </p>
         <PhaseTimer
           key={phaseStartTime}
@@ -326,8 +302,8 @@ export function NightPanel({
 
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
           gap: 16,
           marginBottom: token.marginLG,
           flex: 1,
@@ -338,28 +314,24 @@ export function NightPanel({
             key={p.id}
             onClick={() => setTargetId(p.id)}
             style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "16px",
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '16px',
               background:
-                targetId === p.id
-                  ? `${token.colorPrimary}33`
-                  : "rgba(255, 255, 255, 0.05)",
-              border: `2px solid ${targetId === p.id ? token.colorPrimary : "transparent"}`,
+                targetId === p.id ? `${token.colorPrimary}33` : 'rgba(255, 255, 255, 0.05)',
+              border: `2px solid ${targetId === p.id ? token.colorPrimary : 'transparent'}`,
               borderRadius: token.borderRadiusLG,
               color: token.colorText,
               fontSize: 18,
-              cursor: "pointer",
-              transition: "all 0.2s",
-              minHeight: "160px",
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              minHeight: '160px',
             }}
           >
             <span style={{ fontSize: 32, marginBottom: 8 }}>👤</span>
-            <span style={{ fontWeight: 500, textAlign: "center" }}>
-              {p.nickname}
-            </span>
+            <span style={{ fontWeight: 500, textAlign: 'center' }}>{p.nickname}</span>
           </button>
         ))}
       </div>

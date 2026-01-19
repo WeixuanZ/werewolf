@@ -1,5 +1,5 @@
-import { useAtom, useAtomValue, useSetAtom, atom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
+import { useAtom, useAtomValue, useSetAtom, atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 
 // Store player data per room to support mid-game refreshes
 interface RoomSession {
@@ -8,15 +8,9 @@ interface RoomSession {
 }
 
 // Private atoms with ALL_CAPS naming convention
-const ROOM_SESSIONS_ATOM = atomWithStorage<Record<string, RoomSession>>(
-  "werewolf_sessions",
-  {},
-);
+const ROOM_SESSIONS_ATOM = atomWithStorage<Record<string, RoomSession>>('werewolf_sessions', {});
 
-const DEFAULT_NICKNAME_ATOM = atomWithStorage<string>(
-  "werewolf_default_nickname",
-  "",
-);
+const DEFAULT_NICKNAME_ATOM = atomWithStorage<string>('werewolf_default_nickname', '');
 
 const CURRENT_ROOM_ID_ATOM = atom<string | null>(null);
 

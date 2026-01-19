@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Card, Tag, theme, Button, Modal } from "antd";
-import { getRoleNameWithEmoji } from "../utils/roleUtils";
-import { DeleteOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
-import type { Player } from "../types";
+import { useState } from 'react';
+import { Card, Tag, theme, Button, Modal } from 'antd';
+import { getRoleNameWithEmoji } from '../utils/roleUtils';
+import { DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import type { Player } from '../types';
 
 const { useToken } = theme;
 
@@ -20,22 +20,22 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
   return (
     <div
       style={{
-        background: "rgba(255, 255, 255, 0.05)",
+        background: 'rgba(255, 255, 255, 0.05)',
         border: `1px solid ${token.colorBorder}`,
         borderRadius: token.borderRadius,
         padding: 16,
         minHeight: 120,
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
       }}
     >
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           height: 44, // Match button height for alignment
         }}
       >
@@ -44,22 +44,22 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
             fontWeight: 600,
             color: token.colorText,
             fontSize: 18, // Increased for better legibility
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
             flex: 1,
             marginRight: 8,
-            lineHeight: "44px", // Vertical center
+            lineHeight: '44px', // Vertical center
           }}
         >
           {player.nickname}
         </span>
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
+            display: 'flex',
+            alignItems: 'center',
             gap: 8,
-            height: "100%",
+            height: '100%',
           }}
         >
           {canKick && (
@@ -72,9 +72,9 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
                 width: 44,
                 height: 44,
                 padding: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             />
           )}
@@ -82,45 +82,43 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
             style={{
               width: 12,
               height: 12,
-              borderRadius: "50%",
+              borderRadius: '50%',
               backgroundColor: statusColor,
               flexShrink: 0,
-              boxShadow: player.is_online
-                ? `0 0 8px ${token.colorSuccess}`
-                : "none",
-              transition: "all 0.3s ease",
+              boxShadow: player.is_online ? `0 0 8px ${token.colorSuccess}` : 'none',
+              transition: 'all 0.3s ease',
             }}
-            title={player.is_online ? "Online" : "Offline"}
+            title={player.is_online ? 'Online' : 'Offline'}
           />
         </div>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
         {player.is_spectator ? (
-          <Tag color="cyan" style={{ padding: "4px 8px", fontSize: 13 }}>
+          <Tag color="cyan" style={{ padding: '4px 8px', fontSize: 13 }}>
             SPECTATOR
           </Tag>
         ) : (
           <Tag
-            color={player.is_alive ? "success" : "default"}
+            color={player.is_alive ? 'success' : 'default'}
             bordered={false}
-            style={{ padding: "4px 8px", fontSize: 13 }}
+            style={{ padding: '4px 8px', fontSize: 13 }}
           >
-            {player.is_alive ? "Alive" : "Dead"}
+            {player.is_alive ? 'Alive' : 'Dead'}
           </Tag>
         )}
         {player.role && !player.is_spectator && (
-          <Tag color="purple" style={{ padding: "4px 8px", fontSize: 13 }}>
+          <Tag color="purple" style={{ padding: '4px 8px', fontSize: 13 }}>
             {getRoleNameWithEmoji(player.role)}
           </Tag>
         )}
         {isMe && (
-          <Tag color="gold" style={{ padding: "4px 8px", fontSize: 13 }}>
+          <Tag color="gold" style={{ padding: '4px 8px', fontSize: 13 }}>
             YOU
           </Tag>
         )}
         {player.is_admin && (
-          <Tag color="red" style={{ padding: "4px 8px", fontSize: 13 }}>
+          <Tag color="red" style={{ padding: '4px 8px', fontSize: 13 }}>
             ADMIN
           </Tag>
         )}
@@ -156,8 +154,8 @@ export function PlayerList({ players, myId, onKick }: PlayerListProps) {
       <Card title={`Players (${players.length})`}>
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
             gap: 16,
           }}
         >
@@ -175,15 +173,15 @@ export function PlayerList({ players, myId, onKick }: PlayerListProps) {
 
       <Modal
         title={
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <ExclamationCircleOutlined style={{ color: "#faad14" }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ExclamationCircleOutlined style={{ color: '#faad14' }} />
             <span>Kick Player</span>
           </div>
         }
         open={!!kickTarget}
         onCancel={() => setKickTarget(null)}
         footer={
-          <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+          <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
             <Button
               onClick={() => setKickTarget(null)}
               size="large"
@@ -204,9 +202,8 @@ export function PlayerList({ players, myId, onKick }: PlayerListProps) {
         }
         centered
       >
-        <p style={{ fontSize: 16, margin: "16px 0" }}>
-          Are you sure you want to remove{" "}
-          <strong>{kickTarget?.nickname}</strong> from the game?
+        <p style={{ fontSize: 16, margin: '16px 0' }}>
+          Are you sure you want to remove <strong>{kickTarget?.nickname}</strong> from the game?
         </p>
       </Modal>
     </>

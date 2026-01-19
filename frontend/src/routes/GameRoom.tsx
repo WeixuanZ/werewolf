@@ -1,32 +1,13 @@
-import {
-  CopyOutlined,
-  QrcodeOutlined,
-  ExclamationCircleOutlined,
-} from "@ant-design/icons";
-import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { useGameSocket } from "../hooks/useGameSocket";
-import { useSetCurrentRoomId, useCurrentSession } from "../store/gameStore";
-import {
-  Card,
-  Typography,
-  Tag,
-  Button,
-  Spin,
-  message,
-  theme,
-  QRCode,
-  Modal,
-} from "antd";
-import { v4 as uuidv4 } from "uuid";
-import { GamePhase } from "../types";
-import { useParams } from "@tanstack/react-router";
-import {
-  useJoinRoom,
-  useStartGame,
-  useEndGame,
-  useKickPlayer,
-} from "../api/client";
+import { CopyOutlined, QrcodeOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { useEffect, useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { useGameSocket } from '../hooks/useGameSocket';
+import { useSetCurrentRoomId, useCurrentSession } from '../store/gameStore';
+import { Card, Typography, Tag, Button, Spin, message, theme, QRCode, Modal } from 'antd';
+import { v4 as uuidv4 } from 'uuid';
+import { GamePhase } from '../types';
+import { useParams } from '@tanstack/react-router';
+import { useJoinRoom, useStartGame, useEndGame, useKickPlayer } from '../api/client';
 import {
   JoinScreen,
   PlayerList,
@@ -34,8 +15,8 @@ import {
   LobbyPanel,
   VotingPanel,
   GameOverScreen,
-} from "../components";
-import type { GameSettings } from "../types";
+} from '../components';
+import type { GameSettings } from '../types';
 
 const { Title } = Typography;
 const { useToken } = theme;
@@ -45,7 +26,7 @@ export default function GameRoom() {
   const navigate = useNavigate();
   const [showQrCode, setShowQrCode] = useState(false);
   const [showEndGameConfirm, setShowEndGameConfirm] = useState(false);
-  const { roomId = "" } = useParams({ strict: false });
+  const { roomId = '' } = useParams({ strict: false });
 
   // Set current room context for atoms
   const setCurrentRoomId = useSetCurrentRoomId();
@@ -57,8 +38,8 @@ export default function GameRoom() {
 
   useEffect(() => {
     if (error || (!isLoading && !gameState)) {
-      message.error("Room not found or expired");
-      navigate({ to: "/" });
+      message.error('Room not found or expired');
+      navigate({ to: '/' });
     }
   }, [error, gameState, isLoading, navigate]);
   const [session, setSession] = useCurrentSession();
@@ -87,11 +68,10 @@ export default function GameRoom() {
     try {
       await joinRoom.mutateAsync({ nickname, playerId: newPlayerId });
       setSession({ playerId: newPlayerId, nickname });
-      message.success("Joined successfully!");
+      message.success('Joined successfully!');
       return true;
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to join";
+      const errorMessage = err instanceof Error ? err.message : 'Failed to join';
       message.error(errorMessage);
       return false;
     }
@@ -101,27 +81,25 @@ export default function GameRoom() {
     if (!playerId) return;
     try {
       await startGame.mutateAsync({ playerId, settings });
-      message.success("Game started!");
+      message.success('Game started!');
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to start";
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start';
       message.error(errorMessage);
     }
   };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
-    message.success("Link copied!");
+    message.success('Link copied!');
   };
 
   const handleEndGame = async () => {
     if (!playerId) return;
     try {
       await endGame.mutateAsync({ playerId });
-      message.success("Game ended!");
+      message.success('Game ended!');
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to end game";
+      const errorMessage = err instanceof Error ? err.message : 'Failed to end game';
       message.error(errorMessage);
     }
   };
@@ -130,10 +108,9 @@ export default function GameRoom() {
     if (!playerId) return;
     try {
       await kickPlayer.mutateAsync({ playerId, targetId });
-      message.success("Player removed");
+      message.success('Player removed');
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to remove player";
+      const errorMessage = err instanceof Error ? err.message : 'Failed to remove player';
       message.error(errorMessage);
     }
   };
@@ -142,10 +119,10 @@ export default function GameRoom() {
     return (
       <div
         style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
         }}
       >
         <Spin size="large" />
@@ -159,37 +136,31 @@ export default function GameRoom() {
   }
 
   if (!isJoined) {
-    return (
-      <JoinScreen
-        roomId={roomId}
-        onJoin={handleJoin}
-        isSpectator={isGameInProgress}
-      />
-    );
+    return <JoinScreen roomId={roomId} onJoin={handleJoin} isSpectator={isGameInProgress} />;
   }
 
   const players = Object.values(gameState.players);
 
   return (
-    <div style={{ padding: token.padding, minHeight: "100vh" }}>
-      <div style={{ maxWidth: 800, margin: "0 auto" }}>
+    <div style={{ padding: token.padding, minHeight: '100vh' }}>
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
         {/* Header */}
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
             gap: token.margin,
             marginBottom: token.marginLG,
             padding: 16,
-            background: "rgba(0, 0, 0, 0.8)",
-            backdropFilter: "blur(10px)",
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
             borderRadius: token.borderRadiusLG,
-            position: "sticky",
+            position: 'sticky',
             top: 0,
             zIndex: 100,
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
           }}
         >
           <div>
@@ -198,14 +169,11 @@ export default function GameRoom() {
             </Title>
             {isLobby && (
               <>
-                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                   <Button icon={<CopyOutlined />} onClick={handleCopyLink}>
                     Copy Link
                   </Button>
-                  <Button
-                    icon={<QrcodeOutlined />}
-                    onClick={() => setShowQrCode(true)}
-                  >
+                  <Button icon={<QrcodeOutlined />} onClick={() => setShowQrCode(true)}>
                     QR Code
                   </Button>
                 </div>
@@ -219,8 +187,8 @@ export default function GameRoom() {
                 >
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "center",
+                      display: 'flex',
+                      justifyContent: 'center',
                       padding: 20,
                     }}
                   >
@@ -230,7 +198,7 @@ export default function GameRoom() {
               </>
             )}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {isGameInProgress && me?.is_admin && (
               <>
                 <Button
@@ -242,17 +210,15 @@ export default function GameRoom() {
                 </Button>
                 <Modal
                   title={
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 8 }}
-                    >
-                      <ExclamationCircleOutlined style={{ color: "#faad14" }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <ExclamationCircleOutlined style={{ color: '#faad14' }} />
                       <span>End Game</span>
                     </div>
                   }
                   open={showEndGameConfirm}
                   onCancel={() => setShowEndGameConfirm(false)}
                   footer={
-                    <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+                    <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
                       <Button
                         onClick={() => setShowEndGameConfirm(false)}
                         size="large"
@@ -276,23 +242,21 @@ export default function GameRoom() {
                   }
                   centered
                 >
-                  <p style={{ fontSize: 16, margin: "16px 0" }}>
+                  <p style={{ fontSize: 16, margin: '16px 0' }}>
                     Are you sure you want to end the current game?
                   </p>
                 </Modal>
               </>
             )}
-            <Tag color={isLobby ? "blue" : isNight ? "purple" : "green"}>
-              {gameState.phase}
-            </Tag>
+            <Tag color={isLobby ? 'blue' : isNight ? 'purple' : 'green'}>{gameState.phase}</Tag>
           </div>
         </div>
 
         {/* Main Content */}
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
+            display: 'flex',
+            flexDirection: 'column',
             gap: token.margin,
           }}
         >
@@ -315,15 +279,13 @@ export default function GameRoom() {
             <Card title="🌙 Night Action">
               <NightPanel
                 key={`night-${gameState.turn_count}`}
-                myRole={me.role ?? ""}
+                myRole={me.role ?? ''}
                 players={players}
-                playerId={playerId ?? ""}
+                playerId={playerId ?? ''}
                 roomId={roomId}
                 hasSubmittedAction={me.has_night_action}
                 phaseStartTime={gameState.phase_start_time}
-                phaseDurationSeconds={
-                  gameState.settings?.phase_duration_seconds
-                }
+                phaseDurationSeconds={gameState.settings?.phase_duration_seconds}
                 timerEnabled={gameState.settings?.timer_enabled ?? true}
               />
             </Card>

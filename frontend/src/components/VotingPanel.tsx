@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { Button, theme } from "antd";
-import { useSubmitVote } from "../api/client";
-import type { GameState, Player } from "../types";
-import { getRoleEmoji } from "../utils/roleUtils";
+import { useState } from 'react';
+import { Button, theme } from 'antd';
+import { useSubmitVote } from '../api/client';
+import type { GameState, Player } from '../types';
+import { getRoleEmoji } from '../utils/roleUtils';
 
-import { PhaseTimer } from "./PhaseTimer";
+import { PhaseTimer } from './PhaseTimer';
 
 const { useToken } = theme;
 
@@ -14,11 +14,7 @@ interface VotingPanelProps {
   timerEnabled: boolean;
 }
 
-export function VotingPanel({
-  gameState,
-  playerId,
-  timerEnabled,
-}: VotingPanelProps) {
+export function VotingPanel({ gameState, playerId, timerEnabled }: VotingPanelProps) {
   const { token } = useToken();
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const submitVote = useSubmitVote(gameState.room_id);
@@ -43,15 +39,11 @@ export function VotingPanel({
     submitVote.mutate({ playerId, targetId: selectedTarget });
   };
 
-  const votedPlayers = Object.values(gameState.players).filter(
-    (p) => p.vote_target,
-  );
-  const totalAlive = Object.values(gameState.players).filter(
-    (p) => p.is_alive,
-  ).length;
+  const votedPlayers = Object.values(gameState.players).filter((p) => p.vote_target);
+  const totalAlive = Object.values(gameState.players).filter((p) => p.is_alive).length;
 
   const panelStyle: React.CSSProperties = {
-    background: "rgba(0, 0, 0, 0.3)",
+    background: 'rgba(0, 0, 0, 0.3)',
     borderRadius: token.borderRadiusLG,
     padding: token.paddingLG,
     border: `1px solid ${token.colorBorder}`,
@@ -59,19 +51,12 @@ export function VotingPanel({
 
   if (hasVoted) {
     return (
-      <div style={{ ...panelStyle, textAlign: "center" }}>
-        <div
-          style={{ color: token.colorSuccess, fontSize: 16, marginBottom: 8 }}
-        >
-          ✅ You voted for{" "}
-          <strong>
-            {gameState.players[currentPlayer.vote_target!]?.nickname ||
-              "someone"}
-          </strong>
+      <div style={{ ...panelStyle, textAlign: 'center' }}>
+        <div style={{ color: token.colorSuccess, fontSize: 16, marginBottom: 8 }}>
+          ✅ You voted for{' '}
+          <strong>{gameState.players[currentPlayer.vote_target!]?.nickname || 'someone'}</strong>
         </div>
-        <div style={{ color: token.colorTextSecondary }}>
-          Waiting for other players to vote...
-        </div>
+        <div style={{ color: token.colorTextSecondary }}>Waiting for other players to vote...</div>
       </div>
     );
   }
@@ -83,11 +68,9 @@ export function VotingPanel({
         phaseDurationSeconds={gameState.settings.phase_duration_seconds}
         timerEnabled={timerEnabled}
       />
-      <div style={{ textAlign: "center", marginBottom: token.margin }}>
-        <h2 style={{ color: token.colorText, margin: 0 }}>
-          🗳️ Day Phase - Voting
-        </h2>
-        <p style={{ color: token.colorTextSecondary, margin: "8px 0 0" }}>
+      <div style={{ textAlign: 'center', marginBottom: token.margin }}>
+        <h2 style={{ color: token.colorText, margin: 0 }}>🗳️ Day Phase - Voting</h2>
+        <p style={{ color: token.colorTextSecondary, margin: '8px 0 0' }}>
           Votes: {votedPlayers.length} / {totalAlive}
         </p>
       </div>
@@ -95,7 +78,7 @@ export function VotingPanel({
       <p
         style={{
           color: token.colorTextSecondary,
-          textAlign: "center",
+          textAlign: 'center',
           marginBottom: token.margin,
         }}
       >
@@ -104,8 +87,8 @@ export function VotingPanel({
 
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
           gap: 16,
           marginBottom: token.margin,
         }}
@@ -115,35 +98,31 @@ export function VotingPanel({
             key={player.id}
             onClick={() => setSelectedTarget(player.id)}
             style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "16px",
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '16px',
               background:
                 selectedTarget === player.id
                   ? `${token.colorPrimary}33`
-                  : "rgba(255, 255, 255, 0.05)",
+                  : 'rgba(255, 255, 255, 0.05)',
               border: `2px solid ${
-                selectedTarget === player.id
-                  ? token.colorPrimary
-                  : "transparent"
+                selectedTarget === player.id ? token.colorPrimary : 'transparent'
               }`,
               borderRadius: token.borderRadiusLG,
               color: token.colorText,
               fontSize: 18,
-              cursor: "pointer",
-              transition: "all 0.2s",
-              position: "relative",
-              minHeight: "120px",
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              position: 'relative',
+              minHeight: '120px',
             }}
           >
             <span style={{ fontSize: 24, marginBottom: 8 }}>
-              {player.role ? getRoleEmoji(player.role) : "👤"}
+              {player.role ? getRoleEmoji(player.role) : '👤'}
             </span>
-            <span
-              style={{ fontWeight: 500, textAlign: "center", marginBottom: 4 }}
-            >
+            <span style={{ fontWeight: 500, textAlign: 'center', marginBottom: 4 }}>
               {player.nickname}
             </span>
 
@@ -153,7 +132,7 @@ export function VotingPanel({
                   fontSize: 12,
                   color: token.colorTextLightSolid,
                   background: token.colorPrimary,
-                  padding: "2px 8px",
+                  padding: '2px 8px',
                   borderRadius: 12,
                   marginTop: 4,
                 }}
@@ -174,7 +153,7 @@ export function VotingPanel({
         disabled={!selectedTarget}
         loading={submitVote.isPending}
       >
-        {submitVote.isPending ? "Submitting..." : "Confirm Vote"}
+        {submitVote.isPending ? 'Submitting...' : 'Confirm Vote'}
       </Button>
     </div>
   );

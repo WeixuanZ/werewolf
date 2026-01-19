@@ -1,12 +1,12 @@
-import { useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import useWebSocket from "react-use-websocket";
-import { WSMessageType } from "../types";
-import type { SocketMessage, GameState } from "../types";
-import { useCurrentSessionValue } from "../store/gameStore";
-import { api } from "../api/client";
-import { WS_BASE_URL } from "../config";
-import { message } from "antd";
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import useWebSocket from 'react-use-websocket';
+import { WSMessageType } from '../types';
+import type { SocketMessage, GameState } from '../types';
+import { useCurrentSessionValue } from '../store/gameStore';
+import { api } from '../api/client';
+import { WS_BASE_URL } from '../config';
+import { message } from 'antd';
 
 export const useGameSocket = (roomId: string) => {
   const session = useCurrentSessionValue();
@@ -19,7 +19,7 @@ export const useGameSocket = (roomId: string) => {
     error,
     isLoading,
   } = useQuery<GameState>({
-    queryKey: ["gameState", roomId, playerId],
+    queryKey: ['gameState', roomId, playerId],
     queryFn: () => api.rooms.get(roomId, playerId ?? undefined),
     enabled: !!roomId,
     refetchOnWindowFocus: true,
@@ -32,7 +32,7 @@ export const useGameSocket = (roomId: string) => {
     onMessage: (event) => {
       try {
         const msg: SocketMessage = JSON.parse(event.data);
-        const queryKey = ["gameState", roomId, playerId];
+        const queryKey = ['gameState', roomId, playerId];
 
         switch (msg.type) {
           case WSMessageType.STATE_UPDATE:
@@ -75,7 +75,7 @@ export const useGameSocket = (roomId: string) => {
 
           case WSMessageType.PING:
             // Server sent PING, respond with PONG
-            sendJsonMessage({ type: "PONG" });
+            sendJsonMessage({ type: 'PONG' });
             break;
 
           case WSMessageType.ERROR:
@@ -83,7 +83,7 @@ export const useGameSocket = (roomId: string) => {
             break;
         }
       } catch (e) {
-        console.error("WS message parse error:", e);
+        console.error('WS message parse error:', e);
       }
     },
     shouldReconnect: () => true,
@@ -95,7 +95,7 @@ export const useGameSocket = (roomId: string) => {
   const sendPong = useCallback(() => {
     if (readyState === 1) {
       // WebSocket.OPEN
-      sendJsonMessage({ type: "PONG" });
+      sendJsonMessage({ type: 'PONG' });
     }
   }, [sendJsonMessage, readyState]);
 

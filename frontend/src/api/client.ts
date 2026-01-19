@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { API_BASE_URL } from "../config";
-import type { GameState, GameSettings } from "../types";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { API_BASE_URL } from '../config';
+import type { GameState, GameSettings } from '../types';
 
 // ============================================================================
 // API Client - Low-level fetch functions
@@ -12,23 +12,20 @@ export class ApiError extends Error {
 
   constructor(status: number, detail: string) {
     super(detail);
-    this.name = "ApiError";
+    this.name = 'ApiError';
     this.status = status;
     this.detail = detail;
   }
 }
 
-async function fetchApi<T>(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<T> {
+async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: { "Content-Type": "application/json", ...options.headers },
+    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
   });
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({ detail: "Unknown error" }));
+    const data = await res.json().catch(() => ({ detail: 'Unknown error' }));
     throw new ApiError(res.status, data.detail || `HTTP ${res.status}`);
   }
 
@@ -41,35 +38,26 @@ async function fetchApi<T>(
 
 export const api = {
   rooms: {
-    create: () => fetchApi<GameState>("/rooms", { method: "POST", body: "{}" }),
+    create: () => fetchApi<GameState>('/rooms', { method: 'POST', body: '{}' }),
 
     get: (roomId: string, playerId?: string) =>
-      fetchApi<GameState>(
-        `/rooms/${roomId}${playerId ? `?player_id=${playerId}` : ""}`,
-      ),
+      fetchApi<GameState>(`/rooms/${roomId}${playerId ? `?player_id=${playerId}` : ''}`),
 
     join: (roomId: string, nickname: string, playerId: string) =>
       fetchApi<GameState>(`/rooms/${roomId}/join`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ nickname, player_id: playerId }),
       }),
 
-    updateSettings: (
-      roomId: string,
-      playerId: string,
-      settings: GameSettings,
-    ) =>
-      fetchApi<GameState>(
-        `/rooms/${roomId}/settings?player_id=${encodeURIComponent(playerId)}`,
-        {
-          method: "POST",
-          body: JSON.stringify(settings),
-        },
-      ),
+    updateSettings: (roomId: string, playerId: string, settings: GameSettings) =>
+      fetchApi<GameState>(`/rooms/${roomId}/settings?player_id=${encodeURIComponent(playerId)}`, {
+        method: 'POST',
+        body: JSON.stringify(settings),
+      }),
 
     start: (roomId: string, playerId: string, settings?: GameSettings) =>
       fetchApi<GameState>(`/rooms/${roomId}/start`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ player_id: playerId, settings }),
       }),
 
@@ -81,7 +69,7 @@ export const api = {
       confirmed: boolean = true,
     ) =>
       fetchApi<GameState>(`/rooms/${roomId}/action?player_id=${playerId}`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({
           action_type: actionType,
           target_id: targetId,
@@ -91,25 +79,25 @@ export const api = {
 
     submitVote: (roomId: string, playerId: string, targetId: string) =>
       fetchApi<GameState>(`/rooms/${roomId}/vote?player_id=${playerId}`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ target_id: targetId }),
       }),
 
     end: (roomId: string, playerId: string) =>
       fetchApi<GameState>(`/rooms/${roomId}/end`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ player_id: playerId }),
       }),
 
     restart: (roomId: string, playerId: string) =>
       fetchApi<GameState>(`/rooms/${roomId}/restart`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ player_id: playerId }),
       }),
 
     kick: (roomId: string, playerId: string, targetId: string) =>
       fetchApi<GameState>(`/rooms/${roomId}/kick`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ player_id: playerId, target_id: targetId }),
       }),
   },
@@ -125,7 +113,7 @@ export function useCreateRoom() {
   return useMutation({
     mutationFn: api.rooms.create,
     onSuccess: (data) => {
-      queryClient.setQueryData(["gameState", data.room_id], data);
+      queryClient.setQueryData(['gameState', data.room_id], data);
     },
   });
 }
@@ -134,15 +122,10 @@ export function useJoinRoom(roomId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      nickname,
-      playerId,
-    }: {
-      nickname: string;
-      playerId: string;
-    }) => api.rooms.join(roomId, nickname, playerId),
+    mutationFn: ({ nickname, playerId }: { nickname: string; playerId: string }) =>
+      api.rooms.join(roomId, nickname, playerId),
     onSuccess: (data) => {
-      queryClient.setQueryData(["gameState", roomId], data);
+      queryClient.setQueryData(['gameState', roomId], data);
     },
   });
 }
@@ -151,15 +134,10 @@ export function useUpdateSettings(roomId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      playerId,
-      settings,
-    }: {
-      playerId: string;
-      settings: GameSettings;
-    }) => api.rooms.updateSettings(roomId, playerId, settings),
+    mutationFn: ({ playerId, settings }: { playerId: string; settings: GameSettings }) =>
+      api.rooms.updateSettings(roomId, playerId, settings),
     onSuccess: (data) => {
-      queryClient.setQueryData(["gameState", roomId], data);
+      queryClient.setQueryData(['gameState', roomId], data);
     },
   });
 }
@@ -168,15 +146,10 @@ export function useStartGame(roomId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      playerId,
-      settings,
-    }: {
-      playerId: string;
-      settings?: GameSettings;
-    }) => api.rooms.start(roomId, playerId, settings),
+    mutationFn: ({ playerId, settings }: { playerId: string; settings?: GameSettings }) =>
+      api.rooms.start(roomId, playerId, settings),
     onSuccess: (data) => {
-      queryClient.setQueryData(["gameState", roomId], data);
+      queryClient.setQueryData(['gameState', roomId], data);
     },
   });
 }
@@ -195,10 +168,9 @@ export function useSubmitAction(roomId: string) {
       actionType: string;
       targetId: string;
       confirmed?: boolean;
-    }) =>
-      api.rooms.submitAction(roomId, playerId, actionType, targetId, confirmed),
+    }) => api.rooms.submitAction(roomId, playerId, actionType, targetId, confirmed),
     onSuccess: (data) => {
-      queryClient.setQueryData(["gameState", roomId], data);
+      queryClient.setQueryData(['gameState', roomId], data);
     },
   });
 }
@@ -207,23 +179,17 @@ export function useSubmitVote(roomId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      playerId,
-      targetId,
-    }: {
-      playerId: string;
-      targetId: string;
-    }) => api.rooms.submitVote(roomId, playerId, targetId),
+    mutationFn: ({ playerId, targetId }: { playerId: string; targetId: string }) =>
+      api.rooms.submitVote(roomId, playerId, targetId),
     onSuccess: (data) => {
-      queryClient.setQueryData(["gameState", roomId], data);
+      queryClient.setQueryData(['gameState', roomId], data);
     },
   });
 }
 
 export function useEndGame(roomId: string) {
   return useMutation({
-    mutationFn: ({ playerId }: { playerId: string }) =>
-      api.rooms.end(roomId, playerId),
+    mutationFn: ({ playerId }: { playerId: string }) => api.rooms.end(roomId, playerId),
   });
 }
 
@@ -231,10 +197,9 @@ export function useRestartGame(roomId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ playerId }: { playerId: string }) =>
-      api.rooms.restart(roomId, playerId),
+    mutationFn: ({ playerId }: { playerId: string }) => api.rooms.restart(roomId, playerId),
     onSuccess: (data) => {
-      queryClient.setQueryData(["gameState", roomId], data);
+      queryClient.setQueryData(['gameState', roomId], data);
     },
   });
 }
@@ -243,15 +208,10 @@ export function useKickPlayer(roomId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      playerId,
-      targetId,
-    }: {
-      playerId: string;
-      targetId: string;
-    }) => api.rooms.kick(roomId, playerId, targetId),
+    mutationFn: ({ playerId, targetId }: { playerId: string; targetId: string }) =>
+      api.rooms.kick(roomId, playerId, targetId),
     onSuccess: (data) => {
-      queryClient.setQueryData(["gameState", roomId], data);
+      queryClient.setQueryData(['gameState', roomId], data);
     },
   });
 }

@@ -1,8 +1,8 @@
-import { useNavigate } from "@tanstack/react-router";
-import { useDefaultNickname } from "../store/gameStore";
-import { Button, Input, Card, Typography, Space, message, theme } from "antd";
-import { useCreateRoom } from "../api/client";
-import { useState } from "react";
+import { useNavigate } from '@tanstack/react-router';
+import { useDefaultNickname } from '../store/gameStore';
+import { Button, Input, Card, Typography, Space, message, theme } from 'antd';
+import { useCreateRoom } from '../api/client';
+import { useState } from 'react';
 
 const { Title } = Typography;
 const { useToken } = theme;
@@ -11,7 +11,7 @@ export default function Home() {
   const { token } = useToken();
   const navigate = useNavigate();
   const [nickname, setNickname] = useDefaultNickname();
-  const [roomIdInput, setRoomIdInput] = useState("");
+  const [roomIdInput, setRoomIdInput] = useState('');
   const createRoom = useCreateRoom();
 
   const handleCreateRoom = async () => {
@@ -20,17 +20,17 @@ export default function Home() {
       if (data?.room_id) {
         navigate({ to: `/room/${data.room_id}` });
       } else {
-        message.error("Failed to create room. Please try again.");
+        message.error('Failed to create room. Please try again.');
       }
     } catch (e) {
       console.error(e);
-      message.error("Failed to create room");
+      message.error('Failed to create room');
     }
   };
 
   const handleJoinRoom = () => {
     if (!nickname || !roomIdInput) {
-      message.warning("Enter nickname and room ID");
+      message.warning('Enter nickname and room ID');
       return;
     }
     navigate({ to: `/room/${roomIdInput}` });
@@ -39,26 +39,23 @@ export default function Home() {
   return (
     <div
       style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
         padding: token.padding,
       }}
     >
-      <Card style={{ width: "100%", maxWidth: 400, textAlign: "center" }}>
+      <Card style={{ width: '100%', maxWidth: 400, textAlign: 'center' }}>
         <Title level={2}>🐺 Werewolf</Title>
-        <Space direction="vertical" style={{ width: "100%" }} size="large">
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
           <div
             style={{
               paddingBottom: token.paddingLG,
               borderBottom: `1px solid ${token.colorBorder}`,
             }}
           >
-            <Typography.Text
-              type="secondary"
-              style={{ display: "block", marginBottom: 16 }}
-            >
+            <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
               Start a new game as Admin
             </Typography.Text>
             <Button
@@ -73,10 +70,7 @@ export default function Home() {
           </div>
 
           <div>
-            <Typography.Text
-              type="secondary"
-              style={{ display: "block", marginBottom: 16 }}
-            >
+            <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
               Or join an existing game
             </Typography.Text>
             <Input
@@ -87,7 +81,7 @@ export default function Home() {
               style={{ marginBottom: 12 }}
               onPressEnter={handleJoinRoom}
             />
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
               <Input
                 placeholder="Room ID"
                 value={roomIdInput}

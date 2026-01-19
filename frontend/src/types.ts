@@ -1,37 +1,36 @@
 export const RoleType = {
-  VILLAGER: "VILLAGER",
-  WEREWOLF: "WEREWOLF",
-  SEER: "SEER",
-  DOCTOR: "DOCTOR",
-  WITCH: "WITCH",
-  HUNTER: "HUNTER",
-  SPECTATOR: "SPECTATOR",
+  VILLAGER: 'VILLAGER',
+  WEREWOLF: 'WEREWOLF',
+  SEER: 'SEER',
+  DOCTOR: 'DOCTOR',
+  WITCH: 'WITCH',
+  HUNTER: 'HUNTER',
+  SPECTATOR: 'SPECTATOR',
 } as const;
 
 export type RoleType = (typeof RoleType)[keyof typeof RoleType];
 
 export const GamePhase = {
-  WAITING: "WAITING",
-  DAY: "DAY",
-  NIGHT: "NIGHT",
-  VOTING: "VOTING",
-  GAME_OVER: "GAME_OVER",
+  WAITING: 'WAITING',
+  DAY: 'DAY',
+  NIGHT: 'NIGHT',
+  VOTING: 'VOTING',
+  GAME_OVER: 'GAME_OVER',
 } as const;
 
 export type GamePhase = (typeof GamePhase)[keyof typeof GamePhase];
 
 export const NightActionType = {
-  KILL: "KILL",
-  SAVE: "SAVE",
-  CHECK: "CHECK",
-  HEAL: "HEAL",
-  POISON: "POISON",
-  REVENGE: "REVENGE",
-  SKIP: "SKIP",
+  KILL: 'KILL',
+  SAVE: 'SAVE',
+  CHECK: 'CHECK',
+  HEAL: 'HEAL',
+  POISON: 'POISON',
+  REVENGE: 'REVENGE',
+  SKIP: 'SKIP',
 } as const;
 
-export type NightActionType =
-  (typeof NightActionType)[keyof typeof NightActionType];
+export type NightActionType = (typeof NightActionType)[keyof typeof NightActionType];
 
 export interface Player {
   id: string;
@@ -74,13 +73,13 @@ export interface GameState {
 }
 
 export const WSMessageType = {
-  STATE_UPDATE: "STATE_UPDATE",
-  ERROR: "ERROR",
-  CHAT: "CHAT",
-  PLAYER_DISCONNECTED: "PLAYER_DISCONNECTED",
-  PLAYER_RECONNECTED: "PLAYER_RECONNECTED",
-  PING: "PING",
-  PONG: "PONG",
+  STATE_UPDATE: 'STATE_UPDATE',
+  ERROR: 'ERROR',
+  CHAT: 'CHAT',
+  PLAYER_DISCONNECTED: 'PLAYER_DISCONNECTED',
+  PLAYER_RECONNECTED: 'PLAYER_RECONNECTED',
+  PING: 'PING',
+  PONG: 'PONG',
 } as const;
 
 export type WSMessageType = (typeof WSMessageType)[keyof typeof WSMessageType];
@@ -96,9 +95,7 @@ export interface WSStateUpdateMessage extends WSBaseMessage {
 }
 
 export interface WSPresenceMessage extends WSBaseMessage {
-  type:
-    | typeof WSMessageType.PLAYER_DISCONNECTED
-    | typeof WSMessageType.PLAYER_RECONNECTED;
+  type: typeof WSMessageType.PLAYER_DISCONNECTED | typeof WSMessageType.PLAYER_RECONNECTED;
   payload: {
     player_id: string;
     nickname: string;
