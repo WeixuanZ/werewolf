@@ -146,6 +146,7 @@ async def test_player_view_spectator_sees_roles(mock_redis):
 
     service = GameService()
     game = await service.get_game("test")
+    assert game is not None
     view = await service.get_player_view(game, "p1")
 
     # Spectator sees everyone's role
@@ -175,6 +176,7 @@ async def test_player_view_dead_player_sees_roles(mock_redis):
 
     service = GameService()
     game = await service.get_game("test")
+    assert game is not None
     view = await service.get_player_view(game, "p1")
 
     # Dead player sees everyone's role
