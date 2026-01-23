@@ -104,6 +104,8 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
               alignItems: 'center',
               justifyContent: 'space-between',
               marginBottom: 12,
+              borderBottom: '1px solid rgba(255,255,255,0.1)',
+              paddingBottom: 12,
             }}
           >
             <Text strong>Enable Dramatic Tones</Text>
@@ -154,8 +156,7 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                borderTop: '1px solid rgba(255,255,255,0.1)',
-                paddingTop: 12,
+                paddingTop: 0,
               }}
             >
               <Text>Phase Duration (seconds)</Text>
