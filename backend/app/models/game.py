@@ -32,6 +32,7 @@ class PlayerState(BaseModel):
     witch_has_heal: bool = True
     witch_has_poison: bool = True
     hunter_revenge_target: str | None = None
+    last_protected_target: str | None = None
 
     vote_target: str | None = None
     night_action_target: str | None = None
@@ -108,6 +109,7 @@ class Game:
                 witch_has_heal=p.witch_has_heal,
                 witch_has_poison=p.witch_has_poison,
                 hunter_revenge_target=p.hunter_revenge_target,
+                last_protected_target=p.last_protected_target,
                 vote_target=p.vote_target,
                 night_action_target=p.night_action_target,
                 night_action_type=p.night_action_type,
@@ -168,6 +170,15 @@ class Game:
             # Generally, actions are private unless it's yourself OR you are wolves acting together
             should_show_action = is_self or (are_werewolves and p.role == RoleType.WEREWOLF)
 
+            vote_dist = None
+            if is_self and viewer and viewer.role == RoleType.WEREWOLF and self.phase == GamePhase.NIGHT:
+                # Calculate distribution of wolf votes
+                wolf_votes = {}
+                for w_p in self.players.values():
+                    if w_p.role == RoleType.WEREWOLF and w_p.is_alive and w_p.night_action_target:
+                         wolf_votes[w_p.night_action_target] = wolf_votes.get(w_p.night_action_target, 0) + 1
+                vote_dist = wolf_votes
+
             filtered_players[pid] = PlayerSchema(
                 id=p.id,
                 nickname=p.nickname,
@@ -182,6 +193,7 @@ class Game:
                 night_action_type=p.night_action_type if should_show_action else None,
                 night_action_confirmed=p.night_action_confirmed,
                 has_night_action=p.has_night_action if is_self else False,
+                night_action_vote_distribution=vote_dist if is_self else None
             )
 
             # Dynamic Role Info (Prompts, available actions)

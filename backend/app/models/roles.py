@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from app.core.exceptions import InvalidActionError
 from app.schemas.game import NightActionType, NightInfoSchema, RoleType
 
 if TYPE_CHECKING:
@@ -36,11 +37,11 @@ class Role(ABC):
         """
         Process the night action for this role.
         Validates the action and updates player state.
-        Raises ValueError if action is invalid.
+        Raises InvalidActionError if action is invalid.
         """
         # Default implementation for non-acting roles or generic validation
         if not self.can_act_at_night:
-            raise ValueError(f"{self.role_type} cannot act at night")
+            raise InvalidActionError(f"{self.role_type} cannot act at night")
 
 
 class Villager(Role):
@@ -72,7 +73,7 @@ class Werewolf(Role):
         self, game: "Game", player_id: str, action_type: str, target_id: str | None
     ) -> None:
         if action_type != NightActionType.KILL and action_type != NightActionType.SKIP:
-            raise ValueError("Invalid action type for Werewolf")
+            raise InvalidActionError("Invalid action type for Werewolf")
 
         player = game.players.get(player_id)
         if not player:
@@ -85,7 +86,7 @@ class Werewolf(Role):
             return
 
         if not target_id or target_id not in game.players:
-            raise ValueError("Invalid target")
+            raise InvalidActionError("Invalid target")
 
         player.night_action_target = target_id
         player.night_action_type = action_type
@@ -112,7 +113,7 @@ class Seer(Role):
         self, game: "Game", player_id: str, action_type: str, target_id: str | None
     ) -> None:
         if action_type != NightActionType.CHECK and action_type != NightActionType.SKIP:
-            raise ValueError("Invalid action type for Seer")
+            raise InvalidActionError("Invalid action type for Seer")
 
         player = game.players.get(player_id)
         if not player:
@@ -124,7 +125,7 @@ class Seer(Role):
             return
 
         if not target_id or target_id not in game.players:
-            raise ValueError("Invalid target")
+            raise InvalidActionError("Invalid target")
 
         player.night_action_target = target_id
         player.night_action_type = action_type
@@ -157,7 +158,7 @@ class Doctor(Role):
         self, game: "Game", player_id: str, action_type: str, target_id: str | None
     ) -> None:
         if action_type != NightActionType.SAVE and action_type != NightActionType.SKIP:
-            raise ValueError("Invalid action type for Doctor")
+            raise InvalidActionError("Invalid action type for Doctor")
 
         player = game.players.get(player_id)
         if not player:
@@ -169,7 +170,7 @@ class Doctor(Role):
             return
 
         if not target_id or target_id not in game.players:
-            raise ValueError("Invalid target")
+            raise InvalidActionError("Invalid target")
 
         player.night_action_target = target_id
         player.night_action_type = action_type
@@ -217,25 +218,25 @@ class Witch(Role):
 
         if action_type == NightActionType.HEAL:
             if not player.witch_has_heal:
-                raise ValueError("No heal potion left")
+                raise InvalidActionError("No heal potion left")
 
             # For Heal, target MUST be invalid/None or match victim?
             # Frontend sends victim_id as target_id.
             if not target_id:
-                raise ValueError("Target required for HEAL")
+                raise InvalidActionError("Target required for HEAL")
 
             player.witch_has_heal = False
 
         elif action_type == NightActionType.POISON:
             if not player.witch_has_poison:
-                raise ValueError("No poison potion left")
+                raise InvalidActionError("No poison potion left")
             if not target_id or target_id not in game.players:
-                raise ValueError("Invalid target for POISON")
+                raise InvalidActionError("Invalid target for POISON")
 
             player.witch_has_poison = False
 
         else:
-            raise ValueError("Invalid action type for Witch")
+            raise InvalidActionError("Invalid action type for Witch")
 
         player.night_action_target = target_id
         player.night_action_type = action_type
@@ -271,15 +272,58 @@ class Hunter(Role):
             return
 
         if action_type != NightActionType.REVENGE:
-            raise ValueError("Invalid action type for Hunter")
+            raise InvalidActionError("Invalid action type for Hunter")
 
         if not target_id or target_id not in game.players:
-            raise ValueError("Invalid target")
+            raise InvalidActionError("Invalid target")
 
         player.night_action_target = target_id
         player.night_action_type = action_type
         # Also update revenge target specific field
         player.hunter_revenge_target = target_id
+
+
+class Bodyguard(Role):
+    def __init__(self):
+        super().__init__(RoleType.BODYGUARD)
+
+    @property
+    def can_act_at_night(self) -> bool:
+        return True
+
+    def get_description(self) -> str:
+        return "Protect one player from death each night. Cannot choose the same person twice in a row."
+
+    def get_night_info(self, _game_state, _player_id: str) -> NightInfoSchema | None:
+        return NightInfoSchema(
+            prompt="Choose a player to guard tonight.",
+            actions_available=[NightActionType.SAVE],
+        )
+
+    def handle_night_action(
+        self, game: "Game", player_id: str, action_type: str, target_id: str | None
+    ) -> None:
+        player = game.players.get(player_id)
+        if not player:
+            return
+
+        if action_type == NightActionType.SKIP:
+            player.night_action_target = "SKIP"
+            player.night_action_type = NightActionType.SKIP
+            return
+
+        if action_type != NightActionType.SAVE:
+            raise InvalidActionError("Invalid action type for Bodyguard")
+
+        if not target_id or target_id not in game.players:
+            raise InvalidActionError("Invalid target")
+
+        if target_id == player.last_protected_target:
+            raise InvalidActionError("Cannot protect the same player twice in a row")
+
+        player.night_action_target = target_id
+        player.night_action_type = action_type
+        player.last_protected_target = target_id
 
 
 class Spectator(Role):
@@ -309,6 +353,8 @@ def get_role_instance(role_type: RoleType) -> Role:
         return Witch()
     elif role_type == RoleType.HUNTER:
         return Hunter()
+    elif role_type == RoleType.BODYGUARD:
+        return Bodyguard()
     elif role_type == RoleType.SPECTATOR:
         return Spectator()
     return Villager()

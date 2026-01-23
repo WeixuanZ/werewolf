@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.game import Game
 
+from app.core.exceptions import InvalidActionError
 from app.models.roles import RoleType
 from app.schemas.game import GamePhase, NightActionType
 
@@ -99,11 +100,11 @@ class NightState(PhaseState):
         # Delegate validation and state updates to the Role instance
         try:
             player.role_instance.handle_night_action(game, player_id, action_type, target_id)
-        except ValueError as e:
+        except InvalidActionError as e:
             # You might want to log this or return an error to the user
             # For now, we just return safely without updating state
             print(f"Invalid action for {player_id}: {e}")
-            return
+            raise e
 
     def check_completion(self, game: Game) -> bool:
         """All alive players with night actions must have acted. Werewolves must agree."""
@@ -275,13 +276,13 @@ class HunterRevengeState(PhaseState):
         action_type = action.get("action_type")
 
         if action_type != NightActionType.REVENGE:
-            return
+            raise InvalidActionError(f"Invalid action type {action_type} for Hunter Revenge")
 
         if not target_id or target_id not in game.players:
-            return
+            raise InvalidActionError("Invalid target")
 
         if not game.players[target_id].is_alive:
-            return
+            raise InvalidActionError("Target is already dead")
 
         player.night_action_target = target_id
         player.night_action_type = action_type

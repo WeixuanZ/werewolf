@@ -10,6 +10,7 @@ class RoleType(str, Enum):
     DOCTOR = "DOCTOR"
     WITCH = "WITCH"
     HUNTER = "HUNTER"
+    BODYGUARD = "BODYGUARD"
     SPECTATOR = "SPECTATOR"
 
 
@@ -52,6 +53,7 @@ class PlayerSchema(BaseModel):
     witch_has_heal: bool = True
     witch_has_poison: bool = True
     hunter_revenge_target: str | None = None
+    last_protected_target: str | None = None
 
     vote_target: str | None = None
     night_action_target: str | None = None
@@ -61,6 +63,7 @@ class PlayerSchema(BaseModel):
 
     # Dynamic context for frontend
     night_info: NightInfoSchema | None = None
+    night_action_vote_distribution: dict[str, int] | None = None  # For Werewolf consensus
 
     model_config = ConfigDict(from_attributes=True)
 

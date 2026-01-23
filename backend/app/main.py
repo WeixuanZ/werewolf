@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.routers import rooms, websocket
 from app.core.config import settings
+from app.core.exceptions import GameLogicError
 from app.core.redis import RedisClient
 
 
@@ -40,6 +42,14 @@ app.add_middleware(
 
 app.include_router(rooms.router, prefix="/api", tags=["rooms"])
 app.include_router(websocket.router, tags=["websocket"])
+
+
+@app.exception_handler(GameLogicError)
+async def game_logic_exception_handler(request: Request, exc: GameLogicError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": str(exc)},
+    )
 
 
 @app.get("/")
