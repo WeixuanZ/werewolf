@@ -37,6 +37,7 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
       },
       phase_duration_seconds: 60,
       timer_enabled: true,
+      dramatic_tones_enabled: true,
     },
   );
   const [loading, setLoading] = useState(false);
@@ -97,6 +98,31 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
             borderRadius: 8,
           }}
         >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 12,
+            }}
+          >
+            <Text strong>Enable Dramatic Tones</Text>
+            <Switch
+              checked={settings.dramatic_tones_enabled ?? true}
+              disabled={!isAdmin}
+              onChange={(checked) => {
+                const newSettings = { ...settings, dramatic_tones_enabled: checked };
+                setSettings(newSettings);
+                if (session?.playerId) {
+                  updateSettings({
+                    playerId: session.playerId,
+                    settings: newSettings,
+                  });
+                }
+              }}
+            />
+          </div>
+
           <div
             style={{
               display: 'flex',
