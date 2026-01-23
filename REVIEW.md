@@ -23,11 +23,12 @@ The codebase demonstrates a high level of engineering quality, employing modern 
 - **Phasing**: The Day/Night cycle and Waiting phases function correctly.
 - **Winning Conditions**: Villager vs. Werewolf count logic is correct.
 - **Basic Role Actions**: Seer (check), Doctor (save), and Werewolf (kill) standard actions are implemented correctly.
+- **Witch Potions**: The Witch performs one action per night (Heal OR Poison). While strict, this is a valid implementation choice.
 
 ### Issues & Deviations
 1.  **Hunter Day-Death Logic (Critical)**:
     - **Current Behavior**: The Hunter role only has a "Revenge" action during the **Night**. If a Hunter is voted out (lynched) during the **Day**, they simply die without triggering their ability.
-    - **Standard Rule**: The Hunter should be able to "shoot" and eliminate a target immediately upon death, regardless of whether it happens during the Day or Night.
+    - **Standard Rule**: The Hunter should be able to "shoot" and eliminate a target immediately upon death if killed by a Werewolf or by Village Vote. Note: Death by Witch poison usually does *not* trigger the ability.
     - **Impact**: This significantly nerfs the Hunter role, making them just a regular Villager if lynched.
 
 2.  **Dead Player Role Visibility (Major)**:
@@ -35,12 +36,7 @@ The codebase demonstrates a high level of engineering quality, employing modern 
     - **Standard Rule**: In most Werewolf variants, the role of a dead player is revealed to all players immediately. This is crucial information for the Village to deduce who remains.
     - **Impact**: The Village has much less information to work with, tilting the balance heavily in favor of the Werewolves.
 
-3.  **Witch Potions**:
-    - **Current Behavior**: The Witch can perform one action per night (Heal OR Poison).
-    - **Standard Rule**: Varying. Often a Witch can use both in a game, sometimes both in one night. The current implementation is a valid variant but restricts the Witch's power.
-    - **Constraint**: The data model (`night_action_type`) supports only a single action per turn.
-
-4.  **Tie Voting**:
+3.  **Tie Voting**:
     - **Current Behavior**: If the day vote results in a tie, no one is eliminated.
     - **Standard Rule**: Valid variant. Some rules invoke a revote or a random kill, but "no kill" is acceptable.
 
@@ -53,13 +49,12 @@ The codebase demonstrates a high level of engineering quality, employing modern 
 - **Tanner/Fool**: A neutral role who wins if they get lynched.
 
 ### Missing Features
-- **In-Game Chat/Discussion**: Essential for the "Social Deduction" aspect. The current backend focuses purely on state, assuming external communication or future implementation.
 - **Events Log**: A history of public events (e.g., "Player X was eliminated", "Player Y voted for Z") is not explicitly tracked in the game state for client replay or history.
 - **Disconnect Handling**: While presence is tracked, the game logic doesn't pause or handle a player disconnecting during a critical vote/action phase.
 
 ## 5. Recommendations
 
-1.  **Fix Hunter Logic**: Modify `DayState.resolve` to check if the eliminated player is a Hunter. If so, transition to a temporary `HUNTER_REVENGE` phase or allow an immediate target selection before proceeding to Night.
-2.  **Update Visibility Rules**: Modify `get_view_for_player` to reveal the roles of all dead players to everyone.
-3.  **Relax Werewolf Consensus**: Instead of requiring 100% agreement to finish the phase, consider a majority rule or a designated "Alpha Wolf" if consensus isn't reached, or better frontend support for coordinating the vote.
+1.  **Fix Hunter Logic**: Modify `DayState.resolve` to check if the eliminated player is a Hunter. If so, transition to a temporary `HUNTER_REVENGE` phase or allow an immediate target selection before proceeding to Night. Ensure this only triggers on Vote or Wolf Kill, not Witch Poison.
+2.  **Update Visibility Rules**: Add a game setting to toggle "Reveal Role on Death". This allows admins to choose the desired game style.
+3.  **Improve Consensus UI**: Enhance the frontend to better visualize and facilitate Werewolf consensus during the Night phase to prevent stalls, rather than strictly relaxing the backend rule.
 4.  **Add Events/History**: Implement an event log in `GameState` to provide a narrative of the game to the frontend.
