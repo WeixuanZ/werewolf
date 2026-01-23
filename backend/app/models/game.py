@@ -161,6 +161,7 @@ class Game:
                 or pid in revealed_to_viewer
                 or is_spectator
                 or are_werewolves
+                or (not p.is_alive and self.settings.reveal_role_on_death)
             )
 
             # Action visibility
@@ -191,7 +192,10 @@ class Game:
                     role_inst = p_internal.role_instance
                     filtered_players[pid].role_description = role_inst.get_description()
 
-                    if self.phase == GamePhase.NIGHT:
+                    if self.phase == GamePhase.NIGHT or (
+                        self.phase == GamePhase.HUNTER_REVENGE
+                        and p.role == RoleType.HUNTER
+                    ):
                         filtered_players[pid].night_info = role_inst.get_night_info(
                             self._state, pid
                         )

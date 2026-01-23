@@ -231,6 +231,87 @@ class DayState(PhaseState):
                 game.players[eliminated_id].is_alive = False
                 game.voted_out_this_round = eliminated_id
 
+                # Check Hunter
+                if game.players[eliminated_id].role == RoleType.HUNTER:
+                    return GamePhase.HUNTER_REVENGE
+
+        winner = game.check_winners()
+        if winner:
+            game.winners = winner
+            return GamePhase.GAME_OVER
+
+        return GamePhase.NIGHT
+
+
+class HunterRevengeState(PhaseState):
+    phase = GamePhase.HUNTER_REVENGE
+
+    def on_enter(self, game: Game) -> None:
+        # We need to find the recently died hunter and prepare them
+        # Usually we just clear their action so they can pick again?
+        # But wait, they might have picked a target at night (if they thought they'd die at night).
+        # We should clear it to ensure a fresh choice for *this* death.
+        for player in game.players.values():
+            if player.role == RoleType.HUNTER and not player.is_alive:
+                player.night_action_target = None
+                player.night_action_confirmed = False
+
+    def process_action(self, game: Game, player_id: str, action: dict) -> None:
+        player = game.players.get(player_id)
+        # Allow action even if not is_alive, BUT only if they are the Hunter who just died?
+        # Simpler: Allow any Hunter who is dead to act?
+        # Or better: check game.voted_out_this_round
+        if not player or player.role != RoleType.HUNTER:
+            return
+
+        # If they are not the one voted out, they shouldn't act?
+        # Actually, if multiple hunters die? But voting only kills one.
+        if game.voted_out_this_round != player_id:
+            # Maybe they died earlier and are just chatting?
+            # But in this phase, we expect the specific hunter to act.
+            return
+
+        target_id = action.get("target_id")
+        action_type = action.get("action_type")
+
+        if action_type != NightActionType.REVENGE:
+            return
+
+        if not target_id or target_id not in game.players:
+            return
+
+        if not game.players[target_id].is_alive:
+            return
+
+        player.night_action_target = target_id
+        player.night_action_type = action_type
+        player.night_action_confirmed = action.get("confirmed", False)
+        player.hunter_revenge_target = target_id
+
+    def check_completion(self, game: Game) -> bool:
+        # Check if the hunter has acted
+        hunter_id = game.voted_out_this_round
+        if not hunter_id:
+            return True  # Should not happen, but safe fallback
+
+        hunter = game.players.get(hunter_id)
+        if not hunter:
+            return True
+
+        if hunter.night_action_target and hunter.night_action_confirmed:
+            return True
+
+        return False
+
+    def resolve(self, game: Game) -> GamePhase:
+        hunter_id = game.voted_out_this_round
+        if hunter_id:
+            hunter = game.players.get(hunter_id)
+            if hunter and hunter.night_action_target:
+                target_id = hunter.night_action_target
+                if target_id in game.players:
+                    game.players[target_id].is_alive = False
+
         winner = game.check_winners()
         if winner:
             game.winners = winner
@@ -260,6 +341,7 @@ PHASE_STATES: dict[GamePhase, PhaseState] = {
     GamePhase.WAITING: WaitingState(),
     GamePhase.NIGHT: NightState(),
     GamePhase.DAY: DayState(),
+    GamePhase.HUNTER_REVENGE: HunterRevengeState(),
     GamePhase.GAME_OVER: GameOverState(),
 }
 

@@ -18,6 +18,7 @@ class GamePhase(str, Enum):
     DAY = "DAY"
     NIGHT = "NIGHT"
     VOTING = "VOTING"
+    HUNTER_REVENGE = "HUNTER_REVENGE"
     GAME_OVER = "GAME_OVER"
 
 
@@ -73,6 +74,7 @@ class GameSettingsSchema(BaseModel):
     }
     phase_duration_seconds: int = 60
     timer_enabled: bool = True
+    reveal_role_on_death: bool = False
 
 
 class GameStateSchema(BaseModel):
