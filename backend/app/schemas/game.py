@@ -11,6 +11,9 @@ class RoleType(str, Enum):
     WITCH = "WITCH"
     HUNTER = "HUNTER"
     BODYGUARD = "BODYGUARD"
+    CUPID = "CUPID"
+    LYCAN = "LYCAN"
+    TANNER = "TANNER"
     SPECTATOR = "SPECTATOR"
 
 
@@ -30,6 +33,7 @@ class NightActionType(str, Enum):
     HEAL = "HEAL"
     POISON = "POISON"
     REVENGE = "REVENGE"
+    LINK = "LINK"
     SKIP = "SKIP"
 
 
@@ -88,6 +92,7 @@ class GameStateSchema(BaseModel):
     turn_count: int = 0
     winners: str | None = None
     seer_reveals: dict[str, list[str]] = {}  # {seer_id: [checked_player_ids]}
+    lovers: list[str] = []
     voted_out_this_round: str | None = None
     phase_start_time: float | None = None
 

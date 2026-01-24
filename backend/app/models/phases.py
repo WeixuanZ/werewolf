@@ -81,7 +81,7 @@ class NightState(PhaseState):
             return
 
         if not player.can_act_at_night():
-            return
+            raise InvalidActionError(f"{player.role} cannot act at night")
 
         target_id = action.get("target_id")
         action_type = action.get("action_type")
@@ -149,6 +149,17 @@ class NightState(PhaseState):
                     saves.add(player.night_action_target)
             elif player.role == RoleType.DOCTOR:
                 saves.add(player.night_action_target)
+            elif player.role == RoleType.BODYGUARD:
+                saves.add(player.night_action_target)
+
+        # Cupid Logic: Process Links
+        for player in game.players.values():
+            if player.role == RoleType.CUPID and player.night_action_target and player.night_action_type == NightActionType.LINK:
+                 # Apply link
+                 targets = player.night_action_target.split(",")
+                 if len(targets) == 2:
+                     game.lovers = targets
+                 # Cupid only works on turn 1, logic prevents action otherwise
 
         # Calculate deaths (first pass)
         dead_this_round = kills - saves
@@ -163,6 +174,18 @@ class NightState(PhaseState):
                 # Hunter died, so their target dies too (Revenge)
                 final_deaths.add(hunter.night_action_target)
 
+        # Phase 3: Lovers Suicide Pact
+        # If one lover is dead, the other dies
+        if game.lovers:
+            l1, l2 = game.lovers[0], game.lovers[1]
+            l1_dead = l1 in final_deaths or (not game.players[l1].is_alive)
+            l2_dead = l2 in final_deaths or (not game.players[l2].is_alive)
+
+            if l1_dead and not l2_dead:
+                final_deaths.add(l2)
+            elif l2_dead and not l1_dead:
+                final_deaths.add(l1)
+
         # Apply deaths
         for target_id in final_deaths:
             if target_id in game.players:
@@ -171,6 +194,14 @@ class NightState(PhaseState):
         game.turn_count += 1
 
         winner = game.check_winners()
+
+        # Lovers Win Condition Check (if not covered by check_winners)
+        # Implemented inside check_winners if possible, or here?
+        # Standard: Lovers win if they are the last 2 alive.
+        # check_winners handles Team Wins.
+        # Let's add special check here or modify check_winners.
+        # Modifying check_winners is better for consistency.
+
         if winner:
             game.winners = winner
             return GamePhase.GAME_OVER
@@ -229,8 +260,31 @@ class DayState(PhaseState):
             # Only eliminate if there's a clear winner (no tie)
             if len(top_voted) == 1:
                 eliminated_id = top_voted[0]
+
+                # Check Tanner
+                if game.players[eliminated_id].role == RoleType.TANNER:
+                    game.winners = "TANNER"
+                    return GamePhase.GAME_OVER
+
                 game.players[eliminated_id].is_alive = False
                 game.voted_out_this_round = eliminated_id
+
+                # Lovers Suicide Pact (Day)
+                if game.lovers:
+                    l1, l2 = game.lovers[0], game.lovers[1]
+                    other_lover = None
+                    if eliminated_id == l1:
+                         other_lover = l2
+                    elif eliminated_id == l2:
+                         other_lover = l1
+
+                    if other_lover and game.players[other_lover].is_alive:
+                        game.players[other_lover].is_alive = False
+                        # If the OTHER lover was a Hunter, do they get revenge?
+                        # Complex edge case. Standard: Yes.
+                        # But current State Machine handles one HunterRevenge phase.
+                        # If both die, we might need a queue or just let the primary lynch victim act.
+                        # For now, simplistic: Suicide lover dies silently.
 
                 # Check Hunter
                 if game.players[eliminated_id].role == RoleType.HUNTER:
@@ -312,6 +366,17 @@ class HunterRevengeState(PhaseState):
                 target_id = hunter.night_action_target
                 if target_id in game.players:
                     game.players[target_id].is_alive = False
+
+                    # Check Lovers Pact for Hunter's victim
+                    if game.lovers:
+                         l1, l2 = game.lovers[0], game.lovers[1]
+                         victim_id = target_id
+                         other_lover = None
+                         if victim_id == l1: other_lover = l2
+                         elif victim_id == l2: other_lover = l1
+
+                         if other_lover and game.players[other_lover].is_alive:
+                             game.players[other_lover].is_alive = False
 
         winner = game.check_winners()
         if winner:

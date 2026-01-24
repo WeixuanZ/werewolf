@@ -176,6 +176,22 @@ class Doctor(Role):
         player.night_action_type = action_type
 
 
+class Lycan(Role):
+    def __init__(self):
+        super().__init__(RoleType.LYCAN)
+
+    def get_description(self) -> str:
+        return "You are a Villager, but you appear as a Werewolf to the Seer."
+
+
+class Tanner(Role):
+    def __init__(self):
+        super().__init__(RoleType.TANNER)
+
+    def get_description(self) -> str:
+        return "You hate your life and your job. You win if you get voted out."
+
+
 class Witch(Role):
     def __init__(self):
         super().__init__(RoleType.WITCH)
@@ -283,6 +299,63 @@ class Hunter(Role):
         player.hunter_revenge_target = target_id
 
 
+class Cupid(Role):
+    def __init__(self):
+        super().__init__(RoleType.CUPID)
+
+    @property
+    def can_act_at_night(self) -> bool:
+        return True
+
+    def get_description(self) -> str:
+        return "Link two players as lovers on the first night."
+
+    def get_night_info(self, game_state, _player_id: str) -> NightInfoSchema | None:
+        if game_state.turn_count > 1:
+            return None # Only act on night 1
+
+        return NightInfoSchema(
+            prompt="Choose two players to fall in love.",
+            actions_available=[NightActionType.LINK],
+        )
+
+    def handle_night_action(
+        self, game: "Game", player_id: str, action_type: str, target_id: str | None
+    ) -> None:
+        player = game.players.get(player_id)
+        if not player:
+            return
+
+        if game.turn_count > 1:
+             raise InvalidActionError("Cupid can only act on the first night")
+
+        if action_type == NightActionType.SKIP:
+            player.night_action_target = "SKIP"
+            player.night_action_type = NightActionType.SKIP
+            return
+
+        if action_type != NightActionType.LINK:
+            raise InvalidActionError("Invalid action type for Cupid")
+
+        if not target_id or "," not in target_id:
+             raise InvalidActionError("Cupid must select two players (comma separated)")
+
+        targets = target_id.split(",")
+        if len(targets) != 2:
+            raise InvalidActionError("Must select exactly two players")
+
+        t1, t2 = targets[0], targets[1]
+
+        if t1 not in game.players or t2 not in game.players:
+            raise InvalidActionError("Invalid target player(s)")
+
+        if t1 == t2:
+             raise InvalidActionError("Cannot link a player to themselves")
+
+        player.night_action_target = target_id
+        player.night_action_type = action_type
+
+
 class Bodyguard(Role):
     def __init__(self):
         super().__init__(RoleType.BODYGUARD)
@@ -355,6 +428,12 @@ def get_role_instance(role_type: RoleType) -> Role:
         return Hunter()
     elif role_type == RoleType.BODYGUARD:
         return Bodyguard()
+    elif role_type == RoleType.CUPID:
+        return Cupid()
+    elif role_type == RoleType.LYCAN:
+        return Lycan()
+    elif role_type == RoleType.TANNER:
+        return Tanner()
     elif role_type == RoleType.SPECTATOR:
         return Spectator()
     return Villager()

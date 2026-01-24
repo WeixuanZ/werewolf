@@ -65,6 +65,7 @@ class GameState(BaseModel):
     turn_count: int = 0
     winners: str | None = None
     seer_reveals: dict[str, list[str]] = {}
+    lovers: list[str] = []
     voted_out_this_round: str | None = None
     phase_start_time: float | None = None
 
@@ -126,6 +127,7 @@ class Game:
             turn_count=self.turn_count,
             winners=self.winners,
             seer_reveals=self.seer_reveals,
+            lovers=self.lovers,
             voted_out_this_round=self.voted_out_this_round,
             phase_start_time=self.phase_start_time,
         )
@@ -179,10 +181,23 @@ class Game:
                          wolf_votes[w_p.night_action_target] = wolf_votes.get(w_p.night_action_target, 0) + 1
                 vote_dist = wolf_votes
 
+            # Determine role to show
+            role_to_show = None
+            if should_show_role:
+                 role_to_show = p.role
+                 # Lycan Masking for Seer
+                 # If viewer is Seer, and p is Lycan, show Werewolf
+                 # But ONLY if the reason we are showing it is because of Seer Reveal
+                 # If dead and reveal_on_death is on, show REAL role (Lycan)? Standard rules vary.
+                 # Usually Seer checks see "Werewolf". Death reveal shows "Lycan".
+                 # So check if reason for visibility is 'revealed_to_viewer'
+                 if p.role == RoleType.LYCAN and viewer and viewer.role == RoleType.SEER and pid in revealed_to_viewer and p.is_alive:
+                      role_to_show = RoleType.WEREWOLF
+
             filtered_players[pid] = PlayerSchema(
                 id=p.id,
                 nickname=p.nickname,
-                role=p.role if should_show_role else None,
+                role=role_to_show,
                 is_alive=p.is_alive,
                 is_admin=p.is_admin,
                 is_spectator=p.role == RoleType.SPECTATOR,
@@ -229,6 +244,9 @@ class Game:
             RoleType.DOCTOR: 0,
             RoleType.WITCH: 0,
             RoleType.HUNTER: 0,
+            RoleType.CUPID: 0,
+            RoleType.LYCAN: 0,
+            RoleType.TANNER: 0,
             RoleType.VILLAGER: 0,
             RoleType.SPECTATOR: 0,
         }
@@ -236,13 +254,16 @@ class Game:
         # Progressive complexity
         if active_players >= 5:
             defaults[RoleType.DOCTOR] = 1
+            defaults[RoleType.CUPID] = 1
 
         if active_players >= 7:
             defaults[RoleType.WITCH] = 1
+            defaults[RoleType.TANNER] = 1
 
         if active_players >= 9:
             defaults[RoleType.HUNTER] = 1
             defaults[RoleType.WEREWOLF] = 2
+            defaults[RoleType.LYCAN] = 1
 
         # Calculate villagers
         special_roles = sum(defaults.values())
@@ -294,6 +315,14 @@ class Game:
     @property
     def seer_reveals(self) -> dict[str, list[str]]:
         return self._state.seer_reveals
+
+    @property
+    def lovers(self) -> list[str]:
+        return self._state.lovers
+
+    @lovers.setter
+    def lovers(self, value: list[str]):
+        self._state.lovers = value
 
     @property
     def voted_out_this_round(self) -> str | None:
@@ -393,6 +422,13 @@ class Game:
             for p in self.players.values()
             if p.is_alive and p.role != RoleType.WEREWOLF and p.role != RoleType.SPECTATOR
         )
+
+        # Lovers Win
+        if self.lovers:
+             # Check if only lovers are alive
+             alive_ids = {p.id for p in self.players.values() if p.is_alive}
+             if len(alive_ids) == 2 and set(self.lovers) == alive_ids:
+                 return "LOVERS"
 
         if alive_werewolves == 0:
             return "VILLAGERS"
