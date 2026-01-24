@@ -6,6 +6,12 @@ export function useSoundEffects(gameState: GameState | null | undefined) {
   const prevPhase = useRef<GamePhase | null>(null);
   const prevAliveCount = useRef<number | null>(null);
 
+  const playSound = (path: string) => {
+    const audio = new Audio(path);
+    audio.volume = 0.5; // Reasonable volume
+    audio.play().catch(e => console.warn("Audio play failed (interaction required?)", e));
+  };
+
   useEffect(() => {
     if (!gameState) return;
 
@@ -31,7 +37,7 @@ export function useSoundEffects(gameState: GameState | null | undefined) {
 
     // Night Fall
     if (prevPhase.current !== GamePhase.NIGHT && phase === GamePhase.NIGHT) {
-      playSound('/sounds/night-start.wav');
+      playSound('/sounds/night-start.mp3');
     }
 
     // Morning Reveal (Murder)
@@ -51,9 +57,4 @@ export function useSoundEffects(gameState: GameState | null | undefined) {
     prevAliveCount.current = currentAliveCount;
   }, [gameState]);
 
-  const playSound = (path: string) => {
-    const audio = new Audio(path);
-    audio.volume = 0.5; // Reasonable volume
-    audio.play().catch(e => console.warn("Audio play failed (interaction required?)", e));
-  };
 }
