@@ -15,8 +15,7 @@ export const DynamicBackground = () => {
 
   // Extract roomId if we are in a room
   // Matches /room/xyz
-  const roomMatch = pathname.match(/^\/room\/([^\/]+)/);
-  const roomId = roomMatch ? roomMatch[1] : null;
+  const roomId = pathname.startsWith('/room/') ? pathname.split('/')[2] : null;
   const playerId = session?.playerId;
 
   // Access game state from React Query cache
