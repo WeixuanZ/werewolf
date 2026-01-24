@@ -1,0 +1,42 @@
+name: Cleanup Preview Environment
+
+on:
+  pull_request:
+    types: [closed]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  GAR_REPO: werewolf-repo
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Delete Services
+        run: |
+          echo "Deleting Backend Service: werewolf-backend-pr-${{ github.event.number }}"
+          gcloud run services delete werewolf-backend-pr-${{ github.event.number }} --region ${{ env.REGION }} --quiet || echo "Backend service not found or already deleted"
+
+          echo "Deleting Frontend Service: werewolf-frontend-pr-${{ github.event.number }}"
+          gcloud run services delete werewolf-frontend-pr-${{ github.event.number }} --region ${{ env.REGION }} --quiet || echo "Frontend service not found or already deleted"
+
+      - name: Delete Images
+        run: |
+          echo "Deleting Backend Image..."
+          gcloud artifacts docker images delete ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/werewolf-backend:pr-${{ github.event.number }} --delete-tags --quiet || echo "Backend image not found"
+
+          echo "Deleting Frontend Image..."
+          gcloud artifacts docker images delete ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/werewolf-frontend:pr-${{ github.event.number }} --delete-tags --quiet || echo "Frontend image not found"

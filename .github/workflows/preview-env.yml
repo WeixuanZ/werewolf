@@ -1,0 +1,105 @@
+name: Preview Environment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  GAR_REPO: werewolf-repo
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker Auth
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Get Redis IP
+        id: redis-ip
+        run: |
+          IP=$(gcloud compute instances describe main --zone us-central1-a --format='get(networkInterfaces[0].networkIP)')
+          echo "ip=$IP" >> $GITHUB_OUTPUT
+
+      - name: Build and Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/werewolf-backend:pr-${{ github.event.number }}
+
+      - name: Build and Push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          target: production
+          push: true
+          tags: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/werewolf-frontend:pr-${{ github.event.number }}
+
+      - name: Deploy Backend
+        id: deploy-backend
+        run: |
+          SERVICE_NAME=werewolf-backend-pr-${{ github.event.number }}
+          IMAGE=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/werewolf-backend:pr-${{ github.event.number }}
+
+          # Deploy Backend
+          gcloud run deploy $SERVICE_NAME \
+            --image $IMAGE \
+            --region ${{ env.REGION }} \
+            --network werewolf-vpc \
+            --subnet werewolf-subnet \
+            --vpc-egress all-traffic \
+            --set-env-vars REDIS_URL=redis://${{ steps.redis-ip.outputs.ip }}:6379/0,BACKEND_CORS_ORIGINS='["*"]' \
+            --allow-unauthenticated \
+            --port 8000 \
+            --format 'value(status.url)' > backend_url.txt
+
+          echo "url=$(cat backend_url.txt)" >> $GITHUB_OUTPUT
+
+      - name: Deploy Frontend
+        id: deploy-frontend
+        run: |
+          SERVICE_NAME=werewolf-frontend-pr-${{ github.event.number }}
+          IMAGE=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}/werewolf-frontend:pr-${{ github.event.number }}
+          BACKEND_URL=${{ steps.deploy-backend.outputs.url }}
+
+          # Deploy Frontend
+          gcloud run deploy $SERVICE_NAME \
+            --image $IMAGE \
+            --region ${{ env.REGION }} \
+            --set-env-vars VITE_API_URL=$BACKEND_URL \
+            --allow-unauthenticated \
+            --port 80 \
+            --format 'value(status.url)' > frontend_url.txt
+
+          echo "url=$(cat frontend_url.txt)" >> $GITHUB_OUTPUT
+
+      - name: Comment on PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const frontendUrl = "${{ steps.deploy-frontend.outputs.url }}";
+            const backendUrl = "${{ steps.deploy-backend.outputs.url }}";
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `🚀 **Preview Environment Deployed!**\n\nFrontend: ${frontendUrl}\nBackend: ${backendUrl}\n\n*The environment will be destroyed when this PR is closed.*`
+            });
