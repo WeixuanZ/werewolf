@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { GamePhase } from '../types';
 import { useParams } from '@tanstack/react-router';
 import { useJoinRoom, useStartGame, useEndGame, useKickPlayer } from '../api/client';
+import { useSoundEffects } from '../hooks/useSoundEffects';
 import {
   JoinScreen,
   PlayerList,
@@ -35,6 +36,9 @@ export default function GameRoom() {
   }, [roomId, setCurrentRoomId]);
 
   const { gameState, error, isLoading } = useGameSocket(roomId);
+
+  // Sound effects
+  useSoundEffects(gameState);
 
   useEffect(() => {
     if (error || (!isLoading && !gameState)) {
