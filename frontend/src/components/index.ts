@@ -6,3 +6,4 @@ export { LobbyPanel } from './LobbyPanel';
 export { VotingPanel } from './VotingPanel';
 export { GameOverScreen } from './GameOverScreen';
 export { PhaseTimer } from './PhaseTimer';
+export { CreditsModal } from './CreditsModal';
