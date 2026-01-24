@@ -7,3 +7,7 @@ export { VotingPanel } from './VotingPanel';
 export { GameOverScreen } from './GameOverScreen';
 export { PhaseTimer } from './PhaseTimer';
 export { CreditsModal } from './CreditsModal';
+export { WerewolfBackground } from './WerewolfBackground';
+export { WerewolfBackgroundForest } from './WerewolfBackgroundForest';
+export { WerewolfBackgroundAbstract } from './WerewolfBackgroundAbstract';
+export { DynamicBackground } from './DynamicBackground';
