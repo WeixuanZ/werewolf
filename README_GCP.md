@@ -45,11 +45,11 @@ After deployment, the script outputs the **Frontend URL**. Visit it to play the 
 
 ## CI/CD & Preview Environments
 
-The repository includes GitHub Actions to automatically deploy preview environments for every Pull Request.
+The repository includes GitHub Actions to automatically deploy **Production** and **Preview Environments** (on Pull Requests).
 
 ### Requirements
 
-To enable this feature, you must configure the following **GitHub Actions Secrets**:
+To enable these features, you must configure the following **GitHub Actions Secrets**:
 
 1.  **`GCP_PROJECT_ID`**: The ID of your Google Cloud Project (e.g., `tbd-project-82910`).
 2.  **`GCP_CREDENTIALS`**: The JSON key of a Service Account with permissions to:
@@ -57,18 +57,27 @@ To enable this feature, you must configure the following **GitHub Actions Secret
     *   Push to Artifact Registry (`roles/artifactregistry.writer`).
     *   Read Compute Engine details (to get Redis IP) (`roles/compute.viewer`).
     *   Act as Service Account (for Cloud Run identity) (`roles/iam.serviceAccountUser`).
+    *   **Manage Terraform State** (Storage Object Admin on the state bucket).
+3.  **`TF_STATE_BUCKET`**: The name of a Google Cloud Storage bucket to store Terraform state (e.g., `werewolf-terraform-state`).
+    *   *Note: This bucket must be created manually before running CI/CD.*
 
-### How it works
+### Workflows
 
-1.  **On PR Open/Update**:
-    *   Builds backend and frontend images tagged with `pr-<PR_NUMBER>`.
-    *   Pushes images to Google Artifact Registry (`werewolf-repo`).
-    *   Deploys ephemeral Cloud Run services (`werewolf-backend-pr-<NUM>` and `werewolf-frontend-pr-<NUM>`).
-    *   Posts a comment on the PR with the live preview URLs.
+#### Preview Environments
+*   **Trigger**: Open/Update Pull Request.
+*   **Action**:
+    *   Builds images tagged `pr-<number>`.
+    *   Deploys ephemeral Cloud Run services via Terraform (`terraform/preview`).
+    *   Posts live URLs to the PR.
+*   **Cleanup**: On PR close, services and images are deleted.
+*   **State**: Stored in `gs://<TF_STATE_BUCKET>/pr-<number>/default.tfstate`.
 
-2.  **On PR Close**:
-    *   Deletes the Cloud Run services.
-    *   Deletes the Docker images to save storage.
+#### Production Deployment
+*   **Trigger**: Push tag `v*`.
+*   **Action**:
+    *   Builds images tagged with the version.
+    *   Applies the main Terraform configuration (`terraform/`).
+*   **State**: Stored in `gs://<TF_STATE_BUCKET>/prod/default.tfstate`.
 
 ### ⚠️ Important Note on Data
 
