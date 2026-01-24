@@ -9,3 +9,4 @@ export { PhaseTimer } from './PhaseTimer';
 export { WerewolfBackground } from './WerewolfBackground';
 export { WerewolfBackgroundForest } from './WerewolfBackgroundForest';
 export { WerewolfBackgroundAbstract } from './WerewolfBackgroundAbstract';
+export { DynamicBackground } from './DynamicBackground';

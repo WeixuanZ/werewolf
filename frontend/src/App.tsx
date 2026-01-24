@@ -9,7 +9,7 @@ import {
 import Home from './routes/Home';
 import GameRoom from './routes/GameRoom';
 import { ConfigProvider, theme } from 'antd';
-import { WerewolfBackgroundAbstract } from './components';
+import { DynamicBackground } from './components';
 
 const queryClient = new QueryClient();
 
@@ -65,7 +65,7 @@ const rootRoute = createRootRoute({
           overflow: 'hidden',
         }}
       >
-        <WerewolfBackgroundAbstract />
+        <DynamicBackground />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <Outlet />
         </div>
