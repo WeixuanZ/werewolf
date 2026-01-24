@@ -1,0 +1,17 @@
+Verification Report:
+1. Terraform Refactoring:
+   - Resource google_cloud_run_v2_service.backend moved to module.app.google_cloud_run_v2_service.backend (Verified)
+   - Resource google_cloud_run_v2_service.frontend moved to module.app.google_cloud_run_v2_service.frontend (Verified)
+   - Resource google_cloud_run_service_iam_binding.backend_public moved to module.app.google_cloud_run_service_iam_binding.backend_public (Verified)
+   - Resource google_cloud_run_service_iam_binding.frontend_public moved to module.app.google_cloud_run_service_iam_binding.frontend_public (Verified)
+   - Configuration logic is identical.
+
+2. Workflows:
+   - Preview Environment: Deploys to terraform/preview with pr-{number} state prefix.
+   - Cleanup: Destroys terraform/preview with pr-{number} state prefix.
+   - Production: Deploys to terraform/ (root) with prod state prefix.
+   - Image syncing: Production workflow syncs GHCR images to GAR to match Terraform expectations.
+
+3. Production Stack Safety:
+   - moved blocks ensure existing Cloud Run services are preserved.
+   - Root main.tf and cloud_run.tf logic remains unchanged (just pointing to the module).

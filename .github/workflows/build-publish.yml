@@ -9,6 +9,9 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  GAR_REPO: werewolf-repo
 
 jobs:
   build-and-push:
@@ -64,3 +67,73 @@ jobs:
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
+
+  deploy-prod:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure Docker Auth
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Get Version
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Sync Images to GAR
+        run: |
+          # Define Image Paths
+          GH_USER=${{ github.repository_owner }}
+          TAG=${{ steps.version.outputs.tag }}
+
+          GHCR_BACKEND="ghcr.io/$GH_USER/werewolf-backend:$TAG"
+          GHCR_FRONTEND="ghcr.io/$GH_USER/werewolf-frontend:$TAG"
+
+          GAR_PREFIX="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}"
+          GAR_BACKEND="${GAR_PREFIX}/werewolf-backend:$TAG"
+          GAR_FRONTEND="${GAR_PREFIX}/werewolf-frontend:$TAG"
+
+          echo "Syncing Backend: $GHCR_BACKEND -> $GAR_BACKEND"
+          docker pull $GHCR_BACKEND
+          docker tag $GHCR_BACKEND $GAR_BACKEND
+          docker push $GAR_BACKEND
+
+          echo "Syncing Frontend: $GHCR_FRONTEND -> $GAR_FRONTEND"
+          docker pull $GHCR_FRONTEND
+          docker tag $GHCR_FRONTEND $GAR_FRONTEND
+          docker push $GAR_FRONTEND
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="prefix=prod"
+
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: |
+          TAG=${{ steps.version.outputs.tag }}
+          GAR_PREFIX="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_REPO }}"
+
+          terraform apply -auto-approve \
+            -var="project_id=${{ env.PROJECT_ID }}" \
+            -var="region=${{ env.REGION }}" \
+            -var="backend_image=${GAR_PREFIX}/werewolf-backend:$TAG" \
+            -var="frontend_image=${GAR_PREFIX}/werewolf-frontend:$TAG"
