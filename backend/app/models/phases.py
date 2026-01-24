@@ -336,10 +336,7 @@ class HunterRevengeState(PhaseState):
         if not hunter:
             return True
 
-        if hunter.night_action_target and hunter.night_action_confirmed:
-            return True
-
-        return False
+        return bool(hunter.night_action_target and hunter.night_action_confirmed)
 
     def resolve(self, game: Game) -> GamePhase:
         hunter_id = game.voted_out_this_round
