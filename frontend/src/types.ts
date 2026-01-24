@@ -59,6 +59,7 @@ export interface GameSettings {
   role_distribution: Record<RoleType, number>;
   phase_duration_seconds: number;
   timer_enabled: boolean;
+  dramatic_tones_enabled: boolean;
 }
 
 export interface GameState {

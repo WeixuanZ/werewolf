@@ -73,6 +73,7 @@ class GameSettingsSchema(BaseModel):
     }
     phase_duration_seconds: int = 60
     timer_enabled: bool = True
+    dramatic_tones_enabled: bool = True
 
 
 class GameStateSchema(BaseModel):
