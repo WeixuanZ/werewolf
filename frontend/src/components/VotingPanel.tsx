@@ -3,7 +3,6 @@ import { Button, theme } from 'antd';
 import { useSubmitVote } from '../api/client';
 import type { GameState, Player } from '../types';
 import { getRoleEmoji } from '../utils/roleUtils';
-
 import { PhaseTimer } from './PhaseTimer';
 
 const { useToken } = theme;

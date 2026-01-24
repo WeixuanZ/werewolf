@@ -3,7 +3,6 @@ import { getRoleEmoji } from '../utils/roleUtils';
 import { useSubmitAction } from '../api/client';
 import { RoleType, NightActionType } from '../types';
 import type { Player } from '../types';
-
 import { PhaseTimer } from './PhaseTimer';
 
 const { Text, Title } = Typography;
