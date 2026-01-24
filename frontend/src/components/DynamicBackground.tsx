@@ -1,7 +1,7 @@
 import { useLocation } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
 import { useCurrentSessionValue } from '../store/gameStore';
-import { GamePhase, type GameState } from '../types';
+import { useGameState } from '../hooks/useGameState';
+import { GamePhase } from '../types';
 import {
   WerewolfBackground,
   WerewolfBackgroundForest,
@@ -19,13 +19,12 @@ export const DynamicBackground = () => {
   const playerId = session?.playerId;
 
   // Access game state from React Query cache
-  // We don't provide a queryFn here because we expect the GameRoom component
-  // to handle the actual data fetching and socket connection.
+  // We use the shared hook but disable active fetching (staleTime: Infinity)
+  // because the socket connection in GameRoom handles the updates.
   // We just want to reactively read the current state.
-  const { data: gameState } = useQuery<GameState>({
-    queryKey: ['gameState', roomId, playerId],
-    enabled: !!roomId, // Only check if we are in a room
-    staleTime: Infinity, // Rely on cache updates from other components
+  const { data: gameState } = useGameState(roomId, playerId, {
+    enabled: !!roomId,
+    staleTime: Infinity,
   });
 
   const phase = gameState?.phase;

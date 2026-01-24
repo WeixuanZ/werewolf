@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import useWebSocket from 'react-use-websocket';
 import { WSMessageType } from '../types';
 import type { SocketMessage, GameState } from '../types';
 import { useCurrentSessionValue } from '../store/gameStore';
-import { api } from '../api/client';
+import { useGameState } from './useGameState';
+import { getGameStateQueryKey } from '../utils/queryKeys';
 import { WS_BASE_URL } from '../config';
 import { message } from 'antd';
 
@@ -14,13 +15,12 @@ export const useGameSocket = (roomId: string) => {
   const queryClient = useQueryClient();
 
   // Initial fetch via REST (with player_id for filtered view)
+  // Use the shared hook instead of raw useQuery
   const {
     data: gameState,
     error,
     isLoading,
-  } = useQuery<GameState>({
-    queryKey: ['gameState', roomId, playerId],
-    queryFn: () => api.rooms.get(roomId, playerId ?? undefined),
+  } = useGameState(roomId, playerId, {
     enabled: !!roomId,
     refetchOnWindowFocus: true,
   });
@@ -32,7 +32,7 @@ export const useGameSocket = (roomId: string) => {
     onMessage: (event) => {
       try {
         const msg: SocketMessage = JSON.parse(event.data);
-        const queryKey = ['gameState', roomId, playerId];
+        const queryKey = getGameStateQueryKey(roomId, playerId);
 
         switch (msg.type) {
           case WSMessageType.STATE_UPDATE:
