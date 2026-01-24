@@ -1,6 +1,6 @@
 from app.models.game import Game
 from app.schemas.game import GamePhase, GameSettingsSchema, NightActionType, RoleType
-import pytest
+
 
 class TestNewRoles:
     def test_cupid_linking_and_lovers_pact(self):
@@ -27,11 +27,10 @@ class TestNewRoles:
         game.players["lover2"].role = RoleType.VILLAGER
 
         # Cupid links L1 and L2
-        game.process_action("cupid", {
-            "action_type": NightActionType.LINK,
-            "target_id": "lover1,lover2",
-            "confirmed": True
-        })
+        game.process_action(
+            "cupid",
+            {"action_type": NightActionType.LINK, "target_id": "lover1,lover2", "confirmed": True},
+        )
 
         # Wolf kills L1
         game.process_action("wolf", {"action_type": NightActionType.KILL, "target_id": "lover1"})
@@ -52,9 +51,7 @@ class TestNewRoles:
 
     def test_lycan_seer_interaction(self):
         """Test Seer seeing Lycan as Werewolf."""
-        settings = GameSettingsSchema(
-            role_distribution={RoleType.LYCAN: 1, RoleType.SEER: 1}
-        )
+        settings = GameSettingsSchema(role_distribution={RoleType.LYCAN: 1, RoleType.SEER: 1})
         game = Game.create("room_lycan", settings)
         game.add_player("seer", "Seer")
         game.add_player("lycan", "Lycan")

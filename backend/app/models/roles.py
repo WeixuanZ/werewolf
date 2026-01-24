@@ -31,15 +31,48 @@ class Role(ABC):
         """Return dynamic info for the frontend during night phase."""
         return None
 
+    def validate_night_action(
+        self,
+        game: "Game",
+        player_id: str,
+        action_type: str,
+        target_id: str | None,
+        expected_action_type: NightActionType | None = None,
+    ):
+        """Common validation logic for night actions."""
+        if not self.can_act_at_night:
+            raise InvalidActionError(f"{self.role_type} cannot act at night")
+
+        player = game.players.get(player_id)
+        if not player:
+            # Should not happen in normal flow if caller checks existence
+            return
+
+        if action_type == NightActionType.SKIP:
+            player.night_action_target = "SKIP"
+            player.night_action_type = NightActionType.SKIP
+            return
+
+        if expected_action_type and action_type != expected_action_type:
+            raise InvalidActionError(f"Invalid action type for {self.role_type}")
+
+        if not target_id or target_id not in game.players:
+            # Cupid handles comma-separated targets separately, so skip this check for Cupid
+            if self.role_type != RoleType.CUPID:
+                raise InvalidActionError("Invalid target")
+
+        player.night_action_target = target_id
+        player.night_action_type = action_type
+
     def handle_night_action(
-        self, _game: "Game", _player_id: str, _action_type: str, _target_id: str | None
+        self, game: "Game", player_id: str, action_type: str, target_id: str | None
     ) -> None:
         """
         Process the night action for this role.
         Validates the action and updates player state.
         Raises InvalidActionError if action is invalid.
         """
-        # Default implementation for non-acting roles or generic validation
+        # Default implementation for non-acting roles
         if not self.can_act_at_night:
             raise InvalidActionError(f"{self.role_type} cannot act at night")
 
@@ -72,24 +105,7 @@ class Werewolf(Role):
     def handle_night_action(
         self, game: "Game", player_id: str, action_type: str, target_id: str | None
     ) -> None:
-        if action_type != NightActionType.KILL and action_type != NightActionType.SKIP:
-            raise InvalidActionError("Invalid action type for Werewolf")
-
-        player = game.players.get(player_id)
-        if not player:
-            return
-
-        # SKIP logic
-        if action_type == NightActionType.SKIP:
-            player.night_action_target = "SKIP"
-            player.night_action_type = NightActionType.SKIP
-            return
-
-        if not target_id or target_id not in game.players:
-            raise InvalidActionError("Invalid target")
-
-        player.night_action_target = target_id
-        player.night_action_type = action_type
+        self.validate_night_action(game, player_id, action_type, target_id, NightActionType.KILL)
 
 
 class Seer(Role):
@@ -112,29 +128,15 @@ class Seer(Role):
     def handle_night_action(
         self, game: "Game", player_id: str, action_type: str, target_id: str | None
     ) -> None:
-        if action_type != NightActionType.CHECK and action_type != NightActionType.SKIP:
-            raise InvalidActionError("Invalid action type for Seer")
-
-        player = game.players.get(player_id)
-        if not player:
-            return
-
-        if action_type == NightActionType.SKIP:
-            player.night_action_target = "SKIP"
-            player.night_action_type = NightActionType.SKIP
-            return
-
-        if not target_id or target_id not in game.players:
-            raise InvalidActionError("Invalid target")
-
-        player.night_action_target = target_id
-        player.night_action_type = action_type
+        self.validate_night_action(game, player_id, action_type, target_id, NightActionType.CHECK)
 
         # Seer immediate effect: Reveal
-        if player_id not in game.seer_reveals:
-            game.seer_reveals[player_id] = []
-        if target_id not in game.seer_reveals[player_id]:
-            game.seer_reveals[player_id].append(target_id)
+        # validate_night_action ensures target is valid
+        if action_type != NightActionType.SKIP and target_id:
+            if player_id not in game.seer_reveals:
+                game.seer_reveals[player_id] = []
+            if target_id not in game.seer_reveals[player_id]:
+                game.seer_reveals[player_id].append(target_id)
 
 
 class Doctor(Role):
@@ -157,23 +159,7 @@ class Doctor(Role):
     def handle_night_action(
         self, game: "Game", player_id: str, action_type: str, target_id: str | None
     ) -> None:
-        if action_type != NightActionType.SAVE and action_type != NightActionType.SKIP:
-            raise InvalidActionError("Invalid action type for Doctor")
-
-        player = game.players.get(player_id)
-        if not player:
-            return
-
-        if action_type == NightActionType.SKIP:
-            player.night_action_target = "SKIP"
-            player.night_action_type = NightActionType.SKIP
-            return
-
-        if not target_id or target_id not in game.players:
-            raise InvalidActionError("Invalid target")
-
-        player.night_action_target = target_id
-        player.night_action_type = action_type
+        self.validate_night_action(game, player_id, action_type, target_id, NightActionType.SAVE)
 
 
 class Lycan(Role):
@@ -278,25 +264,12 @@ class Hunter(Role):
     def handle_night_action(
         self, game: "Game", player_id: str, action_type: str, target_id: str | None
     ) -> None:
-        player = game.players.get(player_id)
-        if not player:
-            return
-
-        if action_type == NightActionType.SKIP:
-            player.night_action_target = "SKIP"
-            player.night_action_type = NightActionType.SKIP
-            return
-
-        if action_type != NightActionType.REVENGE:
-            raise InvalidActionError("Invalid action type for Hunter")
-
-        if not target_id or target_id not in game.players:
-            raise InvalidActionError("Invalid target")
-
-        player.night_action_target = target_id
-        player.night_action_type = action_type
+        self.validate_night_action(game, player_id, action_type, target_id, NightActionType.REVENGE)
         # Also update revenge target specific field
-        player.hunter_revenge_target = target_id
+        if action_type != NightActionType.SKIP and target_id:
+            player = game.players.get(player_id)
+            if player:
+                player.hunter_revenge_target = target_id
 
 
 class Cupid(Role):
@@ -312,7 +285,7 @@ class Cupid(Role):
 
     def get_night_info(self, game_state, _player_id: str) -> NightInfoSchema | None:
         if game_state.turn_count > 1:
-            return None # Only act on night 1
+            return None  # Only act on night 1
 
         return NightInfoSchema(
             prompt="Choose two players to fall in love.",
@@ -326,19 +299,19 @@ class Cupid(Role):
         if not player:
             return
 
-        if game.turn_count > 1:
-             raise InvalidActionError("Cupid can only act on the first night")
-
         if action_type == NightActionType.SKIP:
             player.night_action_target = "SKIP"
             player.night_action_type = NightActionType.SKIP
             return
 
+        if game.turn_count > 1:
+            raise InvalidActionError("Cupid can only act on the first night")
+
         if action_type != NightActionType.LINK:
             raise InvalidActionError("Invalid action type for Cupid")
 
         if not target_id or "," not in target_id:
-             raise InvalidActionError("Cupid must select two players (comma separated)")
+            raise InvalidActionError("Cupid must select two players (comma separated)")
 
         targets = target_id.split(",")
         if len(targets) != 2:
@@ -350,7 +323,7 @@ class Cupid(Role):
             raise InvalidActionError("Invalid target player(s)")
 
         if t1 == t2:
-             raise InvalidActionError("Cannot link a player to themselves")
+            raise InvalidActionError("Cannot link a player to themselves")
 
         player.night_action_target = target_id
         player.night_action_type = action_type

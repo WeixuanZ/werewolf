@@ -1,7 +1,9 @@
+import pytest
+
+from app.core.exceptions import InvalidActionError
 from app.models.game import Game
 from app.schemas.game import GamePhase, GameSettingsSchema, NightActionType, RoleType
-from app.core.exceptions import InvalidActionError
-import pytest
+
 
 class TestFeatures:
     def test_bodyguard_logic_and_protection(self):
@@ -50,16 +52,14 @@ class TestFeatures:
 
         # Villager trying night action
         try:
-             game.process_action("p1", {"action_type": NightActionType.KILL, "target_id": "p1"})
-             pytest.fail("Should raise error for Villager acting at night")
+            game.process_action("p1", {"action_type": NightActionType.KILL, "target_id": "p1"})
+            pytest.fail("Should raise error for Villager acting at night")
         except InvalidActionError as e:
             assert "VILLAGER cannot act at night" in str(e)
 
     def test_werewolf_vote_distribution(self):
         """Test that wolves receive vote distribution info."""
-        settings = GameSettingsSchema(
-            role_distribution={RoleType.WEREWOLF: 2}
-        )
+        settings = GameSettingsSchema(role_distribution={RoleType.WEREWOLF: 2})
         game = Game.create("room_wolves", settings)
         game.add_player("w1", "Wolf1")
         game.add_player("w2", "Wolf2")

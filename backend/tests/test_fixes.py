@@ -1,6 +1,6 @@
-
 from app.models.game import Game
 from app.schemas.game import GamePhase, GameSettingsSchema, NightActionType, RoleType
+
 
 class TestFixes:
     def test_hunter_day_revenge(self):
@@ -41,7 +41,7 @@ class TestFixes:
         # Hunter takes revenge on Wolf
         game.process_action(
             "hunter",
-            {"action_type": NightActionType.REVENGE, "target_id": "wolf", "confirmed": True}
+            {"action_type": NightActionType.REVENGE, "target_id": "wolf", "confirmed": True},
         )
 
         # Should transition to NIGHT (or GAME_OVER if Wolf dies and no wolves left)
@@ -49,7 +49,7 @@ class TestFixes:
         assert game.check_and_advance()
 
         assert not game.players["wolf"].is_alive
-        assert game.phase == GamePhase.GAME_OVER # Wolves dead -> Villagers win
+        assert game.phase == GamePhase.GAME_OVER  # Wolves dead -> Villagers win
         assert game.winners == "VILLAGERS"
 
     def test_reveal_role_on_death_setting(self):

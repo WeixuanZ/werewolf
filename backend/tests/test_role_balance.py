@@ -16,8 +16,8 @@ def create_game_with_players(count: int) -> Game:
     "player_count,expected_roles",
     [
         (4, {RoleType.WEREWOLF: 1, RoleType.SEER: 1, RoleType.VILLAGER: 2}),
-        (5, {RoleType.WEREWOLF: 1, RoleType.SEER: 1, RoleType.DOCTOR: 1, RoleType.VILLAGER: 2}),
-        (6, {RoleType.WEREWOLF: 1, RoleType.SEER: 1, RoleType.DOCTOR: 1, RoleType.VILLAGER: 3}),
+            (5, {RoleType.WEREWOLF: 1, RoleType.SEER: 1, RoleType.DOCTOR: 1, RoleType.CUPID: 1, RoleType.VILLAGER: 1}),
+            (6, {RoleType.WEREWOLF: 1, RoleType.SEER: 1, RoleType.DOCTOR: 1, RoleType.CUPID: 1, RoleType.VILLAGER: 2}),
         (
             7,
             {
@@ -25,7 +25,9 @@ def create_game_with_players(count: int) -> Game:
                 RoleType.SEER: 1,
                 RoleType.DOCTOR: 1,
                 RoleType.WITCH: 1,
-                RoleType.VILLAGER: 3,
+                    RoleType.CUPID: 1,
+                    RoleType.TANNER: 1,
+                    RoleType.VILLAGER: 1,
             },
         ),
         (
@@ -35,7 +37,9 @@ def create_game_with_players(count: int) -> Game:
                 RoleType.SEER: 1,
                 RoleType.DOCTOR: 1,
                 RoleType.WITCH: 1,
-                RoleType.VILLAGER: 4,
+                    RoleType.CUPID: 1,
+                    RoleType.TANNER: 1,
+                    RoleType.VILLAGER: 2,
             },
         ),
         (
@@ -46,7 +50,10 @@ def create_game_with_players(count: int) -> Game:
                 RoleType.DOCTOR: 1,
                 RoleType.WITCH: 1,
                 RoleType.HUNTER: 1,
-                RoleType.VILLAGER: 3,
+                    RoleType.CUPID: 1,
+                    RoleType.TANNER: 1,
+                    RoleType.LYCAN: 1,
+                    RoleType.VILLAGER: 0,
             },
         ),
     ],

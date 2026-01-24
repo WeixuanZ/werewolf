@@ -147,19 +147,21 @@ class NightState(PhaseState):
                     kills.add(player.night_action_target)
                 elif player.night_action_type == NightActionType.HEAL:
                     saves.add(player.night_action_target)
-            elif player.role == RoleType.DOCTOR:
-                saves.add(player.night_action_target)
-            elif player.role == RoleType.BODYGUARD:
+            elif player.role == RoleType.DOCTOR or player.role == RoleType.BODYGUARD:
                 saves.add(player.night_action_target)
 
         # Cupid Logic: Process Links
         for player in game.players.values():
-            if player.role == RoleType.CUPID and player.night_action_target and player.night_action_type == NightActionType.LINK:
-                 # Apply link
-                 targets = player.night_action_target.split(",")
-                 if len(targets) == 2:
-                     game.lovers = targets
-                 # Cupid only works on turn 1, logic prevents action otherwise
+            if (
+                player.role == RoleType.CUPID
+                and player.night_action_target
+                and player.night_action_type == NightActionType.LINK
+            ):
+                # Apply link
+                targets = player.night_action_target.split(",")
+                if len(targets) == 2:
+                    game.lovers = targets
+                # Cupid only works on turn 1, logic prevents action otherwise
 
         # Calculate deaths (first pass)
         dead_this_round = kills - saves
@@ -175,16 +177,8 @@ class NightState(PhaseState):
                 final_deaths.add(hunter.night_action_target)
 
         # Phase 3: Lovers Suicide Pact
-        # If one lover is dead, the other dies
-        if game.lovers:
-            l1, l2 = game.lovers[0], game.lovers[1]
-            l1_dead = l1 in final_deaths or (not game.players[l1].is_alive)
-            l2_dead = l2 in final_deaths or (not game.players[l2].is_alive)
-
-            if l1_dead and not l2_dead:
-                final_deaths.add(l2)
-            elif l2_dead and not l1_dead:
-                final_deaths.add(l1)
+        secondary_deaths = game.resolve_lovers_pact(final_deaths)
+        final_deaths.update(secondary_deaths)
 
         # Apply deaths
         for target_id in final_deaths:
@@ -270,21 +264,10 @@ class DayState(PhaseState):
                 game.voted_out_this_round = eliminated_id
 
                 # Lovers Suicide Pact (Day)
-                if game.lovers:
-                    l1, l2 = game.lovers[0], game.lovers[1]
-                    other_lover = None
-                    if eliminated_id == l1:
-                         other_lover = l2
-                    elif eliminated_id == l2:
-                         other_lover = l1
-
-                    if other_lover and game.players[other_lover].is_alive:
-                        game.players[other_lover].is_alive = False
-                        # If the OTHER lover was a Hunter, do they get revenge?
-                        # Complex edge case. Standard: Yes.
-                        # But current State Machine handles one HunterRevenge phase.
-                        # If both die, we might need a queue or just let the primary lynch victim act.
-                        # For now, simplistic: Suicide lover dies silently.
+                # We treat the eliminated player as dead for the check
+                secondary_deaths = game.resolve_lovers_pact({eliminated_id})
+                for pid in secondary_deaths:
+                    game.players[pid].is_alive = False
 
                 # Check Hunter
                 if game.players[eliminated_id].role == RoleType.HUNTER:
@@ -368,15 +351,9 @@ class HunterRevengeState(PhaseState):
                     game.players[target_id].is_alive = False
 
                     # Check Lovers Pact for Hunter's victim
-                    if game.lovers:
-                         l1, l2 = game.lovers[0], game.lovers[1]
-                         victim_id = target_id
-                         other_lover = None
-                         if victim_id == l1: other_lover = l2
-                         elif victim_id == l2: other_lover = l1
-
-                         if other_lover and game.players[other_lover].is_alive:
-                             game.players[other_lover].is_alive = False
+                    secondary_deaths = game.resolve_lovers_pact({target_id})
+                    for pid in secondary_deaths:
+                        game.players[pid].is_alive = False
 
         winner = game.check_winners()
         if winner:
