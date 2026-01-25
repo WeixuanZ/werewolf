@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.game import Game
 
+from app.core.exceptions import InvalidActionError
 from app.models.roles import RoleType
 from app.schemas.game import GamePhase, NightActionType
 
@@ -80,7 +81,7 @@ class NightState(PhaseState):
             return
 
         if not player.can_act_at_night():
-            return
+            raise InvalidActionError(f"{player.role} cannot act at night")
 
         target_id = action.get("target_id")
         action_type = action.get("action_type")
@@ -99,11 +100,11 @@ class NightState(PhaseState):
         # Delegate validation and state updates to the Role instance
         try:
             player.role_instance.handle_night_action(game, player_id, action_type, target_id)
-        except ValueError as e:
+        except InvalidActionError as e:
             # You might want to log this or return an error to the user
             # For now, we just return safely without updating state
             print(f"Invalid action for {player_id}: {e}")
-            return
+            raise e
 
     def check_completion(self, game: Game) -> bool:
         """All alive players with night actions must have acted. Werewolves must agree."""
@@ -146,8 +147,21 @@ class NightState(PhaseState):
                     kills.add(player.night_action_target)
                 elif player.night_action_type == NightActionType.HEAL:
                     saves.add(player.night_action_target)
-            elif player.role == RoleType.DOCTOR:
+            elif player.role == RoleType.DOCTOR or player.role == RoleType.BODYGUARD:
                 saves.add(player.night_action_target)
+
+        # Cupid Logic: Process Links
+        for player in game.players.values():
+            if (
+                player.role == RoleType.CUPID
+                and player.night_action_target
+                and player.night_action_type == NightActionType.LINK
+            ):
+                # Apply link
+                targets = player.night_action_target.split(",")
+                if len(targets) == 2:
+                    game.lovers = targets
+                # Cupid only works on turn 1, logic prevents action otherwise
 
         # Calculate deaths (first pass)
         dead_this_round = kills - saves
@@ -162,6 +176,10 @@ class NightState(PhaseState):
                 # Hunter died, so their target dies too (Revenge)
                 final_deaths.add(hunter.night_action_target)
 
+        # Phase 3: Lovers Suicide Pact
+        secondary_deaths = game.resolve_lovers_pact(final_deaths)
+        final_deaths.update(secondary_deaths)
+
         # Apply deaths
         for target_id in final_deaths:
             if target_id in game.players:
@@ -170,6 +188,14 @@ class NightState(PhaseState):
         game.turn_count += 1
 
         winner = game.check_winners()
+
+        # Lovers Win Condition Check (if not covered by check_winners)
+        # Implemented inside check_winners if possible, or here?
+        # Standard: Lovers win if they are the last 2 alive.
+        # check_winners handles Team Wins.
+        # Let's add special check here or modify check_winners.
+        # Modifying check_winners is better for consistency.
+
         if winner:
             game.winners = winner
             return GamePhase.GAME_OVER
@@ -228,8 +254,103 @@ class DayState(PhaseState):
             # Only eliminate if there's a clear winner (no tie)
             if len(top_voted) == 1:
                 eliminated_id = top_voted[0]
+
+                # Check Tanner
+                if game.players[eliminated_id].role == RoleType.TANNER:
+                    game.winners = "TANNER"
+                    return GamePhase.GAME_OVER
+
                 game.players[eliminated_id].is_alive = False
                 game.voted_out_this_round = eliminated_id
+
+                # Lovers Suicide Pact (Day)
+                # We treat the eliminated player as dead for the check
+                secondary_deaths = game.resolve_lovers_pact({eliminated_id})
+                for pid in secondary_deaths:
+                    game.players[pid].is_alive = False
+
+                # Check Hunter
+                if game.players[eliminated_id].role == RoleType.HUNTER:
+                    return GamePhase.HUNTER_REVENGE
+
+        winner = game.check_winners()
+        if winner:
+            game.winners = winner
+            return GamePhase.GAME_OVER
+
+        return GamePhase.NIGHT
+
+
+class HunterRevengeState(PhaseState):
+    phase = GamePhase.HUNTER_REVENGE
+
+    def on_enter(self, game: Game) -> None:
+        # We need to find the recently died hunter and prepare them
+        # Usually we just clear their action so they can pick again?
+        # But wait, they might have picked a target at night (if they thought they'd die at night).
+        # We should clear it to ensure a fresh choice for *this* death.
+        for player in game.players.values():
+            if player.role == RoleType.HUNTER and not player.is_alive:
+                player.night_action_target = None
+                player.night_action_confirmed = False
+
+    def process_action(self, game: Game, player_id: str, action: dict) -> None:
+        player = game.players.get(player_id)
+        # Allow action even if not is_alive, BUT only if they are the Hunter who just died?
+        # Simpler: Allow any Hunter who is dead to act?
+        # Or better: check game.voted_out_this_round
+        if not player or player.role != RoleType.HUNTER:
+            return
+
+        # If they are not the one voted out, they shouldn't act?
+        # Actually, if multiple hunters die? But voting only kills one.
+        if game.voted_out_this_round != player_id:
+            # Maybe they died earlier and are just chatting?
+            # But in this phase, we expect the specific hunter to act.
+            return
+
+        target_id = action.get("target_id")
+        action_type = action.get("action_type")
+
+        if action_type != NightActionType.REVENGE:
+            raise InvalidActionError(f"Invalid action type {action_type} for Hunter Revenge")
+
+        if not target_id or target_id not in game.players:
+            raise InvalidActionError("Invalid target")
+
+        if not game.players[target_id].is_alive:
+            raise InvalidActionError("Target is already dead")
+
+        player.night_action_target = target_id
+        player.night_action_type = action_type
+        player.night_action_confirmed = action.get("confirmed", False)
+        player.hunter_revenge_target = target_id
+
+    def check_completion(self, game: Game) -> bool:
+        # Check if the hunter has acted
+        hunter_id = game.voted_out_this_round
+        if not hunter_id:
+            return True  # Should not happen, but safe fallback
+
+        hunter = game.players.get(hunter_id)
+        if not hunter:
+            return True
+
+        return bool(hunter.night_action_target and hunter.night_action_confirmed)
+
+    def resolve(self, game: Game) -> GamePhase:
+        hunter_id = game.voted_out_this_round
+        if hunter_id:
+            hunter = game.players.get(hunter_id)
+            if hunter and hunter.night_action_target:
+                target_id = hunter.night_action_target
+                if target_id in game.players:
+                    game.players[target_id].is_alive = False
+
+                    # Check Lovers Pact for Hunter's victim
+                    secondary_deaths = game.resolve_lovers_pact({target_id})
+                    for pid in secondary_deaths:
+                        game.players[pid].is_alive = False
 
         winner = game.check_winners()
         if winner:
@@ -260,6 +381,7 @@ PHASE_STATES: dict[GamePhase, PhaseState] = {
     GamePhase.WAITING: WaitingState(),
     GamePhase.NIGHT: NightState(),
     GamePhase.DAY: DayState(),
+    GamePhase.HUNTER_REVENGE: HunterRevengeState(),
     GamePhase.GAME_OVER: GameOverState(),
 }
 

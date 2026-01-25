@@ -10,6 +10,10 @@ class RoleType(str, Enum):
     DOCTOR = "DOCTOR"
     WITCH = "WITCH"
     HUNTER = "HUNTER"
+    BODYGUARD = "BODYGUARD"
+    CUPID = "CUPID"
+    LYCAN = "LYCAN"
+    TANNER = "TANNER"
     SPECTATOR = "SPECTATOR"
 
 
@@ -18,6 +22,7 @@ class GamePhase(str, Enum):
     DAY = "DAY"
     NIGHT = "NIGHT"
     VOTING = "VOTING"
+    HUNTER_REVENGE = "HUNTER_REVENGE"
     GAME_OVER = "GAME_OVER"
 
 
@@ -28,6 +33,7 @@ class NightActionType(str, Enum):
     HEAL = "HEAL"
     POISON = "POISON"
     REVENGE = "REVENGE"
+    LINK = "LINK"
     SKIP = "SKIP"
 
 
@@ -51,6 +57,7 @@ class PlayerSchema(BaseModel):
     witch_has_heal: bool = True
     witch_has_poison: bool = True
     hunter_revenge_target: str | None = None
+    last_protected_target: str | None = None
 
     vote_target: str | None = None
     night_action_target: str | None = None
@@ -60,6 +67,7 @@ class PlayerSchema(BaseModel):
 
     # Dynamic context for frontend
     night_info: NightInfoSchema | None = None
+    night_action_vote_distribution: dict[str, int] | None = None  # For Werewolf consensus
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -73,6 +81,7 @@ class GameSettingsSchema(BaseModel):
     }
     phase_duration_seconds: int = 60
     timer_enabled: bool = True
+    reveal_role_on_death: bool = False
     dramatic_tones_enabled: bool = True
 
 
@@ -84,6 +93,7 @@ class GameStateSchema(BaseModel):
     turn_count: int = 0
     winners: str | None = None
     seer_reveals: dict[str, list[str]] = {}  # {seer_id: [checked_player_ids]}
+    lovers: list[str] = []
     voted_out_this_round: str | None = None
     phase_start_time: float | None = None
 

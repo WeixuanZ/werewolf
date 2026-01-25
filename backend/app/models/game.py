@@ -32,6 +32,7 @@ class PlayerState(BaseModel):
     witch_has_heal: bool = True
     witch_has_poison: bool = True
     hunter_revenge_target: str | None = None
+    last_protected_target: str | None = None
 
     vote_target: str | None = None
     night_action_target: str | None = None
@@ -64,6 +65,7 @@ class GameState(BaseModel):
     turn_count: int = 0
     winners: str | None = None
     seer_reveals: dict[str, list[str]] = {}
+    lovers: list[str] = []
     voted_out_this_round: str | None = None
     phase_start_time: float | None = None
 
@@ -96,6 +98,25 @@ class Game:
         """Serialize game to JSON (Redis)."""
         return self._state.model_dump_json()
 
+    def resolve_lovers_pact(self, dead_player_ids: set[str]) -> set[str]:
+        """Check for Lovers Suicide Pact and return any additional deaths."""
+        secondary_deaths = set()
+        if not self.lovers:
+            return secondary_deaths
+
+        l1, l2 = self.lovers[0], self.lovers[1]
+
+        # Check current status in state OR if they are in the incoming dead set
+        l1_is_dead = (not self.players[l1].is_alive) or (l1 in dead_player_ids)
+        l2_is_dead = (not self.players[l2].is_alive) or (l2 in dead_player_ids)
+
+        if l1_is_dead and not l2_is_dead:
+            secondary_deaths.add(l2)
+        elif l2_is_dead and not l1_is_dead:
+            secondary_deaths.add(l1)
+
+        return secondary_deaths
+
     def to_schema(self) -> GameStateSchema:
         """Convert to API schema format."""
         player_schemas = {
@@ -108,6 +129,7 @@ class Game:
                 witch_has_heal=p.witch_has_heal,
                 witch_has_poison=p.witch_has_poison,
                 hunter_revenge_target=p.hunter_revenge_target,
+                last_protected_target=p.last_protected_target,
                 vote_target=p.vote_target,
                 night_action_target=p.night_action_target,
                 night_action_type=p.night_action_type,
@@ -124,6 +146,7 @@ class Game:
             turn_count=self.turn_count,
             winners=self.winners,
             seer_reveals=self.seer_reveals,
+            lovers=self.lovers,
             voted_out_this_round=self.voted_out_this_round,
             phase_start_time=self.phase_start_time,
         )
@@ -161,16 +184,52 @@ class Game:
                 or pid in revealed_to_viewer
                 or is_spectator
                 or are_werewolves
+                or (not p.is_alive and self.settings.reveal_role_on_death)
             )
 
             # Action visibility
             # Generally, actions are private unless it's yourself OR you are wolves acting together
             should_show_action = is_self or (are_werewolves and p.role == RoleType.WEREWOLF)
 
+            vote_dist = None
+            if (
+                is_self
+                and viewer
+                and viewer.role == RoleType.WEREWOLF
+                and self.phase == GamePhase.NIGHT
+            ):
+                # Calculate distribution of wolf votes
+                wolf_votes = {}
+                for w_p in self.players.values():
+                    if w_p.role == RoleType.WEREWOLF and w_p.is_alive and w_p.night_action_target:
+                        wolf_votes[w_p.night_action_target] = (
+                            wolf_votes.get(w_p.night_action_target, 0) + 1
+                        )
+                vote_dist = wolf_votes
+
+            # Determine role to show
+            role_to_show = None
+            if should_show_role:
+                role_to_show = p.role
+                # Lycan Masking for Seer
+                # If viewer is Seer, and p is Lycan, show Werewolf
+                # But ONLY if the reason we are showing it is because of Seer Reveal
+                # If dead and reveal_on_death is on, show REAL role (Lycan)? Standard rules vary.
+                # Usually Seer checks see "Werewolf". Death reveal shows "Lycan".
+                # So check if reason for visibility is 'revealed_to_viewer'
+                if (
+                    p.role == RoleType.LYCAN
+                    and viewer
+                    and viewer.role == RoleType.SEER
+                    and pid in revealed_to_viewer
+                    and p.is_alive
+                ):
+                    role_to_show = RoleType.WEREWOLF
+
             filtered_players[pid] = PlayerSchema(
                 id=p.id,
                 nickname=p.nickname,
-                role=p.role if should_show_role else None,
+                role=role_to_show,
                 is_alive=p.is_alive,
                 is_admin=p.is_admin,
                 is_spectator=p.role == RoleType.SPECTATOR,
@@ -181,6 +240,7 @@ class Game:
                 night_action_type=p.night_action_type if should_show_action else None,
                 night_action_confirmed=p.night_action_confirmed,
                 has_night_action=p.has_night_action if is_self else False,
+                night_action_vote_distribution=vote_dist if is_self else None,
             )
 
             # Dynamic Role Info (Prompts, available actions)
@@ -191,7 +251,9 @@ class Game:
                     role_inst = p_internal.role_instance
                     filtered_players[pid].role_description = role_inst.get_description()
 
-                    if self.phase == GamePhase.NIGHT:
+                    if self.phase == GamePhase.NIGHT or (
+                        self.phase == GamePhase.HUNTER_REVENGE and p.role == RoleType.HUNTER
+                    ):
                         filtered_players[pid].night_info = role_inst.get_night_info(
                             self._state, pid
                         )
@@ -213,6 +275,9 @@ class Game:
             RoleType.DOCTOR: 0,
             RoleType.WITCH: 0,
             RoleType.HUNTER: 0,
+            RoleType.CUPID: 0,
+            RoleType.LYCAN: 0,
+            RoleType.TANNER: 0,
             RoleType.VILLAGER: 0,
             RoleType.SPECTATOR: 0,
         }
@@ -220,13 +285,16 @@ class Game:
         # Progressive complexity
         if active_players >= 5:
             defaults[RoleType.DOCTOR] = 1
+            defaults[RoleType.CUPID] = 1
 
         if active_players >= 7:
             defaults[RoleType.WITCH] = 1
+            defaults[RoleType.TANNER] = 1
 
         if active_players >= 9:
             defaults[RoleType.HUNTER] = 1
             defaults[RoleType.WEREWOLF] = 2
+            defaults[RoleType.LYCAN] = 1
 
         # Calculate villagers
         special_roles = sum(defaults.values())
@@ -278,6 +346,14 @@ class Game:
     @property
     def seer_reveals(self) -> dict[str, list[str]]:
         return self._state.seer_reveals
+
+    @property
+    def lovers(self) -> list[str]:
+        return self._state.lovers
+
+    @lovers.setter
+    def lovers(self, value: list[str]):
+        self._state.lovers = value
 
     @property
     def voted_out_this_round(self) -> str | None:
@@ -377,6 +453,13 @@ class Game:
             for p in self.players.values()
             if p.is_alive and p.role != RoleType.WEREWOLF and p.role != RoleType.SPECTATOR
         )
+
+        # Lovers Win
+        if self.lovers:
+            # Check if only lovers are alive
+            alive_ids = {p.id for p in self.players.values() if p.is_alive}
+            if len(alive_ids) == 2 and set(self.lovers) == alive_ids:
+                return "LOVERS"
 
         if alive_werewolves == 0:
             return "VILLAGERS"
