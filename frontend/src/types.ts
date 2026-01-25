@@ -5,6 +5,10 @@ export const RoleType = {
   DOCTOR: 'DOCTOR',
   WITCH: 'WITCH',
   HUNTER: 'HUNTER',
+  CUPID: 'CUPID',
+  BODYGUARD: 'BODYGUARD',
+  LYCAN: 'LYCAN',
+  TANNER: 'TANNER',
   SPECTATOR: 'SPECTATOR',
 } as const;
 
@@ -27,6 +31,7 @@ export const NightActionType = {
   HEAL: 'HEAL',
   POISON: 'POISON',
   REVENGE: 'REVENGE',
+  LINK: 'LINK',
   SKIP: 'SKIP',
 } as const;
 
@@ -43,6 +48,7 @@ export interface Player {
   is_online: boolean;
   vote_target?: string | null;
   night_action_target?: string | null;
+  night_action_type?: string | null;
   night_action_confirmed?: boolean;
   has_night_action?: boolean;
   night_info?: {

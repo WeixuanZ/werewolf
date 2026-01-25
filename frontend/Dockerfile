@@ -12,6 +12,10 @@ CMD ["npm", "run", "dev", "--", "--host"]
 
 # Build stage
 FROM base as builder
+ARG COMMIT_SHA=unknown
+ARG VERSION=0.0.0
+ENV COMMIT_SHA=${COMMIT_SHA}
+ENV VERSION=${VERSION}
 COPY . .
 RUN npm run build
 

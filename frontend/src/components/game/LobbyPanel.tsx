@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { getRoleNameWithEmoji } from '../utils/roleUtils';
+import { getRoleNameWithEmoji } from '../../utils/roleUtils';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
-import { Card, Button, Spin, Typography, message, theme, Switch } from 'antd';
-import { useCurrentSession } from '../store/gameStore';
-import { useUpdateSettings } from '../api/client';
+import { Card, Button, Spin, Typography, message, theme, Switch, Tooltip } from 'antd';
+import { useCurrentSession } from '../../store/gameStore';
+import { useUpdateSettings, api } from '../../api/client';
+import { useQuery } from '@tanstack/react-query';
 
 const { Text } = Typography;
 const { useToken } = theme;
 
-import { RoleType } from '../types';
-import type { GameSettings } from '../types';
+import { RoleType } from '../../types';
+import type { GameSettings } from '../../types';
 
 interface LobbyPanelProps {
   isAdmin: boolean;
@@ -24,6 +25,20 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
   const roomId = window.location.pathname.split('/').pop() || '';
   const { mutate: updateSettings } = useUpdateSettings(roomId);
 
+  // Fetch role metadata
+  const { data: rolesData } = useQuery({
+    queryKey: ['roles'],
+    queryFn: api.rooms.getRoles,
+    staleTime: Infinity,
+  });
+
+  const roleDescriptions: Record<string, string> = {};
+  if (rolesData) {
+    rolesData.forEach((r) => {
+      roleDescriptions[r.type] = r.description;
+    });
+  }
+
   const [settings, setSettings] = useState<GameSettings>(
     serverSettings || {
       role_distribution: {
@@ -32,6 +47,10 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
         [RoleType.DOCTOR]: 1,
         [RoleType.WITCH]: 0,
         [RoleType.HUNTER]: 0,
+        [RoleType.CUPID]: 0,
+        [RoleType.BODYGUARD]: 0,
+        [RoleType.LYCAN]: 0,
+        [RoleType.TANNER]: 0,
         [RoleType.VILLAGER]: 0,
         [RoleType.SPECTATOR]: 0,
       },
@@ -84,6 +103,10 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
     RoleType.DOCTOR,
     RoleType.WITCH,
     RoleType.HUNTER,
+    RoleType.CUPID,
+    RoleType.BODYGUARD,
+    RoleType.LYCAN,
+    RoleType.TANNER,
     RoleType.VILLAGER,
   ];
 
@@ -207,7 +230,7 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
           }}
         >
           {roles.map((role) => {
-            const count = settings.role_distribution[role];
+            const count = settings.role_distribution[role] ?? 0;
             return (
               <div
                 key={role}
@@ -223,16 +246,26 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
                   border: `1px solid ${token.colorBorderSecondary}`,
                 }}
               >
-                <Text
-                  strong
-                  style={{
-                    fontSize: 14,
-                    textAlign: 'center',
-                    whiteSpace: 'nowrap',
-                  }}
+                <Tooltip
+                  title={roleDescriptions[role]}
+                  placement="top"
+                  mouseEnterDelay={0.2}
+                  overlayStyle={{ maxWidth: 300 }}
                 >
-                  {getRoleNameWithEmoji(role)}
-                </Text>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: 14,
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap',
+                      cursor: 'help',
+                      borderBottom: '1px dotted rgba(255,255,255,0.3)',
+                      paddingBottom: 2,
+                    }}
+                  >
+                    {getRoleNameWithEmoji(role)}
+                  </Text>
+                </Tooltip>
                 <div
                   style={{
                     display: 'flex',

@@ -53,6 +53,9 @@ jobs:
           push: true
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
+          build-args: |
+            COMMIT_SHA=${{ github.sha }}
+            VERSION=${{ steps.get-version.outputs.version }}
 
       - name: Extract metadata (tags, labels) for Frontend
         id: meta-frontend
@@ -72,6 +75,9 @@ jobs:
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
+          build-args: |
+            COMMIT_SHA=${{ github.sha }}
+            VERSION=${{ steps.get-version.outputs.version }}
 
   release:
     runs-on: ubuntu-latest

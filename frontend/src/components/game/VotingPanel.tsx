@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Button, theme } from 'antd';
-import { useSubmitVote } from '../api/client';
-import type { GameState, Player } from '../types';
-import { getRoleEmoji } from '../utils/roleUtils';
-import { PhaseTimer } from './PhaseTimer';
+import { useSubmitVote } from '../../api/client';
+import type { GameState, Player } from '../../types';
+import { getRoleEmoji } from '../../utils/roleUtils';
 
 const { useToken } = theme;
 
@@ -13,13 +12,18 @@ interface VotingPanelProps {
   timerEnabled: boolean;
 }
 
-export function VotingPanel({ gameState, playerId, timerEnabled }: VotingPanelProps) {
+export function VotingPanel({
+  gameState,
+  playerId,
+  timerEnabled: _timerEnabled,
+}: VotingPanelProps) {
   const { token } = useToken();
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const submitVote = useSubmitVote(gameState.room_id);
 
   const currentPlayer = gameState.players[playerId];
   const hasVoted = currentPlayer?.vote_target != null;
+  const canVote = currentPlayer?.is_alive && !currentPlayer?.is_spectator;
 
   const alivePlayers = Object.values(gameState.players).filter(
     (p) => p.is_alive && !p.is_spectator,
@@ -27,9 +31,12 @@ export function VotingPanel({ gameState, playerId, timerEnabled }: VotingPanelPr
 
   // Calculate vote counts (visible to all)
   const voteCounts: Record<string, number> = {};
+  const voteDetails: Record<string, string[]> = {}; // who voted for whom
   Object.values(gameState.players).forEach((p) => {
     if (p.vote_target) {
       voteCounts[p.vote_target] = (voteCounts[p.vote_target] || 0) + 1;
+      if (!voteDetails[p.vote_target]) voteDetails[p.vote_target] = [];
+      voteDetails[p.vote_target].push(p.nickname);
     }
   });
 
@@ -48,6 +55,86 @@ export function VotingPanel({ gameState, playerId, timerEnabled }: VotingPanelPr
     border: `1px solid ${token.colorBorder}`,
   };
 
+  // Dead/spectator players see read-only view
+  if (!canVote) {
+    return (
+      <div style={panelStyle}>
+        <div style={{ textAlign: 'center', marginBottom: token.margin }}>
+          <h2 style={{ color: token.colorText, margin: 0 }}>🗳️ Day Phase - Voting</h2>
+          <p style={{ color: token.colorTextSecondary, margin: '8px 0 0' }}>
+            Votes: {votedPlayers.length} / {totalAlive}
+          </p>
+          <p style={{ color: token.colorWarning, margin: '8px 0 0' }}>
+            👁️ You cannot vote (spectating)
+          </p>
+        </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+            gap: 16,
+          }}
+        >
+          {alivePlayers.map((player: Player) => (
+            <div
+              key={player.id}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: token.borderRadiusLG,
+                minHeight: '120px',
+              }}
+            >
+              <span style={{ fontSize: 24, marginBottom: 8 }}>
+                {player.role ? getRoleEmoji(player.role) : '👤'}
+              </span>
+              <span
+                style={{
+                  fontWeight: 500,
+                  textAlign: 'center',
+                  marginBottom: 4,
+                  color: token.colorText,
+                }}
+              >
+                {player.nickname}
+              </span>
+              {voteCounts[player.id] && (
+                <>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: token.colorTextLightSolid,
+                      background: token.colorPrimary,
+                      padding: '2px 8px',
+                      borderRadius: 12,
+                      marginTop: 4,
+                    }}
+                  >
+                    {voteCounts[player.id]} votes
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: token.colorTextSecondary,
+                      marginTop: 4,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {voteDetails[player.id]?.join(', ')}
+                  </span>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (hasVoted) {
     return (
       <div style={{ ...panelStyle, textAlign: 'center' }}>
@@ -62,11 +149,6 @@ export function VotingPanel({ gameState, playerId, timerEnabled }: VotingPanelPr
 
   return (
     <div style={panelStyle}>
-      <PhaseTimer
-        phaseStartTime={gameState.phase_start_time}
-        phaseDurationSeconds={gameState.settings.phase_duration_seconds}
-        timerEnabled={timerEnabled}
-      />
       <div style={{ textAlign: 'center', marginBottom: token.margin }}>
         <h2 style={{ color: token.colorText, margin: 0 }}>🗳️ Day Phase - Voting</h2>
         <p style={{ color: token.colorTextSecondary, margin: '8px 0 0' }}>

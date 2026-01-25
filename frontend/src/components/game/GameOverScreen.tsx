@@ -1,8 +1,8 @@
 import { Button, theme } from 'antd';
-import { useRestartGame } from '../api/client';
-import type { GameState, Player } from '../types';
-import { RoleType } from '../types';
-import { getRoleEmoji } from '../utils/roleUtils';
+import { useRestartGame } from '../../api/client';
+import type { GameState, Player } from '../../types';
+import { RoleType } from '../../types';
+import { getRoleEmoji } from '../../utils/roleUtils';
 
 const { useToken } = theme;
 

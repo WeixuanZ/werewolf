@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '../config';
 import type { GameState, GameSettings } from '../types';
 import { getGameStateQueryKey } from '../utils/queryKeys';
@@ -101,7 +101,10 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ player_id: playerId, target_id: targetId }),
       }),
+
+    getRoles: () => fetchApi<{ type: string; description: string }[]>('/roles'),
   },
+  getVersion: () => fetchApi<{ version: string; commit_sha: string }>('/version'),
 };
 
 // ============================================================================
@@ -217,5 +220,13 @@ export function useKickPlayer(roomId: string) {
     onSuccess: (data, variables) => {
       queryClient.setQueryData(getGameStateQueryKey(roomId, variables.playerId), data);
     },
+  });
+}
+
+export function useBackendVersion() {
+  return useQuery({
+    queryKey: ['backendVersion'],
+    queryFn: api.getVersion,
+    staleTime: Infinity,
   });
 }

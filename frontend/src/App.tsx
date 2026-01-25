@@ -6,10 +6,13 @@ import {
   createRootRoute,
   Outlet,
 } from '@tanstack/react-router';
+import { useState } from 'react';
 import Home from './routes/Home';
 import GameRoom from './routes/GameRoom';
 import { ConfigProvider, theme } from 'antd';
-import { DynamicBackground } from './components';
+import { DynamicBackground } from './components/backgrounds/DynamicBackground';
+import { CreditsModal } from './components/CreditsModal';
+import { useBackendVersion } from './api/client';
 
 const queryClient = new QueryClient();
 
@@ -53,25 +56,88 @@ const werewolfTheme = {
   },
 };
 
-// Create a root route
-const rootRoute = createRootRoute({
-  component: () => (
+function RootComponent() {
+  const [showCredits, setShowCredits] = useState(false);
+
+  const { data: backendVersion } = useBackendVersion();
+
+  return (
     <ConfigProvider theme={werewolfTheme}>
       <div
         style={{
-          minHeight: '100vh',
+          height: '100vh',
           background: 'linear-gradient(135deg, #1a1128 0%, #2d1f47 100%)',
           position: 'relative',
-          overflow: 'hidden',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         <DynamicBackground />
-        <div style={{ position: 'relative', zIndex: 1 }}>
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           <Outlet />
         </div>
+        {/* Credits Footer */}
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            textAlign: 'center',
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+            fontSize: 12,
+            color: 'rgba(168, 156, 200, 0.4)',
+            fontFamily: 'monospace',
+          }}
+        >
+          <button
+            onClick={() => setShowCredits(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(168, 156, 200, 0.6)',
+              fontSize: 12,
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              fontFamily: 'inherit',
+              padding: 0,
+            }}
+          >
+            Credits
+          </button>
+
+          <span>|</span>
+
+          <span>
+            FE: {__APP_VERSION__} ({__COMMIT_HASH__})
+          </span>
+          <span>|</span>
+          <span>
+            BE: {backendVersion?.version || '?'} ({backendVersion?.commit_sha || '?'})
+          </span>
+        </div>
+        <CreditsModal open={showCredits} onClose={() => setShowCredits(false)} />
       </div>
     </ConfigProvider>
-  ),
+  );
+}
+
+// Create a root route
+const rootRoute = createRootRoute({
+  component: RootComponent,
 });
 
 // Create index route

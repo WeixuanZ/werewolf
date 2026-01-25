@@ -1,12 +1,10 @@
 import { useParams } from '@tanstack/react-router';
-import { useCurrentSessionValue } from '../store/gameStore';
-import { useGameState } from '../hooks/useGameState';
-import { GamePhase } from '../types';
-import {
-  WerewolfBackground,
-  WerewolfBackgroundForest,
-  WerewolfBackgroundAbstract
-} from './index';
+import { useCurrentSessionValue } from '../../store/gameStore';
+import { useGameState } from '../../hooks/useGameState';
+import { GamePhase } from '../../types';
+import { WerewolfBackground } from './WerewolfBackground';
+import { WerewolfBackgroundForest } from './WerewolfBackgroundForest';
+import { WerewolfBackgroundAbstract } from './WerewolfBackgroundAbstract';
 
 export const DynamicBackground = () => {
   const { roomId } = useParams({ strict: false }) as { roomId?: string };

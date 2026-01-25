@@ -1,9 +1,9 @@
 import { Typography, Button, theme, Avatar, Tooltip, Tag } from 'antd';
-import { getRoleEmoji } from '../utils/roleUtils';
-import { useSubmitAction } from '../api/client';
-import { RoleType, NightActionType } from '../types';
-import type { Player } from '../types';
-import { PhaseTimer } from './PhaseTimer';
+import { getRoleEmoji } from '../../utils/roleUtils';
+import { useSubmitAction } from '../../api/client';
+import { RoleType, NightActionType } from '../../types';
+import type { Player } from '../../types';
+import { PhaseTimer } from '../game/PhaseTimer';
 
 const { Text, Title } = Typography;
 
@@ -65,20 +65,25 @@ export function WerewolfPanel({
   return (
     <div
       style={{
-        background: 'rgba(0, 0, 0, 0.3)',
+        background: 'rgba(20, 20, 30, 0.6)',
+        backdropFilter: 'blur(12px)',
         borderRadius: token.borderRadiusLG,
         padding: token.paddingLG,
-        border: `2px solid ${isMyActionConfirmed ? token.colorSuccess : token.colorBorder}`,
+        border: `2px solid ${isMyActionConfirmed ? token.colorSuccess : 'rgba(255, 255, 255, 0.1)'}`,
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
       }}
     >
       <div style={{ textAlign: 'center', marginBottom: token.margin }}>
-        <Title level={3} style={{ color: token.colorText, margin: 0 }}>
-          {otherWerewolves.length > 0 ? '🐺 Werewolf Council ' : '🐺 Werewolf Action '}
+        <Title
+          level={3}
+          style={{ margin: 0, color: '#ff4d4f', textShadow: '0 0 10px rgba(255, 77, 79, 0.5)' }}
+        >
+          {otherWerewolves.length > 0 ? '🐺 Werewolf Council' : '🐺 Night Action'}
           {isMyActionConfirmed && (
-            <Tag color="success" style={{ verticalAlign: 'middle' }}>
+            <Tag color="success" style={{ verticalAlign: 'middle', marginLeft: 8 }}>
               LOCKED
             </Tag>
           )}
@@ -86,7 +91,9 @@ export function WerewolfPanel({
         <Text style={{ color: token.colorTextSecondary }}>
           {otherWerewolves.length > 0
             ? 'Select a target. Vote together to eliminate.'
-            : 'Select a target to eliminate.'}
+            : isMyActionConfirmed
+              ? 'Target locked. Waiting for night to end...'
+              : 'Select a target to eliminate. This choice is final.'}
         </Text>
       </div>
 
@@ -232,8 +239,10 @@ export function WerewolfPanel({
           ) : myTarget ? (
             <Text style={{ color: token.colorSuccess }}>
               {isMyActionConfirmed
-                ? 'Target confirmed. Waiting for others to confirm...'
-                : 'Target selected. Confirm to lock in your vote.'}
+                ? 'Target confirmed.'
+                : otherWerewolves.length === 0
+                  ? 'Target selected. Confirm to eliminate.'
+                  : 'Target selected. Confirm to lock in your vote.'}
             </Text>
           ) : (
             <Text style={{ color: token.colorTextSecondary }}>Select a target...</Text>
@@ -241,31 +250,33 @@ export function WerewolfPanel({
         </div>
 
         {/* Confirm / Unlock Button */}
-        <Button
-          type={isMyActionConfirmed ? 'default' : 'primary'}
-          block
-          size="large"
-          disabled={!myTarget}
-          onClick={() => {
-            if (isMyActionConfirmed) {
-              // Unlock: send confirmed=false
-              if (myTarget) {
-                // If target is SKIP, we send "SKIP" as targetId with confirmed=false
-                const targetToSend = myTarget === 'SKIP' ? 'SKIP' : myTarget;
-                handleActionSubmit(NightActionType.KILL, targetToSend, false);
+        {(!isMyActionConfirmed || otherWerewolves.length > 0) && (
+          <Button
+            type={isMyActionConfirmed ? 'default' : 'primary'}
+            block
+            size="large"
+            disabled={!myTarget}
+            onClick={() => {
+              if (isMyActionConfirmed) {
+                // Unlock: send confirmed=false
+                if (myTarget) {
+                  // If target is SKIP, we send "SKIP" as targetId with confirmed=false
+                  const targetToSend = myTarget === 'SKIP' ? 'SKIP' : myTarget;
+                  handleActionSubmit(NightActionType.KILL, targetToSend, false);
+                }
+              } else {
+                // Confirm: send confirmed=true
+                if (myTarget) {
+                  const targetToSend = myTarget === 'SKIP' ? 'SKIP' : myTarget;
+                  handleActionSubmit(NightActionType.KILL, targetToSend, true);
+                }
               }
-            } else {
-              // Confirm: send confirmed=true
-              if (myTarget) {
-                const targetToSend = myTarget === 'SKIP' ? 'SKIP' : myTarget;
-                handleActionSubmit(NightActionType.KILL, targetToSend, true);
-              }
-            }
-          }}
-          style={{ height: 48, fontSize: 18 }}
-        >
-          {isMyActionConfirmed ? 'Unlock Selection' : 'Confirm Target'}
-        </Button>
+            }}
+            style={{ height: 48, fontSize: 18 }}
+          >
+            {isMyActionConfirmed ? 'Unlock Selection' : 'Confirm Target'}
+          </Button>
+        )}
 
         {/* Skip Button */}
         <Button

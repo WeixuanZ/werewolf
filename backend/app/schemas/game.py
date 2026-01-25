@@ -51,7 +51,7 @@ class PlayerSchema(BaseModel):
     is_alive: bool = True
     is_admin: bool = False
     is_spectator: bool = False
-    is_online: bool = False
+    is_online: bool = True
 
     # Role specific state
     witch_has_heal: bool = True
@@ -77,7 +77,13 @@ class GameSettingsSchema(BaseModel):
         RoleType.WEREWOLF: 1,
         RoleType.SEER: 1,
         RoleType.DOCTOR: 1,
-        RoleType.VILLAGER: 1,
+        RoleType.WITCH: 0,
+        RoleType.HUNTER: 0,
+        RoleType.CUPID: 0,
+        RoleType.BODYGUARD: 0,
+        RoleType.LYCAN: 0,
+        RoleType.TANNER: 0,
+        RoleType.VILLAGER: 0,
     }
     phase_duration_seconds: int = 60
     timer_enabled: bool = True

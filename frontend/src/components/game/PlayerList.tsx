@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Card, Tag, theme, Button, Modal } from 'antd';
-import { getRoleNameWithEmoji } from '../utils/roleUtils';
+import { getRoleNameWithEmoji } from '../../utils/roleUtils';
 import { DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import type { Player } from '../types';
+import type { Player } from '../../types';
 
 const { useToken } = theme;
 

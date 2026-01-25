@@ -56,16 +56,15 @@ class Role(ABC):
         if expected_action_type and action_type != expected_action_type:
             raise InvalidActionError(f"Invalid action type for {self.role_type}")
 
-        if not target_id or target_id not in game.players:
+        if (not target_id or target_id not in game.players) and self.role_type != RoleType.CUPID:
             # Cupid handles comma-separated targets separately, so skip this check for Cupid
-            if self.role_type != RoleType.CUPID:
-                raise InvalidActionError("Invalid target")
+            raise InvalidActionError("Invalid target")
 
         player.night_action_target = target_id
         player.night_action_type = action_type
 
     def handle_night_action(
-        self, game: "Game", player_id: str, action_type: str, target_id: str | None
+        self, _game: "Game", _player_id: str, _action_type: str, _target_id: str | None
     ) -> None:
         """
         Process the night action for this role.
@@ -190,12 +189,31 @@ class Witch(Role):
         return "You have a potion to save a victim and a poison to kill someone."
 
     def get_night_info(self, game_state, _player_id: str) -> NightInfoSchema | None:
-        victim_id = None
-        for p in game_state.players.values():
-            if p.role == RoleType.WEREWOLF and p.night_action_target:
-                victim_id = p.night_action_target
-                break
+        # Check if werewolves have reached consensus (all alive wolves agreed on same target AND confirmed)
+        alive_wolves = [
+            p for p in game_state.players.values() if p.role == RoleType.WEREWOLF and p.is_alive
+        ]
 
+        # Consensus requires all wolves to have confirmed the same target
+        wolf_targets = set()
+        all_confirmed = True
+        for wolf in alive_wolves:
+            if wolf.night_action_target and wolf.night_action_confirmed:
+                wolf_targets.add(wolf.night_action_target)
+            else:
+                all_confirmed = False
+
+        # Consensus: exactly one target that all have confirmed
+        consensus_reached = all_confirmed and len(wolf_targets) == 1 and len(alive_wolves) > 0
+
+        if not consensus_reached:
+            return NightInfoSchema(
+                prompt="Werewolves are still deliberating...",
+                victim_id=None,
+                actions_available=[NightActionType.POISON, NightActionType.SKIP],
+            )
+
+        victim_id = next(iter(wolf_targets)) if wolf_targets else None
         victim_name = "Unknown"
         if victim_id and victim_id in game_state.players:
             victim_name = game_state.players[victim_id].nickname

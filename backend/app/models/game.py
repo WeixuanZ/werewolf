@@ -234,7 +234,7 @@ class Game:
                 is_admin=p.is_admin,
                 is_spectator=p.role == RoleType.SPECTATOR,
                 # is_online is merged later by service layer
-                is_online=False,
+                is_online=True,
                 vote_target=p.vote_target if is_self else None,
                 night_action_target=p.night_action_target if should_show_action else None,
                 night_action_type=p.night_action_type if should_show_action else None,
@@ -276,6 +276,7 @@ class Game:
             RoleType.WITCH: 0,
             RoleType.HUNTER: 0,
             RoleType.CUPID: 0,
+            RoleType.BODYGUARD: 0,
             RoleType.LYCAN: 0,
             RoleType.TANNER: 0,
             RoleType.VILLAGER: 0,
@@ -407,7 +408,18 @@ class Game:
         random.shuffle(roles_to_assign)
 
         for i, pid in enumerate(player_ids):
-            self._state.players[pid].role = roles_to_assign[i]
+            player = self._state.players[pid]
+            player.role = roles_to_assign[i]
+
+            # Reset role-specific state
+            player.witch_has_heal = True
+            player.witch_has_poison = True
+            player.hunter_revenge_target = None
+            player.last_protected_target = None
+            player.night_action_target = None
+            player.night_action_type = None
+            player.night_action_confirmed = False
+            player.is_alive = True  # Ensure players are alive on new game
 
     def transition_to(self, new_phase: GamePhase):
         """Transition to a new phase, calling on_enter for the new state."""

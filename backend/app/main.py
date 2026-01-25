@@ -45,13 +45,25 @@ app.include_router(websocket.router, tags=["websocket"])
 
 
 @app.exception_handler(GameLogicError)
-async def game_logic_exception_handler(request: Request, exc: GameLogicError):
+async def game_logic_exception_handler(_request: Request, exc: GameLogicError):
     return JSONResponse(
         status_code=400,
         content={"detail": str(exc)},
     )
 
 
+@app.get("/api/version")
+async def version_info():
+    return {
+        "version": settings.VERSION,
+        "commit_sha": settings.COMMIT_SHA,
+    }
+
+
 @app.get("/")
 async def root():
-    return {"message": "Werewolf API is running"}
+    return {
+        "message": "Werewolf API is running",
+        "version": settings.VERSION,
+        "commit_sha": settings.COMMIT_SHA,
+    }

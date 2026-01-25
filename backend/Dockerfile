@@ -34,5 +34,11 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Expose port
 EXPOSE 8000
 
+# Version Info
+ARG COMMIT_SHA=unknown
+ARG VERSION=0.0.0
+ENV COMMIT_SHA=${COMMIT_SHA}
+ENV VERSION=${VERSION}
+
 # Command
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,3 +1,5 @@
+import contextlib
+
 from app.models.game import Game
 from app.schemas.game import GamePhase, GameSettingsSchema, NightActionType, RoleType
 
@@ -149,13 +151,11 @@ class TestAdvancedRoles:
         self.game.phase = GamePhase.NIGHT
         self.game.players["witch"].night_action_target = None
 
-        # Try to use Heal again
-        try:
+        # Try to use Heal again - expected to fail or be ignored
+        with contextlib.suppress(Exception):
             self.game.process_action(
                 "witch", {"action_type": NightActionType.HEAL, "target_id": "villager"}
             )
-        except Exception:
-            pass  # Expected exception or ignored action
 
         # Should not set target because resource is gone
         assert self.game.players["witch"].night_action_target is None

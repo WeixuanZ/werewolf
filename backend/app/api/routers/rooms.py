@@ -99,6 +99,11 @@ async def start_game(
 
         # Broadcast filtered state to each player (each sees their own role only)
         await broadcast_filtered_states(room_id, service)
+
+        # Return filtered view for the admin
+        game = await service.get_game(room_id)
+        if game:
+            return await service.get_player_view(game, request.player_id)
         return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -209,3 +214,16 @@ async def kick_player(
         return game_state
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.get("/roles")
+async def get_roles():
+    """Get metadata for all roles including descriptions."""
+    from app.models.roles import get_role_instance
+    from app.schemas.game import RoleType
+
+    roles = []
+    for role_type in RoleType:
+        instance = get_role_instance(role_type)
+        roles.append({"type": role_type, "description": instance.get_description()})
+    return roles

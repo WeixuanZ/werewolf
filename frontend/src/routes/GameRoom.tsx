@@ -3,20 +3,18 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { useSetCurrentRoomId, useCurrentSession } from '../store/gameStore';
-import { Card, Typography, Tag, Button, Spin, message, theme, QRCode, Modal } from 'antd';
+import { Card, Typography, Button, Spin, message, theme, QRCode, Modal } from 'antd';
 import { v4 as uuidv4 } from 'uuid';
 import { GamePhase } from '../types';
 import { useParams } from '@tanstack/react-router';
 import { useJoinRoom, useStartGame, useEndGame, useKickPlayer } from '../api/client';
 import { useSoundEffects } from '../hooks/useSoundEffects';
-import {
-  JoinScreen,
-  PlayerList,
-  NightPanel,
-  LobbyPanel,
-  VotingPanel,
-  GameOverScreen,
-} from '../components';
+import { JoinScreen } from '../components/game/JoinScreen';
+import { PlayerList } from '../components/game/PlayerList';
+import { NightPanel } from '../components/night/NightPanel';
+import { LobbyPanel } from '../components/game/LobbyPanel';
+import { VotingPanel } from '../components/game/VotingPanel';
+import { GameOverScreen } from '../components/game/GameOverScreen';
 import type { GameSettings } from '../types';
 
 const { Title } = Typography;
@@ -36,9 +34,11 @@ export default function GameRoom() {
   }, [roomId, setCurrentRoomId]);
 
   const { gameState, error, isLoading } = useGameSocket(roomId);
+  const [session, setSession] = useCurrentSession();
+  const playerId = session?.playerId;
 
-  // Sound effects
-  useSoundEffects(gameState);
+  // Sound effects (with player context for per-player audio)
+  useSoundEffects(gameState, { playerId });
 
   useEffect(() => {
     if (error || (!isLoading && !gameState)) {
@@ -46,8 +46,6 @@ export default function GameRoom() {
       navigate({ to: '/' });
     }
   }, [error, gameState, isLoading, navigate]);
-  const [session, setSession] = useCurrentSession();
-  const playerId = session?.playerId;
 
   // API Mutations
   const joinRoom = useJoinRoom(roomId);
@@ -146,7 +144,7 @@ export default function GameRoom() {
   const players = Object.values(gameState.players);
 
   return (
-    <div style={{ padding: token.padding, minHeight: '100vh' }}>
+    <div style={{ padding: token.padding, flex: 1 }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
         {/* Header */}
         <div
@@ -209,6 +207,17 @@ export default function GameRoom() {
                   danger
                   onClick={() => setShowEndGameConfirm(true)}
                   loading={endGame.isPending}
+                  style={{
+                    height: 42, // Match badge height
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '0 20px',
+                    fontSize: 15,
+                    fontWeight: 500,
+                    borderRadius: token.borderRadiusLG,
+                    border: `1px solid ${token.colorErrorBorder}`,
+                    background: 'rgba(255, 77, 79, 0.1)',
+                  }}
                 >
                   End Game
                 </Button>
@@ -237,7 +246,7 @@ export default function GameRoom() {
                           handleEndGame();
                           setShowEndGameConfirm(false);
                         }}
-                        size="large" // Matches standard button size
+                        size="large"
                         style={{ flex: 1, height: 48 }}
                       >
                         End Game
@@ -252,7 +261,43 @@ export default function GameRoom() {
                 </Modal>
               </>
             )}
-            <Tag color={isLobby ? 'blue' : isNight ? 'purple' : 'green'}>{gameState.phase}</Tag>
+
+            {/* Unified Phase Indicator */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '0 16px',
+                height: 42,
+                background: isLobby
+                  ? 'rgba(24, 144, 255, 0.2)'
+                  : isNight
+                    ? 'rgba(128, 0, 128, 0.2)'
+                    : 'rgba(34, 139, 34, 0.2)',
+                borderRadius: token.borderRadiusLG,
+                border: `1px solid ${
+                  isLobby
+                    ? 'rgba(24, 144, 255, 0.4)'
+                    : isNight
+                      ? 'rgba(147, 112, 219, 0.4)'
+                      : 'rgba(34, 139, 34, 0.4)'
+                }`,
+                backdropFilter: 'blur(4px)',
+              }}
+            >
+              <span style={{ fontSize: 20 }}>{isLobby ? '🏠' : isNight ? '🌙' : '☀️'}</span>
+              <span
+                style={{
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: isLobby ? '#1890ff' : isNight ? '#d8bfd8' : '#90ee90',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                {isLobby ? 'LOBBY' : gameState.phase}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -292,6 +337,21 @@ export default function GameRoom() {
                 phaseDurationSeconds={gameState.settings?.phase_duration_seconds}
                 timerEnabled={gameState.settings?.timer_enabled ?? true}
               />
+            </Card>
+          )}
+
+          {/* Spectator Banner */}
+          {isGameInProgress && me && (!me.is_alive || me.is_spectator) && (
+            <Card
+              style={{
+                background: 'rgba(0, 0, 0, 0.4)',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: 24, marginBottom: 8 }}>👁️</div>
+              <div style={{ color: token.colorTextSecondary, fontSize: 16 }}>
+                You are {me.is_spectator ? 'spectating' : 'dead'}. Watch the game unfold...
+              </div>
             </Card>
           )}
 

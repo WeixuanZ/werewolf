@@ -1,6 +1,12 @@
-import { Modal, Typography, List, Divider } from 'antd';
+import { Modal, Typography, List, Divider, Button, theme, Space } from 'antd';
+import {
+  GithubOutlined,
+  SoundOutlined,
+  SafetyCertificateOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 
-const { Text, Link, Title } = Typography;
+const { Text, Title, Link } = Typography;
 
 interface CreditsModalProps {
   open: boolean;
@@ -8,6 +14,8 @@ interface CreditsModalProps {
 }
 
 export function CreditsModal({ open, onClose }: CreditsModalProps) {
+  const { token } = theme.useToken();
+
   const credits = [
     {
       title: 'Night Start Sound',
@@ -33,42 +41,140 @@ export function CreditsModal({ open, onClose }: CreditsModalProps) {
       license: 'CC BY 3.0',
       licenseUrl: 'http://creativecommons.org/licenses/by/3.0/',
     },
+    {
+      title: 'Game Win Sound',
+      description: 'Procedurally generated C Major Fanfare',
+      source: 'Generated via Python wave module',
+      sourceUrl: '',
+      license: 'Public Domain',
+      licenseUrl: '',
+    },
   ];
 
   return (
     <Modal
-      title="Credits"
+      title={
+        <Space>
+          <SafetyCertificateOutlined style={{ color: token.colorPrimary }} />
+          <span>Credits & Licenses</span>
+        </Space>
+      }
       open={open}
       onCancel={onClose}
       footer={null}
       centered
+      width={600}
     >
-      <Title level={5}>Sound Effects</Title>
-      <List
-        itemLayout="vertical"
-        dataSource={credits}
-        renderItem={(item) => (
-          <List.Item>
-            <List.Item.Meta
-              title={item.title}
-              description={
-                <>
-                  <Text>{item.description}</Text>
-                  <br />
-                  <Text type="secondary">Source: </Text>
-                  <Link href={item.sourceUrl} target="_blank">
-                    {item.source}
-                  </Link>
-                  <Divider type="vertical" />
-                  <Link href={item.licenseUrl} target="_blank">
-                    {item.license}
-                  </Link>
-                </>
-              }
-            />
-          </List.Item>
-        )}
-      />
+      {/* Project Section */}
+      <div
+        style={{
+          background: `linear-gradient(145deg, ${token.colorBgContainer}, ${token.colorBgElevated})`,
+          borderRadius: token.borderRadiusLG,
+          padding: 24,
+          marginBottom: 24,
+          textAlign: 'center',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          border: `1px solid ${token.colorBorderSecondary}`,
+        }}
+      >
+        <Title level={2} style={{ margin: 0, color: token.colorPrimary, marginBottom: 8 }}>
+          Werewolf Game
+        </Title>
+        <Text type="secondary" style={{ fontSize: 16 }}>
+          An open-source implementation of the classic social deduction game.
+        </Text>
+
+        <Divider style={{ margin: '16px 0' }} />
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 20 }}>
+          <Space direction="vertical" size={2}>
+            <Space>
+              <UserOutlined /> <Text strong>Author</Text>
+            </Space>
+            <Text>WeixuanZ</Text>
+          </Space>
+
+          <Divider type="vertical" style={{ height: 40 }} />
+
+          <Space direction="vertical" size={2}>
+            <Space>
+              <SafetyCertificateOutlined /> <Text strong>License</Text>
+            </Space>
+            <Text>LGPL v3.0</Text>
+          </Space>
+        </div>
+
+        <Button
+          type="primary"
+          icon={<GithubOutlined />}
+          href="https://github.com/WeixuanZ/werewolf"
+          target="_blank"
+          size="large"
+          shape="round"
+          style={{ paddingInline: 32 }}
+        >
+          View on GitHub
+        </Button>
+      </div>
+
+      {/* Assets Section */}
+      <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <SoundOutlined /> Audio Assets
+      </Title>
+
+      <div
+        style={{
+          background: token.colorBgContainer,
+          borderRadius: token.borderRadiusLG,
+          padding: '0 16px',
+          border: `1px solid ${token.colorBorderSecondary}`,
+        }}
+      >
+        <List
+          itemLayout="vertical"
+          dataSource={credits}
+          size="small"
+          split={true}
+          renderItem={(item) => (
+            <List.Item style={{ padding: '12px 0' }}>
+              <List.Item.Meta
+                title={
+                  <Text strong style={{ color: token.colorTextHeading }}>
+                    {item.title}
+                  </Text>
+                }
+                description={
+                  <Space direction="vertical" size={0} style={{ width: '100%', fontSize: 13 }}>
+                    <Text style={{ color: token.colorText }}>{item.description}</Text>
+                    <Space split={<Divider type="vertical" />}>
+                      <Space>
+                        <Text type="secondary">Source:</Text>
+                        {item.sourceUrl ? (
+                          <Link href={item.sourceUrl} target="_blank">
+                            {item.source}
+                          </Link>
+                        ) : (
+                          <Text type="secondary">{item.source}</Text>
+                        )}
+                      </Space>
+                      <Space>
+                        <Text type="secondary">License:</Text>
+                        {item.licenseUrl ? (
+                          <Link href={item.licenseUrl} target="_blank">
+                            {item.license}
+                          </Link>
+                        ) : (
+                          <Text type="secondary">{item.license}</Text>
+                        )}
+                      </Space>
+                    </Space>
+                  </Space>
+                }
+              />
+            </List.Item>
+          )}
+        />
+      </div>
     </Modal>
   );
 }

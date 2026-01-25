@@ -1,9 +1,8 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useDefaultNickname } from '../store/gameStore';
+import { useState } from 'react';
 import { Button, Input, Card, Typography, Space, message, theme } from 'antd';
 import { useCreateRoom } from '../api/client';
-import { useState } from 'react';
-import { CreditsModal } from '../components';
 
 const { Title } = Typography;
 const { useToken } = theme;
@@ -13,7 +12,6 @@ export default function Home() {
   const navigate = useNavigate();
   const [nickname, setNickname] = useDefaultNickname();
   const [roomIdInput, setRoomIdInput] = useState('');
-  const [showCredits, setShowCredits] = useState(false);
   const createRoom = useCreateRoom();
 
   const handleCreateRoom = async () => {
@@ -44,7 +42,7 @@ export default function Home() {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '100vh',
+        flex: 1,
         padding: token.padding,
       }}
     >
@@ -94,17 +92,6 @@ export default function Home() {
             </div>
           </div>
         </Space>
-
-        <Button
-          type="link"
-          size="small"
-          onClick={() => setShowCredits(true)}
-          style={{ marginTop: 16, color: token.colorTextSecondary }}
-        >
-          Credits
-        </Button>
-
-        <CreditsModal open={showCredits} onClose={() => setShowCredits(false)} />
       </Card>
     </div>
   );
