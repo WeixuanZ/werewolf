@@ -5,10 +5,9 @@ import { useSubmitAction } from '../api/client';
 import { NightActionType, RoleType } from '../types';
 import type { Player } from '../types';
 import { WerewolfPanel } from './WerewolfPanel';
+import { PhaseTimer } from './PhaseTimer';
 
 const { Text } = Typography;
-
-import { PhaseTimer } from './PhaseTimer';
 
 interface NightPanelProps {
   myRole: string;

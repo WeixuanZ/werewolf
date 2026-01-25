@@ -37,6 +37,7 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
       },
       phase_duration_seconds: 60,
       timer_enabled: true,
+      dramatic_tones_enabled: true,
     },
   );
   const [loading, setLoading] = useState(false);
@@ -102,6 +103,33 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              marginBottom: 12,
+              borderBottom: '1px solid rgba(255,255,255,0.1)',
+              paddingBottom: 12,
+            }}
+          >
+            <Text strong>Enable Dramatic Tones</Text>
+            <Switch
+              checked={settings.dramatic_tones_enabled ?? true}
+              disabled={!isAdmin}
+              onChange={(checked) => {
+                const newSettings = { ...settings, dramatic_tones_enabled: checked };
+                setSettings(newSettings);
+                if (session?.playerId) {
+                  updateSettings({
+                    playerId: session.playerId,
+                    settings: newSettings,
+                  });
+                }
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               marginBottom: settings.timer_enabled ? 12 : 0,
             }}
           >
@@ -128,8 +156,7 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                borderTop: '1px solid rgba(255,255,255,0.1)',
-                paddingTop: 12,
+                paddingTop: 0,
               }}
             >
               <Text>Phase Duration (seconds)</Text>

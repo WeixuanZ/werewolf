@@ -9,6 +9,7 @@ import {
 import Home from './routes/Home';
 import GameRoom from './routes/GameRoom';
 import { ConfigProvider, theme } from 'antd';
+import { DynamicBackground } from './components';
 
 const queryClient = new QueryClient();
 
@@ -60,9 +61,14 @@ const rootRoute = createRootRoute({
         style={{
           minHeight: '100vh',
           background: 'linear-gradient(135deg, #1a1128 0%, #2d1f47 100%)',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <Outlet />
+        <DynamicBackground />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <Outlet />
+        </div>
       </div>
     </ConfigProvider>
   ),

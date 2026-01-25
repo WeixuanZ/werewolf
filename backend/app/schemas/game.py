@@ -82,6 +82,7 @@ class GameSettingsSchema(BaseModel):
     phase_duration_seconds: int = 60
     timer_enabled: bool = True
     reveal_role_on_death: bool = False
+    dramatic_tones_enabled: bool = True
 
 
 class GameStateSchema(BaseModel):
