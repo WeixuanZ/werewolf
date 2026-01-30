@@ -1,20 +1,16 @@
 import { useParams } from '@tanstack/react-router';
 import { useCurrentSessionValue } from '../../store/gameStore';
 import { useGameState } from '../../hooks/useGameState';
-import { GamePhase } from '../../types';
+import { GamePhase, RoleType } from '../../types';
+import { DayBackground } from './DayBackground';
+import { NightBackground } from './NightBackground';
 import { WerewolfBackground } from './WerewolfBackground';
-import { WerewolfBackgroundForest } from './WerewolfBackgroundForest';
-import { WerewolfBackgroundAbstract } from './WerewolfBackgroundAbstract';
 
 export const DynamicBackground = () => {
   const { roomId } = useParams({ strict: false }) as { roomId?: string };
   const session = useCurrentSessionValue();
   const playerId = session?.playerId;
 
-  // Access game state from React Query cache
-  // We use the shared hook but disable active fetching (staleTime: Infinity)
-  // because the socket connection in GameRoom handles the updates.
-  // We just want to reactively read the current state.
   const { data: gameState } = useGameState(roomId || null, playerId, {
     enabled: !!roomId,
     staleTime: Infinity,
@@ -26,7 +22,7 @@ export const DynamicBackground = () => {
     return <WerewolfBackground />;
   }
 
-  // Fallback to Geometric if phase is undefined (loading)
+  // Fallback to WerewolfBackground if phase is undefined (loading)
   if (!phase) {
     return <WerewolfBackground />;
   }
@@ -34,13 +30,36 @@ export const DynamicBackground = () => {
   switch (phase) {
     case GamePhase.DAY:
     case GamePhase.VOTING:
-      return <WerewolfBackgroundForest />;
+      return <DayBackground />;
 
     case GamePhase.NIGHT:
-      return <WerewolfBackgroundAbstract />;
+      return <NightBackground />;
+
+    case GamePhase.GAME_OVER: {
+      const winners = gameState?.winners;
+      const playerRole = gameState?.players?.[playerId ?? '']?.role;
+      const isWerewolf = playerRole === RoleType.WEREWOLF;
+      const playerWon =
+        (isWerewolf && winners === 'WEREWOLVES') || (!isWerewolf && winners === 'VILLAGERS');
+      const tintColor = playerWon ? 'rgba(46, 125, 50, 0.2)' : 'rgba(198, 40, 40, 0.2)';
+
+      return (
+        <>
+          <WerewolfBackground />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: tintColor,
+              zIndex: 0,
+              pointerEvents: 'none',
+            }}
+          />
+        </>
+      );
+    }
 
     case GamePhase.WAITING:
-    case GamePhase.GAME_OVER:
     default:
       return <WerewolfBackground />;
   }

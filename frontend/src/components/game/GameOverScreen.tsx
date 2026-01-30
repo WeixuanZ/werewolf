@@ -32,20 +32,17 @@ export function GameOverScreen({ gameState, playerId }: GameOverScreenProps) {
   const werewolves = Object.values(gameState.players).filter((p) => p.role === RoleType.WEREWOLF);
   const villagers = Object.values(gameState.players).filter((p) => p.role !== RoleType.WEREWOLF);
 
-  const bgColor = playerWon ? 'rgba(46, 125, 50, 0.2)' : 'rgba(198, 40, 40, 0.2)';
-
   return (
     <div
       style={{
-        minHeight: '100vh',
+        minHeight: '100%',
+        width: '100%',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        flexDirection: 'column',
         padding: token.padding,
-        background: bgColor,
       }}
     >
-      <div style={{ maxWidth: 600, width: '100%', textAlign: 'center' }}>
+      <div style={{ maxWidth: 600, width: '100%', textAlign: 'center', margin: 'auto' }}>
         {/* Result Banner */}
         <div style={{ marginBottom: token.marginLG }}>
           <span style={{ fontSize: 64, display: 'block', marginBottom: 8 }}>

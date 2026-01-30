@@ -5,6 +5,7 @@ import {
   ExperimentOutlined,
   StopOutlined,
   ArrowLeftOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
 import { getRoleNameWithEmoji, getRoleEmoji, getRoleTheme } from '../../utils/roleUtils';
 import { PhaseTimer } from '../game/PhaseTimer';
@@ -54,11 +55,12 @@ export function WitchAction({
   const roleTheme = getRoleTheme(myRole);
 
   const actionsAvailable = nightInfo?.actions_available || [];
-  const canHeal = actionsAvailable.includes(NightActionType.HEAL) && me?.witch_has_heal;
-  const canPoison = actionsAvailable.includes(NightActionType.POISON) && me?.witch_has_poison;
-
   const victimId = nightInfo?.victim_id;
   const victimName = victimId ? alivePlayers.find((p) => p.id === victimId)?.nickname : null;
+
+  const canHeal =
+    actionsAvailable.includes(NightActionType.HEAL) && me?.witch_has_heal && !!victimId;
+  const canPoison = actionsAvailable.includes(NightActionType.POISON) && me?.witch_has_poison;
 
   const handleHeal = () => {
     if (canHeal && victimId) {
@@ -74,14 +76,6 @@ export function WitchAction({
   const handleConfirmPoison = () => {
     if (selectedPoisonId) {
       onSubmit(NightActionType.POISON, selectedPoisonId, true);
-    }
-  };
-
-  const handleUnlock = () => {
-    onSubmit(confirmedActionType!, confirmedTargetId || null, false);
-    if (confirmedActionType === NightActionType.POISON) {
-      setViewingPoisonTargets(true);
-      setSelectedPoisonId(confirmedTargetId || null);
     }
   };
 
@@ -175,11 +169,9 @@ export function WitchAction({
               <Title level={4} style={{ margin: 0, color: '#fff' }}>
                 Life Potion
               </Title>
-              {victimId ? (
-                <Text style={{ marginTop: 8, color: '#ff7875' }}>Save 💀 {victimName}</Text>
-              ) : (
-                <Text style={{ marginTop: 8, opacity: 0.6 }}>No victim to save</Text>
-              )}
+              <Text style={{ marginTop: 8, color: victimId ? '#ff7875' : 'rgba(255,255,255,0.4)' }}>
+                {victimId ? `Save 💀 ${victimName}` : 'No victim tonight'}
+              </Text>
               <Badge
                 status={me?.witch_has_heal ? 'success' : 'default'}
                 text={me?.witch_has_heal ? 'Available' : 'Empty'}
@@ -299,9 +291,9 @@ export function WitchAction({
             disabled={!selectedPoisonId || isPending}
             onClick={handleConfirmPoison}
             style={{
-              height: 48,
+              height: 50,
               fontSize: 18,
-              borderRadius: 24,
+              borderRadius: 25,
               background: selectedPoisonId
                 ? 'linear-gradient(135deg, #722ed1 0%, #b37feb 100%)'
                 : undefined,
@@ -313,26 +305,33 @@ export function WitchAction({
           </Button>
         )}
 
-        {isConfirmed && (
-          <Button
-            block
-            size="large"
-            onClick={handleUnlock}
-            style={{ height: 48, fontSize: 18, borderRadius: 24 }}
+        {isConfirmed ? (
+          <div
+            style={{
+              padding: 16,
+              background: 'rgba(46, 125, 50, 0.2)',
+              borderRadius: 8,
+              border: '1px solid rgba(46, 125, 50, 0.5)',
+              textAlign: 'center',
+              color: '#a5d6a7',
+              width: '100%',
+            }}
           >
-            Unlock Selection
+            <CheckOutlined style={{ marginRight: 8 }} />
+            Action Submitted
+          </div>
+        ) : (
+          <Button
+            type="text"
+            block
+            icon={<StopOutlined />}
+            style={{ color: token.colorTextSecondary }}
+            onClick={handleSkip}
+            disabled={isPending}
+          >
+            Skip Action
           </Button>
         )}
-
-        <Button
-          size="large"
-          icon={<StopOutlined />}
-          onClick={handleSkip}
-          disabled={isConfirmed || isPending}
-          style={{ height: 48, fontSize: 18, borderRadius: 24, width: '100%' }}
-        >
-          Do Nothing & Sleep
-        </Button>
       </div>
     </div>
   );

@@ -66,10 +66,8 @@ function RootComponent() {
       <div
         style={{
           height: '100vh',
-          background: 'linear-gradient(135deg, #1a1128 0%, #2d1f47 100%)',
           position: 'relative',
-          overflowY: 'auto',
-          overflowX: 'hidden',
+          overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -82,52 +80,55 @@ function RootComponent() {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
+            overflowY: 'auto',
+            overflowX: 'hidden',
           }}
         >
-          <Outlet />
-        </div>
-        {/* Credits Footer */}
-        <div
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            textAlign: 'center',
-            padding: '16px',
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '12px',
-            fontSize: 12,
-            color: 'rgba(168, 156, 200, 0.4)',
-            fontFamily: 'monospace',
-          }}
-        >
-          <button
-            onClick={() => setShowCredits(true)}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Outlet />
+          </div>
+
+          {/* Credits Footer */}
+          <div
             style={{
-              background: 'none',
-              border: 'none',
-              color: 'rgba(168, 156, 200, 0.6)',
+              textAlign: 'center',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
               fontSize: 12,
-              cursor: 'pointer',
-              textDecoration: 'underline',
-              fontFamily: 'inherit',
-              padding: 0,
+              color: 'rgba(168, 156, 200, 0.4)',
+              fontFamily: 'monospace',
             }}
           >
-            Credits
-          </button>
+            <button
+              onClick={() => setShowCredits(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'rgba(168, 156, 200, 0.6)',
+                fontSize: 12,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                fontFamily: 'inherit',
+                padding: 0,
+              }}
+            >
+              Credits
+            </button>
 
-          <span>|</span>
+            <span>|</span>
 
-          <span>
-            FE: {__APP_VERSION__} ({__COMMIT_HASH__})
-          </span>
-          <span>|</span>
-          <span>
-            BE: {backendVersion?.version || '?'} ({backendVersion?.commit_sha || '?'})
-          </span>
+            <span style={{ userSelect: 'text' }}>
+              FE: {__APP_VERSION__} ({__COMMIT_HASH__})
+            </span>
+            <span>|</span>
+            <span style={{ userSelect: 'text' }}>
+              BE: {backendVersion?.version || '?'} ({backendVersion?.commit_sha || '?'})
+            </span>
+          </div>
         </div>
         <CreditsModal open={showCredits} onClose={() => setShowCredits(false)} />
       </div>

@@ -87,7 +87,7 @@ export function CreditsModal({ open, onClose }: CreditsModalProps) {
         <Divider style={{ margin: '16px 0' }} />
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 20 }}>
-          <Space direction="vertical" size={2}>
+          <Space orientation="vertical" size={2}>
             <Space>
               <UserOutlined /> <Text strong>Author</Text>
             </Space>
@@ -96,7 +96,7 @@ export function CreditsModal({ open, onClose }: CreditsModalProps) {
 
           <Divider type="vertical" style={{ height: 40 }} />
 
-          <Space direction="vertical" size={2}>
+          <Space orientation="vertical" size={2}>
             <Space>
               <SafetyCertificateOutlined /> <Text strong>License</Text>
             </Space>
@@ -144,7 +144,7 @@ export function CreditsModal({ open, onClose }: CreditsModalProps) {
                   </Text>
                 }
                 description={
-                  <Space direction="vertical" size={0} style={{ width: '100%', fontSize: 13 }}>
+                  <Space orientation="vertical" size={0} style={{ width: '100%', fontSize: 13 }}>
                     <Text style={{ color: token.colorText }}>{item.description}</Text>
                     <Space split={<Divider type="vertical" />}>
                       <Space>
