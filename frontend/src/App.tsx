@@ -95,51 +95,58 @@ function RootComponent() {
           <div
             style={{
               textAlign: 'center',
-              padding: '8px 12px',
-              paddingBottom: 'calc(8px + env(safe-area-inset-bottom))',
-              display: 'flex',
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
+              padding: '12px',
+              paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
               fontSize: 11,
               color: 'rgba(168, 156, 200, 0.4)',
               fontFamily: 'monospace',
-              flexShrink: 0, // Prevent footer from shrinking
+              flexShrink: 0,
             }}
           >
-            <button
-              onClick={() => setShowCredits(true)}
+            <div
               style={{
-                background: 'none',
-                border: 'none',
-                color: 'rgba(168, 156, 200, 0.6)',
-                fontSize: 11,
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                fontFamily: 'inherit',
-                padding: 0,
-                minHeight: 'auto', // Override global 44px min-height
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                lineHeight: '1.6',
               }}
             >
-              Credits
-            </button>
+              <button
+                onClick={() => setShowCredits(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(168, 156, 200, 0.6)',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  fontFamily: 'inherit',
+                  padding: 0,
+                  minHeight: 'auto',
+                }}
+              >
+                Credits
+              </button>
 
-            <span>|</span>
+              <span style={{ opacity: 0.3 }}>|</span>
 
-            <span style={{ userSelect: 'text' }}>
-              FE: {__APP_VERSION__} ({__COMMIT_HASH__.substring(0, 7)})
-            </span>
-            <span>|</span>
-            <span style={{ userSelect: 'text' }}>
-              BE: {backendVersion?.version || '?'} (
-              {backendVersion?.commit_sha?.substring(0, 7) || '?'})
-            </span>
+              <span style={{ userSelect: 'text', whiteSpace: 'nowrap' }}>
+                FE: {__APP_VERSION__} ({__COMMIT_HASH__.substring(0, 7)})
+              </span>
+
+              <span style={{ opacity: 0.3 }}>|</span>
+
+              <span style={{ userSelect: 'text', whiteSpace: 'nowrap' }}>
+                BE: {backendVersion?.version || '?'} (
+                {backendVersion?.commit_sha?.substring(0, 7) || '?'})
+              </span>
+            </div>
           </div>
         </div>
-        <CreditsModal open={showCredits} onClose={() => setShowCredits(false)} />
       </div>
+      <CreditsModal open={showCredits} onClose={() => setShowCredits(false)} />
     </ConfigProvider>
   );
 }

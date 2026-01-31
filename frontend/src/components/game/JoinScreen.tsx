@@ -28,7 +28,7 @@ export function JoinScreen({ roomId, onJoin, isSpectator }: JoinScreenProps) {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '100vh',
+        flex: 1,
         padding: token.padding,
       }}
     >

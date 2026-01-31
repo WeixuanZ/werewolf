@@ -64,6 +64,27 @@ export function CreditsModal({ open, onClose }: CreditsModalProps) {
       footer={null}
       centered
       width={600}
+      styles={{
+        content: {
+          padding: 0,
+          overflow: 'hidden',
+          borderRadius: token.borderRadiusLG,
+        },
+        header: {
+          padding: `16px max(24px, env(safe-area-inset-right)) 16px max(24px, env(safe-area-inset-left))`,
+          margin: 0,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+          paddingTop: `calc(16px + env(safe-area-inset-top))`,
+        },
+        body: {
+          paddingBottom: 'calc(24px + env(safe-area-inset-bottom))',
+          paddingTop: 24,
+          paddingLeft: 'max(24px, env(safe-area-inset-left))',
+          paddingRight: 'max(24px, env(safe-area-inset-right))',
+          maxHeight: '70vh',
+          overflowY: 'auto',
+        },
+      }}
     >
       {/* Project Section */}
       <div
