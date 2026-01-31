@@ -302,102 +302,104 @@ export default function GameRoom() {
           <div
             style={{
               display: 'flex',
+              flexWrap: 'wrap',
               justifyContent: 'space-between',
               alignItems: 'center',
+              gap: isDesktop ? 16 : 10,
               width: '100%',
             }}
           >
-            {/* Left Group: Room ID + Buttons */}
-            <div
+            {/* Left Group: Room ID */}
+            <Title
+              level={3}
               style={{
-                display: 'flex',
-                flexDirection: isDesktop ? 'row' : 'column',
-                alignItems: isDesktop ? 'center' : 'flex-start',
-                gap: isDesktop ? 16 : 8,
+                margin: 0,
+                color: token.colorText,
+                fontSize: isDesktop ? 24 : 18,
+                whiteSpace: 'nowrap',
               }}
             >
-              <Title
-                level={3}
-                style={{
-                  margin: 0,
-                  color: token.colorText,
-                  fontSize: isDesktop ? 24 : 20,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Room: {roomId}
-              </Title>
+              Room: {roomId}
+            </Title>
 
-              {isLobby && (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <Button
-                    icon={<CopyOutlined />}
-                    onClick={handleCopyLink}
-                    size={isDesktop ? 'middle' : 'small'}
-                  >
-                    Copy Link
-                  </Button>
-                  <Button
-                    icon={<QrcodeOutlined />}
-                    onClick={() => setShowQrCode(true)}
-                    size={isDesktop ? 'middle' : 'small'}
-                  >
-                    QR Code
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Right Group: Admin + Phase Indicator */}
+            {/* Right Group: Phase Indicator (always visible) */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: isDesktop ? 12 : 8,
-                flexShrink: 0,
+                gap: 8,
+                padding: isDesktop ? '0 16px' : '0 12px',
+                height: isDesktop ? 40 : 36,
+                background: isLobby
+                  ? 'rgba(24, 144, 255, 0.2)'
+                  : isNight
+                    ? 'rgba(128, 0, 128, 0.2)'
+                    : 'rgba(34, 139, 34, 0.2)',
+                borderRadius: token.borderRadiusLG,
+                border: `1px solid ${isLobby
+                    ? 'rgba(24, 144, 255, 0.4)'
+                    : isNight
+                      ? 'rgba(147, 112, 219, 0.4)'
+                      : 'rgba(34, 139, 34, 0.4)'
+                  }`,
+                backdropFilter: 'blur(4px)',
+                minWidth: isDesktop ? 120 : 'auto',
+                justifyContent: 'center',
               }}
             >
-              {adminControls}
+              <span style={{ fontSize: isDesktop ? 20 : 18 }}>
+                {isLobby ? '🏠' : isNight ? '🌙' : '☀️'}
+              </span>
+              <span
+                style={{
+                  fontSize: isDesktop ? 15 : 14,
+                  fontWeight: 600,
+                  color: isLobby ? '#1890ff' : isNight ? '#d8bfd8' : '#90ee90',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                {isLobby ? 'LOBBY' : gameState.phase}
+              </span>
+            </div>
+
+            {/* Lobby buttons - second row on mobile */}
+            {isLobby && (
               <div
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
                   gap: 8,
-                  padding: isDesktop ? '0 16px' : '0 12px',
-                  height: isDesktop ? 40 : 36,
-                  background: isLobby
-                    ? 'rgba(24, 144, 255, 0.2)'
-                    : isNight
-                      ? 'rgba(128, 0, 128, 0.2)'
-                      : 'rgba(34, 139, 34, 0.2)',
-                  borderRadius: token.borderRadiusLG,
-                  border: `1px solid ${
-                    isLobby
-                      ? 'rgba(24, 144, 255, 0.4)'
-                      : isNight
-                        ? 'rgba(147, 112, 219, 0.4)'
-                        : 'rgba(34, 139, 34, 0.4)'
-                  }`,
-                  backdropFilter: 'blur(4px)',
-                  minWidth: isDesktop ? 120 : 'auto',
-                  justifyContent: 'center',
+                  width: isDesktop ? 'auto' : '100%',
+                  order: isDesktop ? 0 : 1,
                 }}
               >
-                <span style={{ fontSize: isDesktop ? 20 : 18 }}>
-                  {isLobby ? '🏠' : isNight ? '🌙' : '☀️'}
-                </span>
-                <span
-                  style={{
-                    fontSize: isDesktop ? 15 : 14,
-                    fontWeight: 600,
-                    color: isLobby ? '#1890ff' : isNight ? '#d8bfd8' : '#90ee90',
-                    letterSpacing: '0.5px',
-                  }}
+                <Button
+                  icon={<CopyOutlined />}
+                  onClick={handleCopyLink}
+                  size={isDesktop ? 'middle' : 'small'}
                 >
-                  {isLobby ? 'LOBBY' : gameState.phase}
-                </span>
+                  Copy Link
+                </Button>
+                <Button
+                  icon={<QrcodeOutlined />}
+                  onClick={() => setShowQrCode(true)}
+                  size={isDesktop ? 'middle' : 'small'}
+                >
+                  QR Code
+                </Button>
               </div>
-            </div>
+            )}
+
+            {/* End Game button - separate row on mobile */}
+            {adminControls && (
+              <div
+                style={{
+                  width: isDesktop ? 'auto' : '100%',
+                  order: isDesktop ? 0 : 2,
+                }}
+              >
+                {adminControls}
+              </div>
+            )}
           </div>
 
           {/* QR Code Modal (Common) */}

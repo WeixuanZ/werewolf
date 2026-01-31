@@ -65,7 +65,8 @@ function RootComponent() {
     <ConfigProvider theme={werewolfTheme}>
       <div
         style={{
-          height: '100vh',
+          height: '100dvh',
+          minHeight: '100vh', // Fallback for browsers that don't support dvh
           position: 'relative',
           overflow: 'hidden',
           display: 'flex',
@@ -86,7 +87,7 @@ function RootComponent() {
             paddingTop: 'env(safe-area-inset-top)',
           }}
         >
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <Outlet />
           </div>
 
@@ -94,17 +95,18 @@ function RootComponent() {
           <div
             style={{
               textAlign: 'center',
-              padding: '16px',
-              paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', // Add bottom safe area too
+              padding: '8px 12px',
+              paddingBottom: 'calc(8px + env(safe-area-inset-bottom))',
               display: 'flex',
               flexDirection: 'row',
-              flexWrap: 'wrap', // Allow wrapping on small screens
+              flexWrap: 'wrap',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '12px',
-              fontSize: 12,
+              gap: '8px',
+              fontSize: 11,
               color: 'rgba(168, 156, 200, 0.4)',
               fontFamily: 'monospace',
+              flexShrink: 0, // Prevent footer from shrinking
             }}
           >
             <button
@@ -113,11 +115,12 @@ function RootComponent() {
                 background: 'none',
                 border: 'none',
                 color: 'rgba(168, 156, 200, 0.6)',
-                fontSize: 12,
+                fontSize: 11,
                 cursor: 'pointer',
                 textDecoration: 'underline',
                 fontFamily: 'inherit',
                 padding: 0,
+                minHeight: 'auto', // Override global 44px min-height
               }}
             >
               Credits

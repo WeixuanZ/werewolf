@@ -4,6 +4,20 @@ A high-performance, cloud-native multiplayer implementation of the classic socia
 
 Written by AI.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/1.PNG" alt="Home Screen" width="280" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/2.PNG" alt="Game Lobby" width="280" />
+</p>
+
+<p align="center">
+  <em>Home Screen</em>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <em>Game Lobby</em>
+</p>
+
 ## Architecture
 
 - **Backend**: Python 3.11 with **FastAPI** (REST + WebSockets).
