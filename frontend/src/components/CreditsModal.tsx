@@ -65,11 +65,6 @@ export function CreditsModal({ open, onClose }: CreditsModalProps) {
       centered
       width={600}
       styles={{
-        content: {
-          padding: 0,
-          overflow: 'hidden',
-          borderRadius: token.borderRadiusLG,
-        },
         header: {
           padding: `16px max(24px, env(safe-area-inset-right)) 16px max(24px, env(safe-area-inset-left))`,
           margin: 0,
