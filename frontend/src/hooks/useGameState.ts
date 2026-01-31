@@ -12,13 +12,9 @@ interface UseGameStateOptions {
 export const useGameState = (
   roomId: string | null,
   playerId?: string | null,
-  options: UseGameStateOptions = {}
+  options: UseGameStateOptions = {},
 ) => {
-  const {
-    enabled = true,
-    staleTime = 0,
-    refetchOnWindowFocus = true,
-  } = options;
+  const { enabled = true, staleTime = 0, refetchOnWindowFocus = true } = options;
 
   return useQuery<GameState>({
     queryKey: getGameStateQueryKey(roomId, playerId),

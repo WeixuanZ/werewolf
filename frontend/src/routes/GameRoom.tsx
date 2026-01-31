@@ -3,7 +3,19 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { useSetCurrentRoomId, useCurrentSession } from '../store/gameStore';
-import { Card, Typography, Button, Spin, message, theme, QRCode, Modal, Grid } from 'antd';
+import {
+  Card,
+  Typography,
+  Button,
+  Spin,
+  message,
+  theme,
+  QRCode,
+  Modal,
+  Grid,
+  Flex,
+  Space,
+} from 'antd';
 import { v4 as uuidv4 } from 'uuid';
 import { GamePhase } from '../types';
 import { useParams } from '@tanstack/react-router';
@@ -120,7 +132,7 @@ export default function GameRoom() {
   const isNight = activeState?.phase === GamePhase.NIGHT;
   const isDay = activeState?.phase === GamePhase.DAY;
   const isGameOver = activeState?.phase === GamePhase.GAME_OVER;
-  const isGameInProgress = activeState && activeState.phase !== GamePhase.WAITING;
+  const isGameInProgress = !!activeState && activeState.phase !== GamePhase.WAITING;
 
   const handleJoin = async (nickname: string): Promise<boolean> => {
     const newPlayerId = uuidv4();
@@ -299,35 +311,49 @@ export default function GameRoom() {
           }}
         >
           {/* Unified Responsive Header Layout */}
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: isDesktop ? 16 : 10,
-              width: '100%',
-            }}
-          >
-            {/* Left Group: Room ID */}
-            <Title
-              level={3}
-              style={{
-                margin: 0,
-                color: token.colorText,
-                fontSize: isDesktop ? 24 : 18,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Room: {roomId}
-            </Title>
+          <Flex justify="space-between" align="center" wrap="wrap" gap={isDesktop ? 16 : 12}>
+            {/* Left Group: Room ID + Buttons + Admin */}
+            <Flex align="center" wrap="wrap" gap={isDesktop ? 16 : 8} style={{ flex: 1 }}>
+              <Title
+                level={3}
+                style={{
+                  margin: 0,
+                  color: token.colorText,
+                  fontSize: isDesktop ? 24 : 18,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Room: {roomId}
+              </Title>
 
-            {/* Right Group: Phase Indicator (always visible) */}
-            <div
+              {isLobby && (
+                <Space>
+                  <Button
+                    icon={<CopyOutlined />}
+                    onClick={handleCopyLink}
+                    size={isDesktop ? 'middle' : 'small'}
+                  >
+                    Copy Link
+                  </Button>
+                  <Button
+                    icon={<QrcodeOutlined />}
+                    onClick={() => setShowQrCode(true)}
+                    size={isDesktop ? 'middle' : 'small'}
+                  >
+                    QR Code
+                  </Button>
+                </Space>
+              )}
+
+              {adminControls}
+            </Flex>
+
+            {/* Right Group: Phase Indicator */}
+            <Flex
+              align="center"
+              justify="center"
+              gap={8}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
                 padding: isDesktop ? '0 16px' : '0 12px',
                 height: isDesktop ? 40 : 36,
                 background: isLobby
@@ -336,15 +362,15 @@ export default function GameRoom() {
                     ? 'rgba(128, 0, 128, 0.2)'
                     : 'rgba(34, 139, 34, 0.2)',
                 borderRadius: token.borderRadiusLG,
-                border: `1px solid ${isLobby
+                border: `1px solid ${
+                  isLobby
                     ? 'rgba(24, 144, 255, 0.4)'
                     : isNight
                       ? 'rgba(147, 112, 219, 0.4)'
                       : 'rgba(34, 139, 34, 0.4)'
-                  }`,
+                }`,
                 backdropFilter: 'blur(4px)',
                 minWidth: isDesktop ? 120 : 'auto',
-                justifyContent: 'center',
               }}
             >
               <span style={{ fontSize: isDesktop ? 20 : 18 }}>
@@ -358,49 +384,10 @@ export default function GameRoom() {
                   letterSpacing: '0.5px',
                 }}
               >
-                {isLobby ? 'LOBBY' : gameState.phase}
+                {isLobby ? 'LOBBY' : activeState?.phase}
               </span>
-            </div>
-
-            {/* Lobby buttons - second row on mobile */}
-            {isLobby && (
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 8,
-                  width: isDesktop ? 'auto' : '100%',
-                  order: isDesktop ? 0 : 1,
-                }}
-              >
-                <Button
-                  icon={<CopyOutlined />}
-                  onClick={handleCopyLink}
-                  size={isDesktop ? 'middle' : 'small'}
-                >
-                  Copy Link
-                </Button>
-                <Button
-                  icon={<QrcodeOutlined />}
-                  onClick={() => setShowQrCode(true)}
-                  size={isDesktop ? 'middle' : 'small'}
-                >
-                  QR Code
-                </Button>
-              </div>
-            )}
-
-            {/* End Game button - separate row on mobile */}
-            {adminControls && (
-              <div
-                style={{
-                  width: isDesktop ? 'auto' : '100%',
-                  order: isDesktop ? 0 : 2,
-                }}
-              >
-                {adminControls}
-              </div>
-            )}
-          </div>
+            </Flex>
+          </Flex>
 
           {/* QR Code Modal (Common) */}
           <Modal
