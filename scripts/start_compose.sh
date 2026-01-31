@@ -3,7 +3,7 @@ set -e
 
 echo "Starting local deployment via Docker Compose..."
 
-docker-compose up --build -d
+docker-compose up --build -d -V
 
 echo "Services started!"
 echo "Frontend: http://localhost:3000"

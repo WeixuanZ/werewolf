@@ -56,4 +56,6 @@ npm run dev
 - Real-time interaction via WebSockets.
 - Flexible role assignment algorithm.
 - Robust state management with Redis.
-- Type-safe, production-ready code structure.
+- **Immersive Experience**: Dynamic atmospheric backgrounds, sound effects, and phase timers.
+- **PWA Support**: Installable as a native-like app on mobile devices.
+- **Type-safe, production-ready code structure**.

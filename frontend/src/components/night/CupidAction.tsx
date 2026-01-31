@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { theme, Button, Typography, Badge, Tag } from 'antd';
-import { HeartOutlined, HeartFilled, StopOutlined } from '@ant-design/icons';
+import { HeartOutlined, HeartFilled } from '@ant-design/icons';
 import { getRoleNameWithEmoji, getRoleEmoji, getRoleTheme } from '../../utils/roleUtils';
 import { PhaseTimer } from '../game/PhaseTimer';
 import type { Player } from '../../types';
@@ -96,15 +96,13 @@ export function CupidAction({
       </div>
 
       {/* Timer Bar */}
-      <div style={{ marginBottom: 16 }}>
-        <PhaseTimer
-          key={phaseStartTime}
-          phaseStartTime={phaseStartTime}
-          phaseDurationSeconds={phaseDurationSeconds}
-          timerEnabled={timerEnabled}
-          onExpire={() => onSubmit(NightActionType.SKIP, null, true)}
-        />
-      </div>
+      <PhaseTimer
+        key={phaseStartTime}
+        phaseStartTime={phaseStartTime}
+        phaseDurationSeconds={phaseDurationSeconds}
+        timerEnabled={timerEnabled}
+        onExpire={() => onSubmit(NightActionType.SKIP, null, true)}
+      />
 
       {/* Targets Grid */}
       <div
@@ -112,7 +110,7 @@ export function CupidAction({
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
           gap: 16,
-          marginBottom: 24,
+          marginBottom: token.marginLG,
           flex: 1,
           alignContent: 'start',
           overflowY: 'auto',
@@ -132,20 +130,18 @@ export function CupidAction({
                 justifyContent: 'center',
                 alignItems: 'center',
                 padding: '16px',
-                background: isSelected ? roleTheme.shadow : 'rgba(255, 255, 255, 0.05)',
-                border: `2px solid ${isSelected ? roleTheme.secondary : 'transparent'}`,
+                background: isSelected ? `${roleTheme.primary}33` : 'rgba(255, 255, 255, 0.05)',
+                border: `2px solid ${isSelected ? roleTheme.primary : 'transparent'}`,
                 borderRadius: token.borderRadiusLG,
                 color: token.colorText,
-                cursor: isConfirmed ? 'default' : 'pointer',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                boxShadow: isSelected ? `0 0 15px ${roleTheme.shadow}` : 'none',
+                cursor: isConfirmed ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
                 minHeight: 160,
                 opacity:
                   isConfirmed && !isSelected
                     ? 0.5
                     : selectedTargets.length >= 2 && !isSelected
-                      ? 0.3
+                      ? 0.5
                       : 1,
               }}
             >
@@ -163,6 +159,7 @@ export function CupidAction({
                   textAlign: 'center',
                   fontSize: 18,
                   lineHeight: 1.2,
+                  marginBottom: 12,
                 }}
               >
                 {p.nickname}
@@ -181,71 +178,55 @@ export function CupidAction({
           flexDirection: 'column',
         }}
       >
-        {!isConfirmed && (
-          <div style={{ textAlign: 'center', marginBottom: 8 }}>
-            {activeTargets.length === 2 ? (
-              <Text style={{ color: roleTheme.primary }}>
-                Selection complete. Confirm to link them.
-              </Text>
-            ) : (
-              <Text style={{ color: token.colorTextSecondary }}>
-                Select {2 - activeTargets.length} more player(s)...
-              </Text>
-            )}
-          </div>
-        )}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+            textAlign: 'center',
+            marginBottom: 8,
+          }}
+        >
+          {activeTargets.length === 2 ? (
+            <Text style={{ color: roleTheme.primary }}>
+              {isConfirmed ? 'Lovers linked.' : 'Selection complete. Confirm to link them.'}
+            </Text>
+          ) : (
+            <Text style={{ color: token.colorTextSecondary }}>
+              Select {2 - activeTargets.length} more player(s)...
+            </Text>
+          )}
+        </div>
 
-        {isConfirmed ? (
-          <div
+        {!isConfirmed && (
+          <Button
+            type="primary"
+            block
+            size="large"
+            icon={<HeartOutlined />}
+            disabled={activeTargets.length !== 2 || isPending}
+            onClick={handleConfirm}
             style={{
-              padding: 16,
-              background: 'rgba(46, 125, 50, 0.2)',
-              borderRadius: 8,
-              border: '1px solid rgba(46, 125, 50, 0.5)',
-              textAlign: 'center',
-              color: '#a5d6a7',
-              width: '100%',
+              height: 48,
+              fontSize: 18,
+              // Use role-based color for the action button
+              backgroundColor: activeTargets.length === 2 ? roleTheme.primary : undefined,
             }}
           >
-            <HeartFilled style={{ marginRight: 8 }} />
-            Cupid's Arrows Fired
-          </div>
-        ) : (
-          <>
-            <Button
-              type="primary"
-              block
-              size="large"
-              icon={<HeartOutlined />}
-              disabled={activeTargets.length !== 2 || isPending}
-              onClick={handleConfirm}
-              style={{
-                height: 50,
-                fontSize: 18,
-                borderRadius: 25,
-                background:
-                  activeTargets.length === 2
-                    ? `linear-gradient(135deg, ${roleTheme.secondary} 0%, ${roleTheme.primary} 100%)`
-                    : undefined,
-                border: activeTargets.length === 2 ? 'none' : undefined,
-                boxShadow: activeTargets.length === 2 ? `0 4px 15px ${roleTheme.shadow}` : 'none',
-              }}
-            >
-              {`Link Lovers (${activeTargets.length}/2)`}
-            </Button>
-
-            <Button
-              type="text"
-              block
-              icon={<StopOutlined />}
-              style={{ color: token.colorTextSecondary }}
-              onClick={() => onSubmit(NightActionType.SKIP, null, true)}
-              disabled={isPending}
-            >
-              Skip Action
-            </Button>
-          </>
+            {`Link Lovers (${activeTargets.length}/2)`}
+          </Button>
         )}
+
+        <Button
+          type="default"
+          block
+          size="large"
+          style={{ height: 48, fontSize: 18 }}
+          onClick={() => onSubmit(NightActionType.SKIP, null, true)}
+          disabled={isConfirmed || isPending}
+        >
+          Skip Action
+        </Button>
       </div>
     </div>
   );

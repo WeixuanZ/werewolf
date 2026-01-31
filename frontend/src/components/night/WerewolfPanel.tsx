@@ -1,5 +1,5 @@
 import { Typography, Button, theme, Avatar, Tooltip, Tag } from 'antd';
-import { getRoleEmoji } from '../../utils/roleUtils';
+import { getRoleEmoji, getRoleTheme } from '../../utils/roleUtils';
 import { useSubmitAction } from '../../api/client';
 import { RoleType, NightActionType } from '../../types';
 import type { Player } from '../../types';
@@ -26,6 +26,7 @@ export function WerewolfPanel({
 }: WerewolfPanelProps) {
   const { token } = theme.useToken();
   const submitAction = useSubmitAction(roomId);
+  const roleTheme = getRoleTheme(RoleType.WEREWOLF);
 
   const handleActionSubmit = (
     actionType: string,
@@ -79,7 +80,11 @@ export function WerewolfPanel({
       <div style={{ textAlign: 'center', marginBottom: token.margin }}>
         <Title
           level={3}
-          style={{ margin: 0, color: '#ff4d4f', textShadow: '0 0 10px rgba(255, 77, 79, 0.5)' }}
+          style={{
+            margin: 0,
+            color: roleTheme.primary,
+            textShadow: `0 0 10px ${roleTheme.shadow}`,
+          }}
         >
           {otherWerewolves.length > 0 ? '🐺 Werewolf Council' : '🐺 Night Action'}
           {isMyActionConfirmed && (
@@ -131,8 +136,8 @@ export function WerewolfPanel({
                 justifyContent: 'center',
                 alignItems: 'center',
                 padding: '16px',
-                background: isSelected ? `${token.colorPrimary}33` : 'rgba(255, 255, 255, 0.05)',
-                border: `2px solid ${isSelected ? token.colorPrimary : 'transparent'}`,
+                background: isSelected ? `${roleTheme.primary}33` : 'rgba(255, 255, 255, 0.05)',
+                border: `2px solid ${isSelected ? roleTheme.primary : 'transparent'}`,
                 borderRadius: token.borderRadiusLG,
                 color: token.colorText,
                 fontSize: 18,
@@ -252,7 +257,7 @@ export function WerewolfPanel({
         {/* Confirm / Unlock Button */}
         {(!isMyActionConfirmed || otherWerewolves.length > 0) && (
           <Button
-            type={isMyActionConfirmed ? 'default' : 'primary'}
+            type="primary"
             block
             size="large"
             disabled={!myTarget}
@@ -260,7 +265,6 @@ export function WerewolfPanel({
               if (isMyActionConfirmed) {
                 // Unlock: send confirmed=false
                 if (myTarget) {
-                  // If target is SKIP, we send "SKIP" as targetId with confirmed=false
                   const targetToSend = myTarget === 'SKIP' ? 'SKIP' : myTarget;
                   handleActionSubmit(NightActionType.KILL, targetToSend, false);
                 }
@@ -272,7 +276,11 @@ export function WerewolfPanel({
                 }
               }
             }}
-            style={{ height: 48, fontSize: 18 }}
+            style={{
+              height: 48,
+              fontSize: 18,
+              backgroundColor: !isMyActionConfirmed && myTarget ? roleTheme.primary : undefined,
+            }}
           >
             {isMyActionConfirmed ? 'Unlock Selection' : 'Confirm Target'}
           </Button>

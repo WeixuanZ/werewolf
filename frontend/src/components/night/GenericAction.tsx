@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { theme, Button, Typography, Tag, Space } from 'antd';
-import { StopOutlined, CheckOutlined } from '@ant-design/icons';
-import { getRoleNameWithEmoji, getRoleEmoji } from '../../utils/roleUtils';
+import { theme, Button, Typography, Tag } from 'antd';
+import { getRoleNameWithEmoji, getRoleEmoji, getRoleTheme } from '../../utils/roleUtils';
 import { PhaseTimer } from '../game/PhaseTimer';
 import type { Player } from '../../types';
 import { NightActionType } from '../../types';
@@ -32,6 +31,7 @@ export function GenericAction({
   confirmedTargetId,
 }: GenericActionProps) {
   const { token } = theme.useToken();
+  const roleTheme = getRoleTheme(myRole);
   const [targetId, setTargetId] = useState<string | null>(confirmedTargetId || null);
 
   const actionsAvailable = nightInfo?.actions_available || [];
@@ -69,12 +69,16 @@ export function GenericAction({
       <div style={{ textAlign: 'center', marginBottom: token.margin }}>
         <Title
           level={3}
-          style={{ margin: 0, color: '#d3adf7', textShadow: '0 0 10px rgba(114, 46, 209, 0.5)' }}
+          style={{
+            margin: 0,
+            color: roleTheme.primary,
+            textShadow: `0 0 10px ${roleTheme.shadow}`,
+          }}
         >
           {getRoleNameWithEmoji(myRole)}
           {isConfirmed && (
             <Tag color="success" style={{ verticalAlign: 'middle', marginLeft: 8 }}>
-              COMPLETED
+              LOCKED
             </Tag>
           )}
         </Title>
@@ -83,16 +87,15 @@ export function GenericAction({
             ? 'Action completed. Waiting for night to end...'
             : nightInfo?.prompt || 'Select a target for your action.'}
         </Text>
-        <div style={{ marginTop: 16 }}>
-          <PhaseTimer
-            key={phaseStartTime}
-            phaseStartTime={phaseStartTime}
-            phaseDurationSeconds={phaseDurationSeconds}
-            timerEnabled={timerEnabled}
-            onExpire={handleSkip}
-          />
-        </div>
       </div>
+
+      <PhaseTimer
+        key={phaseStartTime}
+        phaseStartTime={phaseStartTime}
+        phaseDurationSeconds={phaseDurationSeconds}
+        timerEnabled={timerEnabled}
+        onExpire={handleSkip}
+      />
 
       <div
         style={{
@@ -119,12 +122,12 @@ export function GenericAction({
                 justifyContent: 'center',
                 alignItems: 'center',
                 padding: '16px',
-                background: isSelected ? 'rgba(114, 46, 209, 0.3)' : 'rgba(255, 255, 255, 0.05)',
-                border: `2px solid ${isSelected ? '#722ed1' : 'transparent'}`,
+                background: isSelected ? `${token.colorPrimary}33` : 'rgba(255, 255, 255, 0.05)',
+                border: `2px solid ${isSelected ? token.colorPrimary : 'transparent'}`,
                 borderRadius: token.borderRadiusLG,
                 color: token.colorText,
                 fontSize: 18,
-                cursor: isConfirmed ? 'default' : 'pointer',
+                cursor: isConfirmed ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
                 position: 'relative',
                 minHeight: '160px',
@@ -144,63 +147,72 @@ export function GenericAction({
               >
                 {p.nickname}
               </span>
-              {isSelected && <CheckOutlined style={{ color: '#52c41a', fontSize: 24 }} />}
             </button>
           );
         })}
       </div>
 
-      <Space orientation="vertical" style={{ width: '100%' }} size="middle">
-        {isConfirmed ? (
-          <div
-            style={{
-              padding: 16,
-              background: 'rgba(46, 125, 50, 0.2)',
-              borderRadius: 8,
-              border: '1px solid rgba(46, 125, 50, 0.5)',
-              textAlign: 'center',
-              color: '#a5d6a7',
-            }}
-          >
-            <CheckOutlined style={{ marginRight: 8 }} />
-            Action Submitted
-          </div>
-        ) : (
-          <>
-            <Button
-              type="primary"
-              block
-              size="large"
-              icon={targetId ? <CheckOutlined /> : undefined}
-              style={{
-                height: 50,
-                fontSize: 18,
-                borderRadius: 25,
-                background: targetId
-                  ? 'linear-gradient(135deg, #722ed1 0%, #9254de 100%)'
-                  : undefined,
-                border: targetId ? 'none' : undefined,
-              }}
-              onClick={handleConfirm}
-              disabled={!targetId || isPending}
-              loading={isPending}
-            >
-              {targetId ? `Confirm ${defaultAction}` : 'Select a Target'}
-            </Button>
+      {/* Actions */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 16,
+          alignItems: 'center',
+          flexDirection: 'column',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+            textAlign: 'center',
+            marginBottom: 8,
+          }}
+        >
+          {targetId === 'SKIP' ? (
+            <Text style={{ color: token.colorWarning }}>You voted to SKIP.</Text>
+          ) : targetId ? (
+            <Text style={{ color: token.colorSuccess }}>
+              {isConfirmed ? 'Target confirmed.' : 'Target selected. Confirm to submit.'}
+            </Text>
+          ) : (
+            <Text style={{ color: token.colorTextSecondary }}>Select a target...</Text>
+          )}
+        </div>
 
-            <Button
-              type="text"
-              block
-              icon={<StopOutlined />}
-              style={{ color: token.colorTextSecondary }}
-              onClick={handleSkip}
-              disabled={isPending}
-            >
-              Skip Action
-            </Button>
-          </>
+        {/* Confirm / Unlock Button */}
+        {!isConfirmed && (
+          <Button
+            type="primary"
+            block
+            size="large"
+            disabled={!targetId}
+            onClick={handleConfirm}
+            style={{
+              height: 48,
+              fontSize: 18,
+            }}
+            loading={isPending}
+          >
+            {targetId ? `Confirm ${defaultAction}` : 'Select a Target'}
+          </Button>
         )}
-      </Space>
+
+        {/* Skip Button */}
+        <Button
+          type={targetId === 'SKIP' ? 'primary' : 'default'}
+          danger={targetId === 'SKIP'}
+          block
+          size="large"
+          style={{ height: 48, fontSize: 18 }}
+          onClick={handleSkip}
+          disabled={isConfirmed}
+          loading={isPending && targetId === 'SKIP'}
+        >
+          Skip Action
+        </Button>
+      </div>
     </div>
   );
 }

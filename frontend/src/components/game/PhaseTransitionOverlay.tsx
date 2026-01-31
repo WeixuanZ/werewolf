@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Typography, theme } from 'antd';
+import { motion, AnimatePresence } from 'framer-motion';
 import { GamePhase } from '../../types';
 import type { GameState } from '../../types';
 
@@ -9,201 +10,206 @@ interface PhaseTransitionOverlayProps {
   gameState: GameState;
 }
 
+interface Announcement {
+  title: string;
+  subtitle: string;
+  color?: string;
+  type: 'morning' | 'execution' | 'gameover' | 'generic';
+}
+
 export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProps) => {
   const { token } = theme.useToken();
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [step, setStep] = useState<'intro' | 'reveal' | 'outro'>('intro');
-  const [content, setContent] = useState<{
-    title: string;
-    subtitle: string;
-    color?: string;
-  } | null>(null);
-  const [activeAnnouncement, setActiveAnnouncement] = useState<{
-    title: string;
-    subtitle: string;
-    color?: string;
-  } | null>(null);
 
   const prevPhase = useRef<GamePhase>(gameState.phase);
   const prevPlayers = useRef(gameState.players);
 
-  // Effect 1: Detect Game State changes and queue announcements
+  // Sync refs to current state but keep them for comparison in effect
+  // We use a single effect to handle transitions
   useEffect(() => {
     const currentPhase = gameState.phase;
+    const previous = prevPhase.current;
 
-    if (prevPhase.current !== currentPhase) {
-      // NIGHT -> DAY (Morning Announcements)
-      if (prevPhase.current === GamePhase.NIGHT && currentPhase === GamePhase.DAY) {
-        const newlyDead = Object.values(gameState.players).filter(
-          (p) => prevPlayers.current[p.id]?.is_alive && !p.is_alive,
-        );
+    // Skip if phase hasn't changed
+    if (previous === currentPhase) {
+      prevPlayers.current = gameState.players;
+      return;
+    }
 
-        const deadNames = newlyDead.map((p) => p.nickname).join(', ');
+    let nextAnnouncement: Announcement | null = null;
 
-        // Defer state update to avoid synchronous setState in effect warning
-        setTimeout(() => {
-          setActiveAnnouncement({
-            title: 'Morning Breaks...',
-            subtitle:
-              newlyDead.length > 0
-                ? `...and ${deadNames} was found dead.`
-                : '...and it was a peaceful night.',
-            color: newlyDead.length > 0 ? token.colorError : token.colorSuccess,
-          });
-        }, 0);
+    // NIGHT -> DAY (Morning)
+    if (previous === GamePhase.NIGHT && currentPhase === GamePhase.DAY) {
+      const newlyDead = Object.values(gameState.players).filter(
+        (p) => prevPlayers.current[p.id]?.is_alive && !p.is_alive,
+      );
+      const deadNames = newlyDead.map((p) => p.nickname).join(', ');
+
+      nextAnnouncement = {
+        title: 'Morning Breaks',
+        subtitle:
+          newlyDead.length > 0
+            ? `...and ${deadNames} was found dead.`
+            : '...and it was a peaceful night.',
+        color: newlyDead.length > 0 ? '#ff4d4f' : '#52c41a', // Red or Green
+        type: 'morning',
+      };
+    }
+    // DAY -> NIGHT (Execution)
+    else if (
+      previous === GamePhase.DAY &&
+      currentPhase !== GamePhase.DAY &&
+      currentPhase !== GamePhase.WAITING &&
+      currentPhase !== GamePhase.GAME_OVER
+    ) {
+      const victimId = gameState.voted_out_this_round;
+      const victim = victimId ? gameState.players[victimId] : null;
+
+      nextAnnouncement = {
+        title: 'The Village Has Spoken',
+        subtitle: victim ? `${victim.nickname} was executed.` : 'No one was executed.',
+        color: victim ? '#ff4d4f' : '#bfbfbf',
+        type: 'execution',
+      };
+    }
+    // GAME OVER
+    else if (currentPhase === GamePhase.GAME_OVER) {
+      const winners = gameState.winners;
+      let winTitle = 'Game Over';
+      let winColor = '#faad14'; // Default Gold
+
+      if (winners === 'WEREWOLVES') {
+        winTitle = 'Werewolves Win!';
+        winColor = '#ff4d4f';
+      } else if (winners === 'VILLAGERS') {
+        winTitle = 'Villagers Win!';
+        winColor = '#52c41a';
+      } else if (winners === 'LOVERS') {
+        winTitle = 'Lovers Win!';
+        winColor = '#eb2f96';
+      } else if (winners === 'TANNER') {
+        winTitle = 'Tanner Wins!';
+        winColor = '#faad14';
       }
-      // DAY -> NIGHT (Execution Announcements)
-      else if (
-        prevPhase.current === GamePhase.DAY &&
-        currentPhase !== GamePhase.DAY &&
-        currentPhase !== GamePhase.WAITING &&
-        currentPhase !== GamePhase.GAME_OVER
-      ) {
-        const victimId = gameState.voted_out_this_round;
-        const victim = victimId ? gameState.players[victimId] : null;
 
-        setTimeout(() => {
-          setActiveAnnouncement({
-            title: 'The Village Has Spoken',
-            subtitle: victim ? `${victim.nickname} was executed.` : 'No one was executed.',
-            color: victim ? token.colorError : token.colorTextSecondary,
-          });
-        }, 0);
-      }
-      // ANY -> GAME OVER
-      else if (currentPhase === GamePhase.GAME_OVER) {
-        const winners = gameState.winners;
-        const winTitle =
-          winners === 'WEREWOLVES'
-            ? 'Werewolves Win!'
-            : winners === 'VILLAGERS'
-              ? 'Villagers Win!'
-              : winners === 'LOVERS'
-                ? 'Lovers Win!'
-                : winners === 'TANNER'
-                  ? 'Tanner Wins!'
-                  : 'Game Over';
+      nextAnnouncement = {
+        title: winTitle.toUpperCase(),
+        subtitle: 'The game has ended.',
+        color: winColor,
+        type: 'gameover',
+      };
+    }
 
-        const winColor =
-          winners === 'WEREWOLVES'
-            ? token.colorError
-            : winners === 'VILLAGERS'
-              ? token.colorSuccess
-              : winners === 'LOVERS'
-                ? '#eb2f96' // Hot pink for lovers
-                : '#faad14'; // Gold/Yellow for others
+    // specific transition for Hunter/Witch triggers could be added here if needed
 
-        setTimeout(() => {
-          setActiveAnnouncement({
-            title: winTitle,
-            subtitle: 'The game has ended.',
-            color: winColor,
-          });
-        }, 0);
-      }
+    if (nextAnnouncement) {
+      // Trigger sequence - wrap in timeout to avoid set-state-in-effect warning
+      // and ensure clean animation start
+      const startTimer = setTimeout(() => {
+        setAnnouncement(nextAnnouncement);
+        setIsVisible(true);
+      }, 100);
+
+      // Hide everything after duration
+      const hideTimer = setTimeout(() => {
+        setIsVisible(false);
+        // Cleanup content after fade out
+        setTimeout(() => setAnnouncement(null), 1000);
+      }, 6000);
+
+      return () => {
+        clearTimeout(startTimer);
+        clearTimeout(hideTimer);
+      };
     }
 
     prevPhase.current = currentPhase;
     prevPlayers.current = gameState.players;
-  }, [
-    gameState.phase,
-    gameState.players,
-    gameState.voted_out_this_round,
-    gameState.winners,
-    token.colorError,
-    token.colorSuccess,
-    token.colorTextSecondary,
-  ]);
-
-  // Effect 2: Handle animation sequence for active announcement
-  useEffect(() => {
-    if (!activeAnnouncement) return;
-
-    // Defer state updates
-    setTimeout(() => {
-      setContent(activeAnnouncement);
-      setStep('intro');
-      setIsVisible(true);
-    }, 0);
-
-    const revealTimer = setTimeout(() => {
-      setStep('reveal');
-    }, 2500);
-
-    const hideTimer = setTimeout(() => {
-      setIsVisible(false);
-      // Clear announcement after it fades out to allow the same one to trigger again if needed (unlikely)
-      // or just to clean up state
-      setTimeout(() => {
-        setActiveAnnouncement(null);
-        setContent(null);
-      }, 500);
-    }, 6500);
-
-    return () => {
-      clearTimeout(revealTimer);
-      clearTimeout(hideTimer);
-    };
-  }, [activeAnnouncement]);
-
-  if (!isVisible || !content) return null;
+  }, [gameState.phase, gameState.players, gameState.voted_out_this_round, gameState.winners]);
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 2000,
-        background: 'rgba(0, 0, 0, 0.95)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        opacity: isVisible ? 1 : 0,
-        transition: 'opacity 0.5s ease-in-out',
-        pointerEvents: 'none',
-      }}
-    >
-      <div
-        style={{
-          transform: step === 'intro' ? 'scale(1.1)' : 'scale(1)',
-          transition: 'all 1s ease-out',
-          marginBottom: 32,
-          textAlign: 'center',
-        }}
-      >
-        <Title
-          level={1}
+    <AnimatePresence>
+      {isVisible && announcement && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
           style={{
-            color: '#fff',
-            fontSize: '3rem',
-            margin: 0,
-            textShadow: '0 0 20px rgba(255,255,255,0.3)',
+            position: 'fixed',
+            inset: 0,
+            zIndex: 2000,
+            // Deep radial gradient for drama
+            background:
+              'radial-gradient(circle at center, rgba(30,30,40,0.95) 0%, rgba(10,10,15,0.98) 100%)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            pointerEvents: 'none',
           }}
         >
-          {content.title}
-        </Title>
-      </div>
+          <div style={{ textAlign: 'center', padding: '0 20px', maxWidth: '800px' }}>
+            {/* Title Animation */}
+            <motion.div
+              initial={{ opacity: 0, scale: 1.1, y: -20, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Title
+                level={1}
+                style={{
+                  color: '#fff',
+                  fontSize: 'min(4rem, 10vw)',
+                  fontWeight: 800,
+                  margin: 0,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  textShadow: '0 4px 30px rgba(0,0,0,0.5)',
+                  marginBottom: '2rem',
+                }}
+              >
+                {announcement.title}
+              </Title>
+            </motion.div>
 
-      <div
-        style={{
-          opacity: step === 'reveal' ? 1 : 0,
-          transform: step === 'reveal' ? 'translateY(0)' : 'translateY(20px)',
-          transition: 'all 0.8s ease-out',
-          textAlign: 'center',
-        }}
-      >
-        <Text
-          style={{
-            color: content.color || '#fff',
-            fontSize: '2rem',
-            fontWeight: 'bold',
-            display: 'block',
-          }}
-        >
-          {content.subtitle}
-        </Text>
-      </div>
-    </div>
+            {/* Separator Line */}
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 120, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
+              style={{
+                height: 4,
+                background: announcement.color || token.colorPrimary,
+                margin: '0 auto 2rem',
+                borderRadius: 2,
+                boxShadow: `0 0 20px ${announcement.color || token.colorPrimary}`,
+              }}
+            />
+
+            {/* Subtitle Animation */}
+            <motion.div
+              initial={{ opacity: 0, y: 30, filter: 'blur(5px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ delay: 0.8, duration: 1, ease: 'easeOut' }}
+            >
+              <Text
+                style={{
+                  color: announcement.color ? `${announcement.color}dd` : '#ffffffdd',
+                  fontSize: 'min(2rem, 6vw)',
+                  fontWeight: 500,
+                  display: 'block',
+                  textShadow: '0 2px 10px rgba(0,0,0,0.5)',
+                }}
+              >
+                {announcement.subtitle}
+              </Text>
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

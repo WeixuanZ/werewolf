@@ -3,7 +3,6 @@ import { theme, Button, Typography, Badge, Tag } from 'antd';
 import {
   MedicineBoxOutlined,
   ExperimentOutlined,
-  StopOutlined,
   ArrowLeftOutlined,
   CheckOutlined,
 } from '@ant-design/icons';
@@ -83,6 +82,11 @@ export function WitchAction({
     onSubmit(NightActionType.SKIP, null, true);
   };
 
+  // Define colors using tokens or roleTheme where applicable
+  // Heal is always "Green" (Life), Poison is "Purple" (Death/Magic) - fits Witch theme
+  const healColor = token.colorSuccess;
+  const poisonColor = roleTheme.primary; // Witch primary is Purple
+
   return (
     <div
       style={{
@@ -125,24 +129,21 @@ export function WitchAction({
         </Text>
       </div>
 
-      {/* Timer Section */}
-      <div style={{ marginBottom: 16 }}>
-        <PhaseTimer
-          key={phaseStartTime}
-          phaseStartTime={phaseStartTime}
-          phaseDurationSeconds={phaseDurationSeconds}
-          timerEnabled={timerEnabled}
-          onExpire={() => onSubmit(NightActionType.SKIP, null, true)}
-        />
-      </div>
+      <PhaseTimer
+        key={phaseStartTime}
+        phaseStartTime={phaseStartTime}
+        phaseDurationSeconds={phaseDurationSeconds}
+        timerEnabled={timerEnabled}
+        onExpire={() => onSubmit(NightActionType.SKIP, null, true)}
+      />
 
       {/* Content Section */}
-      <div style={{ flex: 1, overflowY: 'auto', marginBottom: 24, padding: 4 }}>
+      <div style={{ flex: 1, overflowY: 'auto', marginBottom: token.marginLG, padding: 4 }}>
         {!viewingPoisonTargets && !isConfirmed ? (
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: 16,
             }}
           >
@@ -155,8 +156,8 @@ export function WitchAction({
                 flexDirection: 'column',
                 alignItems: 'center',
                 padding: 24,
-                background: 'rgba(40, 60, 40, 0.3)',
-                border: `2px solid ${canHeal ? '#52c41a' : 'rgba(255,255,255,0.05)'}`,
+                background: canHeal ? `${healColor}33` : 'rgba(255,255,255,0.05)',
+                border: `2px solid ${canHeal ? healColor : 'transparent'}`,
                 borderRadius: token.borderRadiusLG,
                 cursor: canHeal ? 'pointer' : 'not-allowed',
                 transition: 'all 0.3s ease',
@@ -165,17 +166,23 @@ export function WitchAction({
                 justifyContent: 'center',
               }}
             >
-              <MedicineBoxOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }} />
-              <Title level={4} style={{ margin: 0, color: '#fff' }}>
+              <MedicineBoxOutlined style={{ fontSize: 48, color: healColor, marginBottom: 16 }} />
+              <Title level={4} style={{ margin: 0, color: token.colorText }}>
                 Life Potion
               </Title>
-              <Text style={{ marginTop: 8, color: victimId ? '#ff7875' : 'rgba(255,255,255,0.4)' }}>
+              <Text
+                style={{
+                  marginTop: 8,
+                  color: victimId ? token.colorError : token.colorTextSecondary,
+                  textAlign: 'center',
+                }}
+              >
                 {victimId ? `Save 💀 ${victimName}` : 'No victim tonight'}
               </Text>
               <Badge
                 status={me?.witch_has_heal ? 'success' : 'default'}
                 text={me?.witch_has_heal ? 'Available' : 'Empty'}
-                style={{ marginTop: 12 }}
+                style={{ marginTop: 12, color: token.colorTextSecondary }}
               />
             </button>
 
@@ -188,8 +195,8 @@ export function WitchAction({
                 flexDirection: 'column',
                 alignItems: 'center',
                 padding: 24,
-                background: 'rgba(60, 40, 60, 0.3)',
-                border: `2px solid ${canPoison ? '#722ed1' : 'rgba(255,255,255,0.05)'}`,
+                background: canPoison ? `${poisonColor}33` : 'rgba(255,255,255,0.05)',
+                border: `2px solid ${canPoison ? poisonColor : 'transparent'}`,
                 borderRadius: token.borderRadiusLG,
                 cursor: canPoison ? 'pointer' : 'not-allowed',
                 transition: 'all 0.3s ease',
@@ -198,16 +205,16 @@ export function WitchAction({
                 justifyContent: 'center',
               }}
             >
-              <ExperimentOutlined style={{ fontSize: 48, color: '#722ed1', marginBottom: 16 }} />
-              <Title level={4} style={{ margin: 0, color: '#fff' }}>
+              <ExperimentOutlined style={{ fontSize: 48, color: poisonColor, marginBottom: 16 }} />
+              <Title level={4} style={{ margin: 0, color: token.colorText }}>
                 Death Potion
               </Title>
               <Text style={{ marginTop: 8, opacity: 0.6 }}>Eliminate a player</Text>
               <Badge
                 status={me?.witch_has_poison ? 'processing' : 'default'}
-                color={me?.witch_has_poison ? '#722ed1' : undefined}
+                color={me?.witch_has_poison ? poisonColor : undefined}
                 text={me?.witch_has_poison ? 'Available' : 'Empty'}
-                style={{ marginTop: 12 }}
+                style={{ marginTop: 12, color: token.colorTextSecondary }}
               />
             </button>
           </div>
@@ -237,26 +244,32 @@ export function WitchAction({
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
+                      justifyContent: 'center',
                       alignItems: 'center',
                       padding: 16,
-                      background: isSelected ? 'rgba(114, 46, 209, 0.2)' : 'rgba(255,255,255,0.05)',
-                      border: `2px solid ${isSelected ? '#722ed1' : 'transparent'}`,
+                      background: isSelected ? `${poisonColor}33` : 'rgba(255,255,255,0.05)',
+                      border: `2px solid ${isSelected ? poisonColor : 'transparent'}`,
                       borderRadius: token.borderRadiusLG,
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       minHeight: 160,
-                      justifyContent: 'center',
+                      color: token.colorText,
                     }}
                   >
                     <span style={{ fontSize: 32, marginBottom: 8 }}>
                       {p.role ? getRoleEmoji(p.role) : '👤'}
                     </span>
-                    <Text
-                      strong
-                      style={{ fontSize: 18, color: isSelected ? '#fff' : token.colorText }}
+                    <span
+                      style={{
+                        fontWeight: 500,
+                        textAlign: 'center',
+                        fontSize: 18,
+                        lineHeight: 1.2,
+                        marginBottom: 12,
+                      }}
                     >
                       {p.nickname}
-                    </Text>
+                    </span>
                   </button>
                 );
               })}
@@ -264,6 +277,7 @@ export function WitchAction({
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            {/* Confirmed State View */}
             <div style={{ fontSize: 64, marginBottom: 24 }}>
               {confirmedActionType === NightActionType.HEAL ? '💚' : '💜'}
             </div>
@@ -284,25 +298,40 @@ export function WitchAction({
       {/* Actions Section */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {viewingPoisonTargets && !isConfirmed && (
-          <Button
-            type="primary"
-            block
-            size="large"
-            disabled={!selectedPoisonId || isPending}
-            onClick={handleConfirmPoison}
-            style={{
-              height: 50,
-              fontSize: 18,
-              borderRadius: 25,
-              background: selectedPoisonId
-                ? 'linear-gradient(135deg, #722ed1 0%, #b37feb 100%)'
-                : undefined,
-              border: 'none',
-              boxShadow: selectedPoisonId ? '0 4px 15px rgba(114, 46, 209, 0.4)' : 'none',
-            }}
-          >
-            Confirm Poison
-          </Button>
+          <>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                width: '100%',
+                textAlign: 'center',
+                marginBottom: 8,
+              }}
+            >
+              {selectedPoisonId ? (
+                <Text style={{ color: roleTheme.primary }}>
+                  Target selected. Confirm to poison.
+                </Text>
+              ) : (
+                <Text style={{ color: token.colorTextSecondary }}>Select a target...</Text>
+              )}
+            </div>
+
+            <Button
+              type="primary"
+              block
+              size="large"
+              disabled={!selectedPoisonId || isPending}
+              onClick={handleConfirmPoison}
+              style={{
+                height: 48,
+                fontSize: 18,
+                backgroundColor: selectedPoisonId ? poisonColor : undefined,
+              }}
+            >
+              Confirm Poison
+            </Button>
+          </>
         )}
 
         {isConfirmed ? (
@@ -322,10 +351,10 @@ export function WitchAction({
           </div>
         ) : (
           <Button
-            type="text"
+            type="default"
             block
-            icon={<StopOutlined />}
-            style={{ color: token.colorTextSecondary }}
+            size="large"
+            style={{ height: 48, fontSize: 18 }}
             onClick={handleSkip}
             disabled={isPending}
           >

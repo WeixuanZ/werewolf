@@ -121,104 +121,121 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
             borderRadius: 8,
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 12,
-              borderBottom: '1px solid rgba(255,255,255,0.1)',
-              paddingBottom: 12,
-            }}
-          >
-            <Text strong>Enable Dramatic Tones</Text>
-            <Switch
-              checked={settings.dramatic_tones_enabled ?? true}
-              disabled={!isAdmin}
-              onChange={(checked) => {
-                const newSettings = { ...settings, dramatic_tones_enabled: checked };
-                setSettings(newSettings);
-                if (session?.playerId) {
-                  updateSettings({
-                    playerId: session.playerId,
-                    settings: newSettings,
-                  });
-                }
-              }}
-            />
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: settings.timer_enabled ? 12 : 0,
-            }}
-          >
-            <Text strong>Enable Phase Timer</Text>
-            <Switch
-              checked={settings.timer_enabled}
-              disabled={!isAdmin}
-              onChange={(checked) => {
-                const newSettings = { ...settings, timer_enabled: checked };
-                setSettings(newSettings);
-                if (session?.playerId) {
-                  updateSettings({
-                    playerId: session.playerId,
-                    settings: newSettings,
-                  });
-                }
-              }}
-            />
-          </div>
-
-          {settings.timer_enabled && isAdmin && (
+          {!isAdmin ? (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingTop: 0,
+                justifyContent: 'center',
+                gap: 24,
+                padding: '4px 0',
               }}
             >
-              <Text>Phase Duration (seconds)</Text>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {[30, 60, 90, 120].map((seconds) => (
-                  <Button
-                    key={seconds}
-                    size="small"
-                    type={settings.phase_duration_seconds === seconds ? 'primary' : 'default'}
-                    onClick={() => {
-                      const newSettings = {
-                        ...settings,
-                        phase_duration_seconds: seconds,
-                      };
-                      setSettings(newSettings);
-                      if (session?.playerId) {
-                        updateSettings({
-                          playerId: session.playerId,
-                          settings: newSettings,
-                        });
-                      }
-                    }}
-                  >
-                    {seconds}s
-                  </Button>
-                ))}
+              <div style={{ textAlign: 'center' }}>
+                <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                  Audio
+                </Text>
+                <Text strong>{settings.dramatic_tones_enabled ? 'Dramatic' : 'Off'}</Text>
+              </div>
+              <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
+              <div style={{ textAlign: 'center' }}>
+                <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                  Timer
+                </Text>
+                <Text strong>
+                  {settings.timer_enabled ? `${settings.phase_duration_seconds}s` : 'Off'}
+                </Text>
               </div>
             </div>
-          )}
+          ) : (
+            <>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 12,
+                  borderBottom: '1px solid rgba(255,255,255,0.1)',
+                  paddingBottom: 12,
+                }}
+              >
+                <Text strong>Enable Dramatic Tones</Text>
+                <Switch
+                  checked={settings.dramatic_tones_enabled ?? true}
+                  onChange={(checked) => {
+                    const newSettings = { ...settings, dramatic_tones_enabled: checked };
+                    setSettings(newSettings);
+                    if (session?.playerId) {
+                      updateSettings({
+                        playerId: session.playerId,
+                        settings: newSettings,
+                      });
+                    }
+                  }}
+                />
+              </div>
 
-          {settings.timer_enabled && !isAdmin && (
-            <div
-              style={{
-                borderTop: '1px solid rgba(255,255,255,0.1)',
-                paddingTop: 12,
-              }}
-            >
-              <Text type="secondary">Phase duration: {settings.phase_duration_seconds}s</Text>
-            </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: settings.timer_enabled ? 12 : 0,
+                }}
+              >
+                <Text strong>Enable Phase Timer</Text>
+                <Switch
+                  checked={settings.timer_enabled}
+                  onChange={(checked) => {
+                    const newSettings = { ...settings, timer_enabled: checked };
+                    setSettings(newSettings);
+                    if (session?.playerId) {
+                      updateSettings({
+                        playerId: session.playerId,
+                        settings: newSettings,
+                      });
+                    }
+                  }}
+                />
+              </div>
+
+              {settings.timer_enabled && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingTop: 0,
+                  }}
+                >
+                  <Text>Phase Duration (seconds)</Text>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {[30, 60, 90, 120].map((seconds) => (
+                      <Button
+                        key={seconds}
+                        size="small"
+                        type={settings.phase_duration_seconds === seconds ? 'primary' : 'default'}
+                        onClick={() => {
+                          const newSettings = {
+                            ...settings,
+                            phase_duration_seconds: seconds,
+                          };
+                          setSettings(newSettings);
+                          if (session?.playerId) {
+                            updateSettings({
+                              playerId: session.playerId,
+                              settings: newSettings,
+                            });
+                          }
+                        }}
+                      >
+                        {seconds}s
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
