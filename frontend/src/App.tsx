@@ -82,6 +82,8 @@ function RootComponent() {
             flexDirection: 'column',
             overflowY: 'auto',
             overflowX: 'hidden',
+            // Respect iPhone notch/safe area
+            paddingTop: 'env(safe-area-inset-top)',
           }}
         >
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -93,8 +95,10 @@ function RootComponent() {
             style={{
               textAlign: 'center',
               padding: '16px',
+              paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', // Add bottom safe area too
               display: 'flex',
               flexDirection: 'row',
+              flexWrap: 'wrap', // Allow wrapping on small screens
               alignItems: 'center',
               justifyContent: 'center',
               gap: '12px',
@@ -122,11 +126,12 @@ function RootComponent() {
             <span>|</span>
 
             <span style={{ userSelect: 'text' }}>
-              FE: {__APP_VERSION__} ({__COMMIT_HASH__})
+              FE: {__APP_VERSION__} ({__COMMIT_HASH__.substring(0, 7)})
             </span>
             <span>|</span>
             <span style={{ userSelect: 'text' }}>
-              BE: {backendVersion?.version || '?'} ({backendVersion?.commit_sha || '?'})
+              BE: {backendVersion?.version || '?'} (
+              {backendVersion?.commit_sha?.substring(0, 7) || '?'})
             </span>
           </div>
         </div>
