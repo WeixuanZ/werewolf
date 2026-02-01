@@ -132,13 +132,18 @@ class ConnectionManager:
         if room_id not in self.active_connections:
             return
 
-        for player_id, ws in list(self.active_connections[room_id].items()):
+        async def send_to_one(player_id: str, ws: WebSocket):
             try:
                 filtered_state = await get_player_view_fn(player_id)
                 message = StateUpdateMessage(room_id=room_id, payload=filtered_state)
                 await ws.send_text(message.model_dump_json())
             except Exception as e:
                 logger.warning(f"Failed to send filtered state to {player_id}: {e}")
+
+        # Use list(...) to snapshot the connections so we can iterate safely while awaiting
+        connections = list(self.active_connections[room_id].items())
+        tasks = [send_to_one(pid, ws) for pid, ws in connections]
+        await asyncio.gather(*tasks)
 
     async def send_to_player(self, room_id: str, player_id: str, message: Any):
         """Send a message directly to a specific player."""
