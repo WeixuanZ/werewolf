@@ -100,6 +100,7 @@ export function CreditsModal({ open, onClose }: CreditsModalProps) {
               type="text"
               icon={<span style={{ fontSize: 24 }}>×</span>}
               onClick={onClose}
+              aria-label="Close credits"
               style={{ color: 'rgba(255,255,255,0.4)', height: 32, width: 32, padding: 0 }}
             />
           </div>

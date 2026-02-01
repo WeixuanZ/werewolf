@@ -47,6 +47,7 @@ export function JoinScreen({ roomId, onJoin, isSpectator }: JoinScreenProps) {
         <Text style={{ display: 'block', marginBottom: 16 }}>Enter your nickname to join.</Text>
         <Input
           placeholder="Nickname"
+          aria-label="Nickname"
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           size="large"
