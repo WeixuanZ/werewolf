@@ -95,50 +95,48 @@ function RootComponent() {
           <div
             style={{
               textAlign: 'center',
-              padding: '12px',
-              paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
-              fontSize: 11,
+              padding: '16px 12px',
+              paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+              fontSize: 10,
               color: 'rgba(168, 156, 200, 0.4)',
               fontFamily: 'monospace',
               flexShrink: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              alignItems: 'center',
             }}
           >
+            <button
+              onClick={() => setShowCredits(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'rgba(168, 156, 200, 0.7)',
+                fontSize: 12,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                padding: '4px 12px',
+                fontWeight: 600,
+              }}
+            >
+              Credits
+            </button>
+
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '4px 12px',
                 flexWrap: 'wrap',
                 justifyContent: 'center',
-                lineHeight: '1.6',
+                opacity: 0.6,
               }}
             >
-              <button
-                onClick={() => setShowCredits(true)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'rgba(168, 156, 200, 0.6)',
-                  fontSize: 11,
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  fontFamily: 'inherit',
-                  padding: 0,
-                  minHeight: 'auto',
-                }}
-              >
-                Credits
-              </button>
-
-              <span style={{ opacity: 0.3 }}>|</span>
-
-              <span style={{ userSelect: 'text', whiteSpace: 'nowrap' }}>
+              <span>
                 FE: {__APP_VERSION__} ({__COMMIT_HASH__.substring(0, 7)})
               </span>
-
-              <span style={{ opacity: 0.3 }}>|</span>
-
-              <span style={{ userSelect: 'text', whiteSpace: 'nowrap' }}>
+              <span>
                 BE: {backendVersion?.version || '?'} (
                 {backendVersion?.commit_sha?.substring(0, 7) || '?'})
               </span>

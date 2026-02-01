@@ -1,4 +1,4 @@
-import { Modal, Typography, List, Divider, Button, theme, Space } from 'antd';
+import { Modal, Typography, Button, theme, ConfigProvider } from 'antd';
 import {
   GithubOutlined,
   SoundOutlined,
@@ -19,178 +19,244 @@ export function CreditsModal({ open, onClose }: CreditsModalProps) {
   const credits = [
     {
       title: 'Night Start Sound',
-      description: 'Drama inception braam orchestral hit 1',
-      source: 'SoundMonster Public Domain',
-      sourceUrl: 'https://github.com/jonjonsson/SoundMonster/tree/main/Public%20domain',
+      desc: 'Drama inception braam orchestral hit 1',
+      source: 'SoundMonster',
+      url: 'https://github.com/jonjonsson/SoundMonster/tree/main/Public%20domain',
       license: 'CC0 1.0',
-      licenseUrl: 'http://creativecommons.org/publicdomain/zero/1.0/',
     },
     {
       title: 'Murder Reveal Sound',
-      description: 'Dramatic dun dun dunnn',
-      source: 'copyc4t on Freesound.org',
-      sourceUrl: 'https://freesound.org/people/copyc4t/sounds/146434/',
+      desc: 'Dramatic dun dun dunnn',
+      source: 'copyc4t',
+      url: 'https://freesound.org/people/copyc4t/sounds/146434/',
       license: 'CC BY 4.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
     },
     {
       title: 'Game Over Sound',
-      description: 'Game over arcade',
-      source: 'SimonBay on Freesound.org',
-      sourceUrl: 'https://freesound.org/people/SimonBay/sounds/439890/',
+      desc: 'Game over arcade',
+      source: 'SimonBay',
+      url: 'https://freesound.org/people/SimonBay/sounds/439890/',
       license: 'CC BY 3.0',
-      licenseUrl: 'http://creativecommons.org/licenses/by/3.0/',
     },
     {
       title: 'Game Win Sound',
-      description: 'Procedurally generated C Major Fanfare',
-      source: 'Generated via Python wave module',
-      sourceUrl: '',
+      desc: 'Procedurally generated Fanfare',
+      source: 'Internal',
+      url: '',
       license: 'Public Domain',
-      licenseUrl: '',
     },
   ];
 
   return (
-    <Modal
-      title={
-        <Space>
-          <SafetyCertificateOutlined style={{ color: token.colorPrimary }} />
-          <span>Credits & Licenses</span>
-        </Space>
-      }
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      centered
-      width={600}
-      styles={{
-        header: {
-          padding: `16px max(24px, env(safe-area-inset-right)) 16px max(24px, env(safe-area-inset-left))`,
-          margin: 0,
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          paddingTop: `calc(16px + env(safe-area-inset-top))`,
-        },
-        body: {
-          paddingBottom: 'calc(24px + env(safe-area-inset-bottom))',
-          paddingTop: 24,
-          paddingLeft: 'max(24px, env(safe-area-inset-left))',
-          paddingRight: 'max(24px, env(safe-area-inset-right))',
-          maxHeight: '70vh',
-          overflowY: 'auto',
+    <ConfigProvider
+      theme={{
+        components: {
+          Modal: {
+            contentBg: 'transparent',
+            headerBg: 'transparent',
+            footerBg: 'transparent',
+            boxShadow: 'none',
+          },
         },
       }}
     >
-      {/* Project Section */}
-      <div
-        style={{
-          background: `linear-gradient(145deg, ${token.colorBgContainer}, ${token.colorBgElevated})`,
-          borderRadius: token.borderRadiusLG,
-          padding: 24,
-          marginBottom: 24,
-          textAlign: 'center',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-          border: `1px solid ${token.colorBorderSecondary}`,
+      <Modal
+        open={open}
+        onCancel={onClose}
+        footer={null}
+        centered
+        width={380}
+        closable={false}
+        styles={{
+          body: { padding: 0 },
         }}
+        modalRender={(modal) => (
+          <div
+            style={{
+              background: 'rgba(26, 17, 40, 0.98)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: 16,
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+              overflow: 'hidden',
+            }}
+          >
+            {modal}
+          </div>
+        )}
       >
-        <Title level={2} style={{ margin: 0, color: token.colorPrimary, marginBottom: 8 }}>
-          Werewolf Game
-        </Title>
-        <Text type="secondary" style={{ fontSize: 16 }}>
-          An open-source implementation of the classic social deduction game.
-        </Text>
+        <div style={{ padding: '16px' }}>
+          {/* Header */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 16,
+            }}
+          >
+            <Title
+              level={3}
+              style={{ margin: 0, color: '#fff', fontSize: 24, letterSpacing: -0.5 }}
+            >
+              Credits
+            </Title>
+            <Button
+              type="text"
+              icon={<span style={{ fontSize: 24 }}>×</span>}
+              onClick={onClose}
+              style={{ color: 'rgba(255,255,255,0.4)', height: 32, width: 32, padding: 0 }}
+            />
+          </div>
 
-        <Divider style={{ margin: '16px 0' }} />
+          {/* Brand Card - Denser & Larger */}
+          <div
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 12,
+              padding: '12px 14px',
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ display: 'flex', gap: 20 }}>
+              <div>
+                <Text
+                  style={{
+                    fontSize: 10,
+                    color: token.colorPrimary,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    display: 'block',
+                    marginBottom: 2,
+                  }}
+                >
+                  Author
+                </Text>
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>WeixuanZ</Text>
+              </div>
+              <div>
+                <Text
+                  style={{
+                    fontSize: 10,
+                    color: token.colorPrimary,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    display: 'block',
+                    marginBottom: 2,
+                  }}
+                >
+                  License
+                </Text>
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>LGPL v3.0</Text>
+              </div>
+            </div>
+            <Button
+              type="primary"
+              icon={<GithubOutlined />}
+              href="https://github.com/WeixuanZ/werewolf"
+              target="_blank"
+              size="small"
+              style={{
+                background: '#fff',
+                color: '#000',
+                fontWeight: 600,
+                border: 'none',
+                height: 32,
+                padding: '0 12px',
+              }}
+            >
+              GitHub
+            </Button>
+          </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 20 }}>
-          <Space orientation="vertical" size={2}>
-            <Space>
-              <UserOutlined /> <Text strong>Author</Text>
-            </Space>
-            <Text>WeixuanZ</Text>
-          </Space>
+          {/* List Header */}
+          <Text
+            style={{
+              fontSize: 11,
+              color: 'rgba(255,255,255,0.5)',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              display: 'block',
+              marginBottom: 8,
+              paddingLeft: 4,
+            }}
+          >
+            Audio Library
+          </Text>
 
-          <Divider type="vertical" style={{ height: 40 }} />
-
-          <Space orientation="vertical" size={2}>
-            <Space>
-              <SafetyCertificateOutlined /> <Text strong>License</Text>
-            </Space>
-            <Text>LGPL v3.0</Text>
-          </Space>
-        </div>
-
-        <Button
-          type="primary"
-          icon={<GithubOutlined />}
-          href="https://github.com/WeixuanZ/werewolf"
-          target="_blank"
-          size="large"
-          shape="round"
-          style={{ paddingInline: 32 }}
-        >
-          View on GitHub
-        </Button>
-      </div>
-
-      {/* Assets Section */}
-      <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <SoundOutlined /> Audio Assets
-      </Title>
-
-      <div
-        style={{
-          background: token.colorBgContainer,
-          borderRadius: token.borderRadiusLG,
-          padding: '0 16px',
-          border: `1px solid ${token.colorBorderSecondary}`,
-        }}
-      >
-        <List
-          itemLayout="vertical"
-          dataSource={credits}
-          size="small"
-          split={true}
-          renderItem={(item) => (
-            <List.Item style={{ padding: '12px 0' }}>
-              <List.Item.Meta
-                title={
-                  <Text strong style={{ color: token.colorTextHeading }}>
+          {/* Asset Cards - Readable & Dense */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {credits.map((item, index) => (
+              <div
+                key={index}
+                style={{
+                  padding: '10px 14px',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  borderRadius: 12,
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: 4,
+                  }}
+                >
+                  <Text strong style={{ fontSize: 16, color: '#fff' }}>
                     {item.title}
                   </Text>
-                }
-                description={
-                  <Space orientation="vertical" size={0} style={{ width: '100%', fontSize: 13 }}>
-                    <Text style={{ color: token.colorText }}>{item.description}</Text>
-                    <Space split={<Divider type="vertical" />}>
-                      <Space>
-                        <Text type="secondary">Source:</Text>
-                        {item.sourceUrl ? (
-                          <Link href={item.sourceUrl} target="_blank">
-                            {item.source}
-                          </Link>
-                        ) : (
-                          <Text type="secondary">{item.source}</Text>
-                        )}
-                      </Space>
-                      <Space>
-                        <Text type="secondary">License:</Text>
-                        {item.licenseUrl ? (
-                          <Link href={item.licenseUrl} target="_blank">
-                            {item.license}
-                          </Link>
-                        ) : (
-                          <Text type="secondary">{item.license}</Text>
-                        )}
-                      </Space>
-                    </Space>
-                  </Space>
-                }
-              />
-            </List.Item>
-          )}
-        />
-      </div>
-    </Modal>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: 'rgba(255,255,255,0.6)',
+                      background: 'rgba(255,255,255,0.1)',
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      height: 'fit-content',
+                    }}
+                  >
+                    {item.license}
+                  </Text>
+                </div>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: 'rgba(255,255,255,0.7)',
+                    display: 'block',
+                    marginBottom: 6,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {item.desc}
+                </Text>
+                {item.url && (
+                  <Link
+                    href={item.url}
+                    target="_blank"
+                    style={{
+                      fontSize: 12,
+                      color: token.colorPrimary,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      opacity: 0.9,
+                    }}
+                  >
+                    <SoundOutlined /> {item.source}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </Modal>
+    </ConfigProvider>
   );
 }
