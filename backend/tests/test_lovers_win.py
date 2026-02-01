@@ -1,6 +1,7 @@
 from app.models.game import Game
 from app.schemas.game import GamePhase, GameSettingsSchema, RoleType
 
+
 class TestLoversWin:
     def test_lovers_win_condition(self):
         """Test that Lovers win when they are the last two alive."""
