@@ -65,8 +65,8 @@ function RootComponent() {
     <ConfigProvider theme={werewolfTheme}>
       <div
         style={{
-          height: '100dvh',
-          minHeight: '100vh', // Fallback for browsers that don't support dvh
+          height: '100%',
+          width: '100%',
           position: 'relative',
           overflow: 'hidden',
           display: 'flex',
@@ -85,6 +85,7 @@ function RootComponent() {
             overflowX: 'hidden',
             // Respect iPhone notch/safe area
             paddingTop: 'env(safe-area-inset-top)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
           }}
         >
           <div style={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
