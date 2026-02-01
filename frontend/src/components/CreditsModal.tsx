@@ -1,10 +1,5 @@
 import { Modal, Typography, Button, theme, ConfigProvider } from 'antd';
-import {
-  GithubOutlined,
-  SoundOutlined,
-  SafetyCertificateOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
+import { GithubOutlined, SoundOutlined } from '@ant-design/icons';
 
 const { Text, Title, Link } = Typography;
 
