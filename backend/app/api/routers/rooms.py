@@ -23,8 +23,11 @@ async def broadcast_filtered_states(room_id: str, service: GameService):
     if not game:
         return
 
+    # Fetch presence for all players once
+    presence_map = await service.get_all_player_presence(room_id, list(game.players.keys()))
+
     async def get_view(player_id: str):
-        return await service.get_player_view(game, player_id)
+        return await service.get_player_view(game, player_id, presence_map)
 
     await websocket_manager.broadcast_filtered_game_states(room_id, get_view)
 

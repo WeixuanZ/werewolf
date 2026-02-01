@@ -26,27 +26,45 @@ class GameService:
             return None
         return Game.from_json(data)
 
-    async def get_player_view(self, game: Game, player_id: str) -> GameStateSchema:
+    async def get_all_player_presence(self, room_id: str, player_ids: list[str]) -> dict[str, bool]:
+        """Fetch presence for multiple players."""
+        if not player_ids:
+            return {}
+
+        redis = RedisClient.get_client()
+        presence_keys = [f"presence:{room_id}:{pid}" for pid in player_ids]
+        presence_results = await redis.mget(presence_keys)
+
+        return {pid: presence_results[i] is not None for i, pid in enumerate(player_ids)}
+
+    async def get_player_view(
+        self, game: Game, player_id: str, presence_map: dict[str, bool] | None = None
+    ) -> GameStateSchema:
         """Return game state with other players' roles hidden unless revealed."""
         # Delegate logic to model
         view = game.get_view_for_player(player_id)
-
-        # Check presence in Redis for all players
-        redis = RedisClient.get_client()
         player_ids = list(view.players.keys())
-        presence_keys = [f"presence:{game.room_id}:{pid}" for pid in player_ids]
 
         # Optimize: if no players, skip redis
         if not player_ids:
             return view
 
-        presence_results = await redis.mget(presence_keys)
+        if presence_map is None:
+            # Check presence in Redis for all players
+            redis = RedisClient.get_client()
+            presence_keys = [f"presence:{game.room_id}:{pid}" for pid in player_ids]
+            presence_results = await redis.mget(presence_keys)
 
-        # Update is_online status
-        for i, pid in enumerate(player_ids):
-            is_online = presence_results[i] is not None
-            if pid in view.players:
-                view.players[pid].is_online = is_online
+            # Update is_online status
+            for i, pid in enumerate(player_ids):
+                is_online = presence_results[i] is not None
+                if pid in view.players:
+                    view.players[pid].is_online = is_online
+        else:
+            # Use provided presence map
+            for pid in player_ids:
+                if pid in view.players:
+                    view.players[pid].is_online = presence_map.get(pid, False)
 
         return view
 
