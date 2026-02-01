@@ -301,6 +301,7 @@ export default function GameRoom() {
             gap: 12,
             marginBottom: token.marginLG,
             padding: 16,
+            paddingTop: 'calc(16px + env(safe-area-inset-top))',
             background: 'rgba(0, 0, 0, 0.8)',
             backdropFilter: 'blur(10px)',
             borderRadius: token.borderRadiusLG,

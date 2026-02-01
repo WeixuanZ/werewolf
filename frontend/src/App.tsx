@@ -66,7 +66,6 @@ function RootComponent() {
       <div
         style={{
           height: '100dvh',
-          minHeight: '100vh', // Fallback for browsers that don't support dvh
           position: 'relative',
           overflow: 'hidden',
           display: 'flex',
@@ -83,8 +82,6 @@ function RootComponent() {
             flexDirection: 'column',
             overflowY: 'auto',
             overflowX: 'hidden',
-            // Respect iPhone notch/safe area
-            paddingTop: 'env(safe-area-inset-top)',
           }}
         >
           <div style={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
