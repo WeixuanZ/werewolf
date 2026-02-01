@@ -6,15 +6,35 @@ import {
   createRootRoute,
   Outlet,
 } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import Home from './routes/Home';
-import GameRoom from './routes/GameRoom';
-import { ConfigProvider, theme } from 'antd';
+import { ConfigProvider, theme, Spin } from 'antd';
 import { DynamicBackground } from './components/backgrounds/DynamicBackground';
 import { CreditsModal } from './components/CreditsModal';
 import { useBackendVersion } from './api/client';
 
 const queryClient = new QueryClient();
+
+const GameRoom = lazy(() => import('./routes/GameRoom'));
+
+const GameRoomWrapper = () => (
+  <Suspense
+    fallback={
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+        }}
+      >
+        <Spin size="large" />
+      </div>
+    }
+  >
+    <GameRoom />
+  </Suspense>
+);
 
 // Custom Ant Design theme for Werewolf game
 const werewolfTheme = {
@@ -164,7 +184,7 @@ const indexRoute = createRoute({
 const roomRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'room/$roomId',
-  component: GameRoom,
+  component: GameRoomWrapper,
 });
 
 // Create the router
