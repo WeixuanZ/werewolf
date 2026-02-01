@@ -152,12 +152,15 @@ class Game:
         )
 
     # ===== View Logic =====
-    def get_view_for_player(self, viewer_id: str) -> GameStateSchema:
+    def get_view_for_player(
+        self, viewer_id: str, full_schema: GameStateSchema | None = None
+    ) -> GameStateSchema:
         """
         Create a filtered view of the game state for a specific player.
         Hides roles and actions based on game rules.
         """
-        full_schema = self.to_schema()
+        if full_schema is None:
+            full_schema = self.to_schema()
         is_game_over = full_schema.phase == GamePhase.GAME_OVER
 
         viewer = self.players.get(viewer_id)

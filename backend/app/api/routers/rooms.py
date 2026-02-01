@@ -23,8 +23,11 @@ async def broadcast_filtered_states(room_id: str, service: GameService):
     if not game:
         return
 
+    # Optimization: Generate full schema once
+    full_schema = game.to_schema()
+
     async def get_view(player_id: str):
-        return await service.get_player_view(game, player_id)
+        return await service.get_player_view(game, player_id, full_schema=full_schema)
 
     await websocket_manager.broadcast_filtered_game_states(room_id, get_view)
 

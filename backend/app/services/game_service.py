@@ -26,10 +26,12 @@ class GameService:
             return None
         return Game.from_json(data)
 
-    async def get_player_view(self, game: Game, player_id: str) -> GameStateSchema:
+    async def get_player_view(
+        self, game: Game, player_id: str, full_schema: GameStateSchema | None = None
+    ) -> GameStateSchema:
         """Return game state with other players' roles hidden unless revealed."""
         # Delegate logic to model
-        view = game.get_view_for_player(player_id)
+        view = game.get_view_for_player(player_id, full_schema=full_schema)
 
         # Check presence in Redis for all players
         redis = RedisClient.get_client()
