@@ -9,6 +9,7 @@ Each phase is a state that knows how to:
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -18,6 +19,8 @@ if TYPE_CHECKING:
 from app.core.exceptions import InvalidActionError
 from app.models.roles import RoleType
 from app.schemas.game import GamePhase, NightActionType
+
+logger = logging.getLogger(__name__)
 
 
 class PhaseState(ABC):
@@ -101,9 +104,7 @@ class NightState(PhaseState):
         try:
             player.role_instance.handle_night_action(game, player_id, action_type, target_id)
         except InvalidActionError as e:
-            # You might want to log this or return an error to the user
-            # For now, we just return safely without updating state
-            print(f"Invalid action for {player_id}: {e}")
+            logger.warning(f"Invalid action for {player_id}: {e}")
             raise e
 
     def check_completion(self, game: Game) -> bool:
