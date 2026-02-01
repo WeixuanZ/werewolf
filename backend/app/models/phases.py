@@ -189,13 +189,6 @@ class NightState(PhaseState):
 
         winner = game.check_winners()
 
-        # Lovers Win Condition Check (if not covered by check_winners)
-        # Implemented inside check_winners if possible, or here?
-        # Standard: Lovers win if they are the last 2 alive.
-        # check_winners handles Team Wins.
-        # Let's add special check here or modify check_winners.
-        # Modifying check_winners is better for consistency.
-
         if winner:
             game.winners = winner
             return GamePhase.GAME_OVER
