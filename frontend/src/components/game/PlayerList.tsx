@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Card, Tag, theme, Button, Modal } from 'antd';
 import { getRoleNameWithEmoji } from '../../utils/roleUtils';
 import { DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -13,7 +13,27 @@ interface PlayerCardProps {
   onKick: () => void;
 }
 
-function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
+function arePlayerCardPropsEqual(prev: PlayerCardProps, next: PlayerCardProps) {
+  // MAINTAINER WARNING: If you add new props to PlayerCard that affect rendering,
+  // you MUST update this comparison function. Otherwise, the component will not re-render
+  // when those props change.
+  return (
+    prev.isMe === next.isMe &&
+    prev.canKick === next.canKick &&
+    // Check key player fields that affect rendering
+    // We explicitly exclude onKick from comparison as the parent passes a new closure
+    // on every render, but the underlying behavior (setKickTarget) remains stable.
+    prev.player.id === next.player.id &&
+    prev.player.nickname === next.player.nickname &&
+    prev.player.role === next.player.role &&
+    prev.player.is_alive === next.player.is_alive &&
+    prev.player.is_admin === next.player.is_admin &&
+    prev.player.is_spectator === next.player.is_spectator &&
+    prev.player.is_online === next.player.is_online
+  );
+}
+
+const PlayerCard = memo(function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
   const { token } = useToken();
   const statusColor = player.is_online ? token.colorSuccess : token.colorError;
 
@@ -125,7 +145,7 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
       </div>
     </div>
   );
-}
+}, arePlayerCardPropsEqual);
 
 interface PlayerListProps {
   players: Player[];
