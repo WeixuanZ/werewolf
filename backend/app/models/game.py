@@ -263,10 +263,7 @@ class Game:
                         )
 
         # Create a copy with filtered players and clean sensitive data
-        return full_schema.model_copy(update={
-            "players": filtered_players,
-            "seer_reveals": {}
-        })
+        return full_schema.model_copy(update={"players": filtered_players, "seer_reveals": {}})
 
     def auto_balance_roles(self):
         """Automatically set default role distribution based on player count."""
