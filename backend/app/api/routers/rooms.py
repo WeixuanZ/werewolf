@@ -26,8 +26,13 @@ async def broadcast_filtered_states(room_id: str, service: GameService):
     # Fetch presence for all players once
     presence_map = await service.get_all_player_presence(room_id, list(game.players.keys()))
 
+    # Optimize: Pre-calculate full schema once
+    full_schema = game.to_schema()
+
     async def get_view(player_id: str):
-        return await service.get_player_view(game, player_id, presence_map)
+        return await service.get_player_view(
+            game, player_id, presence_map, full_schema=full_schema
+        )
 
     await websocket_manager.broadcast_filtered_game_states(room_id, get_view)
 

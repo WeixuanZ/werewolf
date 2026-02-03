@@ -152,12 +152,16 @@ class Game:
         )
 
     # ===== View Logic =====
-    def get_view_for_player(self, viewer_id: str) -> GameStateSchema:
+    def get_view_for_player(
+        self, viewer_id: str, full_schema: GameStateSchema | None = None
+    ) -> GameStateSchema:
         """
         Create a filtered view of the game state for a specific player.
         Hides roles and actions based on game rules.
         """
-        full_schema = self.to_schema()
+        if full_schema is None:
+            full_schema = self.to_schema()
+
         is_game_over = full_schema.phase == GamePhase.GAME_OVER
 
         viewer = self.players.get(viewer_id)
@@ -258,11 +262,11 @@ class Game:
                             self._state, pid
                         )
 
-        full_schema.players = filtered_players
-        # Never expose the raw seer reveal map
-        full_schema.seer_reveals = {}
-
-        return full_schema
+        # Create a copy with filtered players and clean sensitive data
+        return full_schema.model_copy(update={
+            "players": filtered_players,
+            "seer_reveals": {}
+        })
 
     def auto_balance_roles(self):
         """Automatically set default role distribution based on player count."""
