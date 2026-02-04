@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Card, Tag, theme, Button, Modal } from 'antd';
 import { getRoleNameWithEmoji } from '../../utils/roleUtils';
 import { DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -13,7 +13,7 @@ interface PlayerCardProps {
   onKick: () => void;
 }
 
-function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
+function PlayerCardComponent({ player, isMe, canKick, onKick }: PlayerCardProps) {
   const { token } = useToken();
   const statusColor = player.is_online ? token.colorSuccess : token.colorError;
 
@@ -126,6 +126,25 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
     </div>
   );
 }
+
+function arePlayerCardPropsEqual(prev: PlayerCardProps, next: PlayerCardProps) {
+  // We explicitly ignore onKick because it's a new function on every render of PlayerList,
+  // but we know it's behaviorally stable (calls setKickTarget(player)).
+  // We compare relevant player fields to avoid re-renders when other parts of player object change (e.g. night actions).
+  return (
+    prev.isMe === next.isMe &&
+    prev.canKick === next.canKick &&
+    prev.player.id === next.player.id &&
+    prev.player.nickname === next.player.nickname &&
+    prev.player.is_online === next.player.is_online &&
+    prev.player.is_alive === next.player.is_alive &&
+    prev.player.is_spectator === next.player.is_spectator &&
+    prev.player.is_admin === next.player.is_admin &&
+    prev.player.role === next.player.role
+  );
+}
+
+const PlayerCard = memo(PlayerCardComponent, arePlayerCardPropsEqual);
 
 interface PlayerListProps {
   players: Player[];
