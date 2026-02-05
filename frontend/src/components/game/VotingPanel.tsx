@@ -177,6 +177,9 @@ export function VotingPanel({
         {alivePlayers.map((player: Player) => (
           <button
             key={player.id}
+            type="button"
+            aria-pressed={selectedTarget === player.id}
+            aria-label={`Select ${player.nickname}`}
             onClick={() => setSelectedTarget(player.id)}
             style={{
               display: 'flex',
