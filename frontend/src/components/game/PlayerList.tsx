@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Card, Tag, theme, Button, Modal } from 'antd';
 import { getRoleNameWithEmoji } from '../../utils/roleUtils';
 import { DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -13,7 +13,21 @@ interface PlayerCardProps {
   onKick: () => void;
 }
 
-function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
+function arePlayerCardPropsEqual(prev: PlayerCardProps, next: PlayerCardProps) {
+  return (
+    prev.isMe === next.isMe &&
+    prev.canKick === next.canKick &&
+    prev.player.id === next.player.id &&
+    prev.player.nickname === next.player.nickname &&
+    prev.player.is_online === next.player.is_online &&
+    prev.player.is_alive === next.player.is_alive &&
+    prev.player.is_spectator === next.player.is_spectator &&
+    prev.player.role === next.player.role &&
+    prev.player.is_admin === next.player.is_admin
+  );
+}
+
+const PlayerCard = memo(function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
   const { token } = useToken();
   const statusColor = player.is_online ? token.colorSuccess : token.colorError;
 
@@ -125,7 +139,7 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
       </div>
     </div>
   );
-}
+}, arePlayerCardPropsEqual);
 
 interface PlayerListProps {
   players: Player[];
