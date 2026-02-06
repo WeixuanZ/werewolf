@@ -1,0 +1,3 @@
+## 2025-02-19 - Frontend State Reference Instability
+**Learning:** The `useGameSocket` and `useGameState` hooks update the entire `GameState` object reference on every update (e.g., polling or WebSocket message). This causes `Object.values(state.players)` to produce new array and object references every time, defeating default `React.memo` optimizations for child components like `PlayerCard`.
+**Action:** When memoizing components derived from `GameState`, always implement a custom comparison function (e.g., `arePropsEqual`) that performs deep comparison on relevant fields instead of relying on reference equality.

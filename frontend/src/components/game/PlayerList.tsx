@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { Card, Tag, theme, Button, Modal } from 'antd';
 import { getRoleNameWithEmoji } from '../../utils/roleUtils';
 import { DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -10,10 +10,36 @@ interface PlayerCardProps {
   player: Player;
   isMe: boolean;
   canKick: boolean;
-  onKick: () => void;
+  onKick: (player: Player) => void;
 }
 
-function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
+function arePlayersEqual(p1: Player, p2: Player) {
+  return (
+    p1.id === p2.id &&
+    p1.nickname === p2.nickname &&
+    p1.role === p2.role &&
+    p1.is_alive === p2.is_alive &&
+    p1.is_admin === p2.is_admin &&
+    p1.is_spectator === p2.is_spectator &&
+    p1.is_online === p2.is_online
+  );
+}
+
+function arePlayerCardPropsEqual(prev: PlayerCardProps, next: PlayerCardProps) {
+  return (
+    prev.isMe === next.isMe &&
+    prev.canKick === next.canKick &&
+    prev.onKick === next.onKick &&
+    arePlayersEqual(prev.player, next.player)
+  );
+}
+
+const PlayerCard = memo(function PlayerCard({
+  player,
+  isMe,
+  canKick,
+  onKick,
+}: PlayerCardProps) {
   const { token } = useToken();
   const statusColor = player.is_online ? token.colorSuccess : token.colorError;
 
@@ -67,7 +93,7 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
               type="text"
               danger
               icon={<DeleteOutlined style={{ fontSize: 20 }} />}
-              onClick={onKick}
+              onClick={() => onKick(player)}
               style={{
                 width: 44,
                 height: 44,
@@ -125,7 +151,8 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
       </div>
     </div>
   );
-}
+},
+arePlayerCardPropsEqual);
 
 interface PlayerListProps {
   players: Player[];
@@ -138,9 +165,9 @@ export function PlayerList({ players, myId, onKick }: PlayerListProps) {
   const amIAdmin = me?.is_admin ?? false;
   const [kickTarget, setKickTarget] = useState<Player | null>(null);
 
-  const handleKickClick = (player: Player) => {
+  const handleKickClick = useCallback((player: Player) => {
     setKickTarget(player);
-  };
+  }, []);
 
   const confirmKick = () => {
     if (kickTarget && onKick) {
@@ -165,7 +192,7 @@ export function PlayerList({ players, myId, onKick }: PlayerListProps) {
               player={player}
               isMe={player.id === myId}
               canKick={amIAdmin && player.id !== myId && !!onKick}
-              onKick={() => handleKickClick(player)}
+              onKick={handleKickClick}
             />
           ))}
         </div>
