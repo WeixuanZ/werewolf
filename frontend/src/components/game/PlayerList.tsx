@@ -68,6 +68,7 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
               danger
               icon={<DeleteOutlined style={{ fontSize: 20 }} />}
               onClick={onKick}
+              aria-label={`Kick ${player.nickname}`}
               style={{
                 width: 44,
                 height: 44,
@@ -79,6 +80,8 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
             />
           )}
           <span
+            role="status"
+            aria-label={player.is_online ? 'Online' : 'Offline'}
             style={{
               width: 12,
               height: 12,
