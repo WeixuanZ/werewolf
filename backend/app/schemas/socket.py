@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from app.schemas.game import GameStateSchema
 
 
-class MessageType(str, Enum):
+class MessageType(StrEnum):
     STATE_UPDATE = "STATE_UPDATE"
     ERROR = "ERROR"
     CHAT = "CHAT"
