@@ -157,8 +157,9 @@ class Game:
         Create a filtered view of the game state for a specific player.
         Hides roles and actions based on game rules.
         """
-        full_schema = self.to_schema()
-        is_game_over = full_schema.phase == GamePhase.GAME_OVER
+        # OPTIMIZATION: Build schema directly from internal state to avoid
+        # double iteration and intermediate object creation (to_schema overhead).
+        is_game_over = self.phase == GamePhase.GAME_OVER
 
         viewer = self.players.get(viewer_id)
         is_spectator = viewer and (viewer.role == RoleType.SPECTATOR or not viewer.is_alive)
@@ -169,7 +170,8 @@ class Game:
             revealed_to_viewer = set(self.seer_reveals.get(viewer_id, []))
 
         filtered_players = {}
-        for pid, p in full_schema.players.items():
+        # Iterate over internal PlayerState objects directly
+        for pid, p in self.players.items():
             # Determine visibility
             is_self = pid == viewer_id
 
@@ -240,29 +242,37 @@ class Game:
                 night_action_type=p.night_action_type if should_show_action else None,
                 night_action_confirmed=p.night_action_confirmed,
                 has_night_action=p.has_night_action if is_self else False,
+                # Map other role-specific fields needed by PlayerSchema
+                witch_has_heal=p.witch_has_heal,
+                witch_has_poison=p.witch_has_poison,
+                hunter_revenge_target=p.hunter_revenge_target,
+                last_protected_target=p.last_protected_target,
                 night_action_vote_distribution=vote_dist if is_self else None,
             )
 
             # Dynamic Role Info (Prompts, available actions)
-            if is_self and p.role and viewer and viewer.is_alive:
-                # We need the behavior instance from the internal state, not the schema
-                p_internal = self.players.get(pid)
-                if p_internal and p_internal.role_instance:
-                    role_inst = p_internal.role_instance
-                    filtered_players[pid].role_description = role_inst.get_description()
+            if is_self and p.role and viewer and viewer.is_alive and p.role_instance:
+                # Use the current p (PlayerState) directly
+                role_inst = p.role_instance
+                filtered_players[pid].role_description = role_inst.get_description()
 
-                    if self.phase == GamePhase.NIGHT or (
-                        self.phase == GamePhase.HUNTER_REVENGE and p.role == RoleType.HUNTER
-                    ):
-                        filtered_players[pid].night_info = role_inst.get_night_info(
-                            self._state, pid
-                        )
+                if self.phase == GamePhase.NIGHT or (
+                    self.phase == GamePhase.HUNTER_REVENGE and p.role == RoleType.HUNTER
+                ):
+                    filtered_players[pid].night_info = role_inst.get_night_info(self._state, pid)
 
-        full_schema.players = filtered_players
-        # Never expose the raw seer reveal map
-        full_schema.seer_reveals = {}
-
-        return full_schema
+        return GameStateSchema(
+            room_id=self.room_id,
+            phase=self.phase,
+            players=filtered_players,
+            settings=self.settings,
+            turn_count=self.turn_count,
+            winners=self.winners,
+            seer_reveals={},  # Never expose the raw seer reveal map
+            lovers=self.lovers,
+            voted_out_this_round=self.voted_out_this_round,
+            phase_start_time=self.phase_start_time,
+        )
 
     def auto_balance_roles(self):
         """Automatically set default role distribution based on player count."""

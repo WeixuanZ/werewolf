@@ -1,9 +1,9 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict
 
 
-class RoleType(str, Enum):
+class RoleType(StrEnum):
     VILLAGER = "VILLAGER"
     WEREWOLF = "WEREWOLF"
     SEER = "SEER"
@@ -17,7 +17,7 @@ class RoleType(str, Enum):
     SPECTATOR = "SPECTATOR"
 
 
-class GamePhase(str, Enum):
+class GamePhase(StrEnum):
     WAITING = "WAITING"
     DAY = "DAY"
     NIGHT = "NIGHT"
@@ -26,7 +26,7 @@ class GamePhase(str, Enum):
     GAME_OVER = "GAME_OVER"
 
 
-class NightActionType(str, Enum):
+class NightActionType(StrEnum):
     KILL = "KILL"
     SAVE = "SAVE"
     CHECK = "CHECK"
