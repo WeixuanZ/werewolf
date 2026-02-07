@@ -161,6 +161,7 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
               >
                 <Text strong>Enable Dramatic Tones</Text>
                 <Switch
+                  aria-label="Toggle dramatic tones"
                   checked={settings.dramatic_tones_enabled ?? true}
                   onChange={(checked) => {
                     const newSettings = { ...settings, dramatic_tones_enabled: checked };
@@ -185,6 +186,7 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
               >
                 <Text strong>Enable Phase Timer</Text>
                 <Switch
+                  aria-label="Toggle phase timer"
                   checked={settings.timer_enabled}
                   onChange={(checked) => {
                     const newSettings = { ...settings, timer_enabled: checked };
@@ -295,6 +297,7 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
                 >
                   {isAdmin && (
                     <Button
+                      aria-label={`Decrease ${role} count`}
                       type="text"
                       icon={<MinusOutlined style={{ fontSize: 20 }} />}
                       onClick={() => updateRole(role, Math.max(0, count - 1))}
@@ -321,6 +324,7 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
                   </Text>
                   {isAdmin && (
                     <Button
+                      aria-label={`Increase ${role} count`}
                       type="text"
                       icon={<PlusOutlined style={{ fontSize: 20 }} />}
                       onClick={() => updateRole(role, count + 1)}
