@@ -1,0 +1,3 @@
+## 2025-02-14 - Redundant Schema Creation in View Logic
+**Learning:** The `Game.to_schema()` method creates a full Pydantic model hierarchy of the game state. Using this method as a data source for `get_view_for_player` (which creates a *filtered* Pydantic model hierarchy) resulted in creating N+N^2 Pydantic objects during broadcasts (N calls to `to_schema`, each creating N `PlayerSchema` objects).
+**Action:** When generating derived or filtered views, access the internal domain model or state (e.g., `self.players`) directly instead of converting to a full schema first. This avoids intermediate object allocation and iteration overhead.
