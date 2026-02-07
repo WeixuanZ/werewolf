@@ -251,13 +251,7 @@ class Game:
             )
 
             # Dynamic Role Info (Prompts, available actions)
-            if (
-                is_self
-                and p.role
-                and viewer
-                and viewer.is_alive
-                and p.role_instance
-            ):
+            if is_self and p.role and viewer and viewer.is_alive and p.role_instance:
                 # Use the current p (PlayerState) directly
                 role_inst = p.role_instance
                 filtered_players[pid].role_description = role_inst.get_description()
@@ -265,9 +259,7 @@ class Game:
                 if self.phase == GamePhase.NIGHT or (
                     self.phase == GamePhase.HUNTER_REVENGE and p.role == RoleType.HUNTER
                 ):
-                    filtered_players[pid].night_info = role_inst.get_night_info(
-                        self._state, pid
-                    )
+                    filtered_players[pid].night_info = role_inst.get_night_info(self._state, pid)
 
         return GameStateSchema(
             room_id=self.room_id,
