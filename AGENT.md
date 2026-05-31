@@ -26,7 +26,7 @@ This document tracks the technical decisions, code style, and architectural patt
 
 ### 1. Robust WebSocket Presence
 - **Rising Edge Reconnection**: The backend implements "rising edge" detection for reconnection notifications. A `PLAYER_RECONNECTED` event is only broadcast if the player was previously marked as offline in Redis.
-- **Redis Presence**: Player online status is tracked via Redis keys (`presence:{room_id}:{player_id}`) with a 30s TTL, refreshed by periodic PING/PONG heartbeats.
+- **Redis Presence**: Player online status is tracked via Redis keys (`presence:{room_id}:{player_id}`) with a 90s TTL, refreshed by periodic PING/PONG heartbeats.
 - **Heartbeat Loop**: A global background task on the server sends PINGs to all connected clients to ensure stale connections are pruned.
 
 ### 2. Session Persistence
