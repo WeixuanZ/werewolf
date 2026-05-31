@@ -1,6 +1,6 @@
-import logging
 from contextlib import asynccontextmanager
 
+from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -9,9 +9,8 @@ from app.api.routers import rooms, websocket
 from app.api.routers.websocket import start_heartbeat_loop, stop_heartbeat_loop
 from app.core.config import settings
 from app.core.exceptions import GameLogicError
+from app.core.logging import logger
 from app.core.redis import RedisClient
-
-logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -29,6 +28,9 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
+
+# Correlation ID must be the first middleware
+app.add_middleware(CorrelationIdMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

@@ -13,6 +13,8 @@ dependencies = [
     "websockets",
     "pytest",
     "pytest-asyncio",
+    "structlog>=25.0.0",
+    "asgi-correlation-id>=4.3.4",
 ]
 
 [build-system]
