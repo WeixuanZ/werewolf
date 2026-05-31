@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Typography, theme } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GamePhase } from '../../types';
+import { GamePhase, RoleType, NightActionType } from '../../types';
 import type { GameState } from '../../types';
 
 const { Title, Text } = Typography;
@@ -69,31 +69,83 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
       );
       const deadNames = newlyDead.map((p) => p.nickname).join(', ');
 
+      // Check Witch actions in previous state
+      const witch = Object.values(prevPlayers.current).find((p) => p.role === RoleType.WITCH);
+      let witchActionText = '';
+      if (witch && witch.night_action_confirmed) {
+        if (witch.night_action_type === NightActionType.HEAL) {
+          witchActionText = ' The Witch used her healing potion!';
+        } else if (witch.night_action_type === NightActionType.POISON) {
+          witchActionText = ' The Witch used her poison!';
+        }
+      }
+
+      // Check Hunter night revenge
+      const deadHunter = newlyDead.find((p) => p.role === RoleType.HUNTER);
+      let hunterActionText = '';
+      if (deadHunter) {
+        const hunterPrevState = prevPlayers.current[deadHunter.id];
+        if (
+          hunterPrevState &&
+          hunterPrevState.night_action_type === NightActionType.REVENGE &&
+          hunterPrevState.night_action_target
+        ) {
+          const revengeTarget = gameState.players[hunterPrevState.night_action_target];
+          if (
+            revengeTarget &&
+            !revengeTarget.is_alive &&
+            prevPlayers.current[revengeTarget.id]?.is_alive
+          ) {
+            hunterActionText = ` ${deadHunter.nickname} took ${revengeTarget.nickname} down with them!`;
+          }
+        }
+      }
+
       nextAnnouncement = {
         title: 'Morning Breaks',
         subtitle:
           newlyDead.length > 0
-            ? `...and ${deadNames} was found dead.`
-            : '...and it was a peaceful night.',
+            ? `...and ${deadNames} was found dead.${witchActionText}${hunterActionText}`
+            : `...and it was a peaceful night.${witchActionText}`,
         color: newlyDead.length > 0 ? '#ff4d4f' : '#52c41a', // Red or Green
         type: 'morning',
       };
     }
-    // DAY -> NIGHT (Execution)
+    // DAY/VOTING -> NIGHT or HUNTER_REVENGE (Execution)
     else if (
-      previous === GamePhase.DAY &&
+      (previous === GamePhase.DAY || previous === GamePhase.VOTING) &&
       currentPhase !== GamePhase.DAY &&
+      currentPhase !== GamePhase.VOTING &&
       currentPhase !== GamePhase.WAITING &&
       currentPhase !== GamePhase.GAME_OVER
     ) {
       const victimId = gameState.voted_out_this_round;
       const victim = victimId ? gameState.players[victimId] : null;
+      const isHunter = victim?.role === RoleType.HUNTER;
 
       nextAnnouncement = {
-        title: 'The Village Has Spoken',
-        subtitle: victim ? `${victim.nickname} was executed.` : 'No one was executed.',
+        title: isHunter ? "The Hunter's Last Stand" : 'The Village Has Spoken',
+        subtitle: victim
+          ? `${victim.nickname} was executed.${isHunter ? ' They are taking someone with them!' : ''}`
+          : 'No one was executed.',
         color: victim ? '#ff4d4f' : '#bfbfbf',
         type: 'execution',
+      };
+    }
+    // HUNTER_REVENGE -> NIGHT (Hunter revenge resolution)
+    else if (previous === GamePhase.HUNTER_REVENGE && currentPhase === GamePhase.NIGHT) {
+      const hunterId = gameState.voted_out_this_round;
+      const hunter = hunterId ? gameState.players[hunterId] : null;
+      const victimId = hunter?.hunter_revenge_target;
+      const victim = victimId ? gameState.players[victimId] : null;
+
+      nextAnnouncement = {
+        title: "Revenge Served",
+        subtitle: (hunter && victim)
+          ? `${hunter.nickname} shot ${victim.nickname}!`
+          : "The hunter's shot missed.",
+        color: '#ff4d4f',
+        type: 'generic',
       };
     }
     // GAME OVER
