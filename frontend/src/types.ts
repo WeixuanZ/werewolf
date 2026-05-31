@@ -34,6 +34,7 @@ export const NightActionType = {
   REVENGE: 'REVENGE',
   LINK: 'LINK',
   SKIP: 'SKIP',
+  DREAM: 'DREAM',
 } as const;
 
 export type NightActionType = (typeof NightActionType)[keyof typeof NightActionType];

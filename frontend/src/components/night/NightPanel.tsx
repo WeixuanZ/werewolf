@@ -7,6 +7,7 @@ import { PhaseTimer } from '../game/PhaseTimer';
 import { CupidAction } from './CupidAction';
 import { WitchAction } from './WitchAction';
 import { GenericAction } from './GenericAction';
+import { DreamAction } from './DreamAction';
 
 const { Text } = Typography;
 
@@ -70,6 +71,8 @@ export function NightPanel({
       } else {
         return;
       }
+    } else if (actionType === NightActionType.DREAM) {
+      finalTarget = typeof tid === 'string' ? tid : '💤';
     } else {
       finalTarget = typeof tid === 'string' ? tid : null;
     }
@@ -84,8 +87,8 @@ export function NightPanel({
     });
   };
 
-  // Passive Roles
-  if (!myRole || ['VILLAGER', 'SPECTATOR', 'LYCAN', 'TANNER'].includes(myRole)) {
+  // Spectator or no role
+  if (!myRole || myRole === RoleType.SPECTATOR) {
     return (
       <div
         style={{
@@ -109,11 +112,25 @@ export function NightPanel({
           />
         </div>
         <Text style={{ fontSize: 18, color: token.colorTextSecondary }}>
-          {myRole === 'LYCAN' || myRole === 'TANNER'
-            ? 'You are sleeping... (Passive Role) 💤'
-            : 'You are sleeping... 💤'}
+          You are spectating... 💤
         </Text>
       </div>
+    );
+  }
+
+  // Dreaming Roles
+  if (['VILLAGER', 'LYCAN', 'TANNER'].includes(myRole)) {
+    return (
+      <DreamAction
+        myRole={myRole}
+        nightInfo={nightInfo}
+        phaseStartTime={phaseStartTime}
+        phaseDurationSeconds={phaseDurationSeconds}
+        timerEnabled={timerEnabled}
+        onSubmit={handleActionSubmit}
+        isPending={submitAction.isPending}
+        confirmedTargetId={confirmedTargetId}
+      />
     );
   }
 

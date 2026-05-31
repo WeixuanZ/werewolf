@@ -189,6 +189,8 @@ class TestNightPhase:
         self.game.process_action("wolf_id", {"action_type": "KILL", "target_id": "villager_id"})
         self.game.process_action("doc_id", {"action_type": "SAVE", "target_id": "seer_id"})
         self.game.process_action("seer_id", {"action_type": "CHECK", "target_id": "wolf_id"})
+        # Villager dreams
+        self.game.process_action("villager_id", {"action_type": "DREAM", "target_id": "💤"})
 
         # All night actors have acted, check_and_advance should resolve
         self.game.check_and_advance()
@@ -202,6 +204,8 @@ class TestNightPhase:
         self.game.process_action("wolf_id", {"action_type": "KILL", "target_id": "seer_id"})
         self.game.process_action("doc_id", {"action_type": "SAVE", "target_id": "seer_id"})
         self.game.process_action("seer_id", {"action_type": "CHECK", "target_id": "wolf_id"})
+        # Villager dreams
+        self.game.process_action("villager_id", {"action_type": "DREAM", "target_id": "💤"})
 
         self.game.check_and_advance()
 
@@ -212,6 +216,8 @@ class TestNightPhase:
         self.game.process_action("wolf_id", {"action_type": "KILL", "target_id": "villager_id"})
         self.game.process_action("doc_id", {"action_type": "SAVE", "target_id": "seer_id"})
         self.game.process_action("seer_id", {"action_type": "CHECK", "target_id": "wolf_id"})
+        # Villager dreams
+        self.game.process_action("villager_id", {"action_type": "DREAM", "target_id": "💤"})
 
         self.game.check_and_advance()
 
