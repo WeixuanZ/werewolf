@@ -3,11 +3,13 @@ import { Typography, theme } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GamePhase } from '../../types';
 import type { GameState } from '../../types';
+import { getRoleEmoji, getRoleTheme } from '../../utils/roleUtils';
 
 const { Title, Text } = Typography;
 
 interface PhaseTransitionOverlayProps {
   gameState: GameState;
+  playerId?: string | null;
 }
 
 interface Announcement {
@@ -17,7 +19,10 @@ interface Announcement {
   type: 'morning' | 'execution' | 'gameover' | 'generic';
 }
 
-export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProps) => {
+export const PhaseTransitionOverlay = ({
+  gameState,
+  playerId,
+}: PhaseTransitionOverlayProps) => {
   const { token } = theme.useToken();
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -39,6 +44,19 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
 
     let nextAnnouncement: Announcement | null = null;
 
+    // WAITING -> NIGHT (Game Start / Role Reveal)
+    if (previous === GamePhase.WAITING && currentPhase === GamePhase.NIGHT) {
+      const me = playerId ? gameState.players[playerId] : null;
+      if (me && me.role) {
+        const theme = getRoleTheme(me.role);
+        nextAnnouncement = {
+          title: 'YOU ARE',
+          subtitle: `${getRoleEmoji(me.role)} ${me.role}`,
+          color: theme.primary,
+          type: 'generic',
+        };
+      }
+    }
     // NIGHT -> DAY (Morning)
     if (previous === GamePhase.NIGHT && currentPhase === GamePhase.DAY) {
       const newlyDead = Object.values(gameState.players).filter(
@@ -126,7 +144,13 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
 
     prevPhase.current = currentPhase;
     prevPlayers.current = gameState.players;
-  }, [gameState.phase, gameState.players, gameState.voted_out_this_round, gameState.winners]);
+  }, [
+    gameState.phase,
+    gameState.players,
+    gameState.voted_out_this_round,
+    gameState.winners,
+    playerId,
+  ]);
 
   return (
     <AnimatePresence>

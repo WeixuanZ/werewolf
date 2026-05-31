@@ -84,6 +84,7 @@ export default function GameRoom() {
 
     // Check if a dramatic transition is happening
     const isDramatic =
+      (prevPhase === GamePhase.WAITING && currentPhase === GamePhase.NIGHT) ||
       (prevPhase === GamePhase.NIGHT && currentPhase === GamePhase.DAY) ||
       (prevPhase === GamePhase.DAY &&
         currentPhase !== GamePhase.DAY &&
@@ -447,7 +448,7 @@ export default function GameRoom() {
         {/* Main Content */}
         {mainContent}
       </div>
-      <PhaseTransitionOverlay gameState={gameState} />
+      <PhaseTransitionOverlay gameState={gameState} playerId={playerId} />
     </div>
   );
 }
