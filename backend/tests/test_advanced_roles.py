@@ -50,6 +50,11 @@ class TestAdvancedRoles:
             "witch", {"action_type": NightActionType.HEAL, "target_id": "villager"}
         )
 
+        # Villager dreams
+        self.game.process_action(
+            "villager", {"action_type": NightActionType.DREAM, "target_id": "💤"}
+        )
+
         # Hunter skips
         self.game.process_action(
             "hunter", {"action_type": NightActionType.SKIP, "target_id": "hunter"}
@@ -74,6 +79,11 @@ class TestAdvancedRoles:
         # Witch poisons Wolf (ignoring save)
         self.game.process_action(
             "witch", {"action_type": NightActionType.POISON, "target_id": "wolf"}
+        )
+
+        # Villager dreams
+        self.game.process_action(
+            "villager", {"action_type": NightActionType.DREAM, "target_id": "💤"}
         )
 
         # Hunter skips
@@ -106,6 +116,11 @@ class TestAdvancedRoles:
             "witch", {"action_type": NightActionType.SKIP, "target_id": "witch"}
         )
 
+        # Villager dreams
+        self.game.process_action(
+            "villager", {"action_type": NightActionType.DREAM, "target_id": "💤"}
+        )
+
         self.game.check_and_advance()
 
         # Expectation: Hunter dies, Wolf dies
@@ -126,6 +141,11 @@ class TestAdvancedRoles:
         # Hunter selected target anyway
         self.game.process_action(
             "hunter", {"action_type": NightActionType.REVENGE, "target_id": "wolf"}
+        )
+
+        # Villager dreams
+        self.game.process_action(
+            "villager", {"action_type": NightActionType.DREAM, "target_id": "💤"}
         )
 
         self.game.check_and_advance()

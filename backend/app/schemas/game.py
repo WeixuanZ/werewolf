@@ -35,6 +35,7 @@ class NightActionType(str, Enum):
     REVENGE = "REVENGE"
     LINK = "LINK"
     SKIP = "SKIP"
+    DREAM = "DREAM"
 
 
 class NightInfoSchema(BaseModel):
