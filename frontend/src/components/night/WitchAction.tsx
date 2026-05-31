@@ -279,10 +279,18 @@ export function WitchAction({
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             {/* Confirmed State View */}
             <div style={{ fontSize: 64, marginBottom: 24 }}>
-              {confirmedActionType === NightActionType.HEAL ? '💚' : '💜'}
+              {confirmedActionType === NightActionType.SKIP
+                ? '⏭️'
+                : confirmedActionType === NightActionType.HEAL
+                  ? '💚'
+                  : '💜'}
             </div>
             <Title level={3} style={{ color: '#fff' }}>
-              {confirmedActionType === NightActionType.HEAL ? 'Healed Victim' : 'Poisoned Target'}
+              {confirmedActionType === NightActionType.SKIP
+                ? 'Skipping action'
+                : confirmedActionType === NightActionType.HEAL
+                  ? 'Healed Victim'
+                  : 'Poisoned Target'}
             </Title>
             {confirmedTargetId && confirmedTargetId !== 'SKIP' && (
               <Text style={{ fontSize: 18, opacity: 0.8 }}>

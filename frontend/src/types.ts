@@ -19,6 +19,7 @@ export const GamePhase = {
   DAY: 'DAY',
   NIGHT: 'NIGHT',
   VOTING: 'VOTING',
+  HUNTER_REVENGE: 'HUNTER_REVENGE',
   GAME_OVER: 'GAME_OVER',
 } as const;
 

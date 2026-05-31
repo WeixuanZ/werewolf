@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Tag, theme, Button, Modal } from 'antd';
+import { Card, Tag, theme, Button, Modal, Tooltip } from 'antd';
 import { getRoleNameWithEmoji } from '../../utils/roleUtils';
 import { DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { Player } from '../../types';
@@ -63,20 +63,23 @@ function PlayerCard({ player, isMe, canKick, onKick }: PlayerCardProps) {
           }}
         >
           {canKick && (
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined style={{ fontSize: 20 }} />}
-              onClick={onKick}
-              style={{
-                width: 44,
-                height: 44,
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            />
+            <Tooltip title="Kick Player">
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined style={{ fontSize: 20 }} />}
+                onClick={onKick}
+                aria-label={`Kick ${player.nickname}`}
+                style={{
+                  width: 44,
+                  height: 44,
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              />
+            </Tooltip>
           )}
           <span
             style={{

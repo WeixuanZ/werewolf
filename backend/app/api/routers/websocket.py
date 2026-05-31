@@ -8,8 +8,8 @@ from app.services.websocket_manager import manager
 
 router = APIRouter()
 
-HEARTBEAT_INTERVAL = 15  # seconds
-HEARTBEAT_TIMEOUT = 10  # seconds to wait for PONG (beyond interval)
+HEARTBEAT_INTERVAL = 30  # seconds
+HEARTBEAT_TIMEOUT = 30  # seconds to wait for PONG (beyond interval)
 
 
 @router.websocket("/ws/{room_id}/{client_id}")

@@ -176,6 +176,8 @@ export function VotingPanel({
       >
         {alivePlayers.map((player: Player) => (
           <button
+            type="button"
+            aria-pressed={selectedTarget === player.id}
             key={player.id}
             onClick={() => setSelectedTarget(player.id)}
             style={{
