@@ -10,11 +10,17 @@ interface PhaseTransitionOverlayProps {
   gameState: GameState;
 }
 
+interface VoteBreakdown {
+  targetNickname: string;
+  voterNicknames: string[];
+}
+
 interface Announcement {
   title: string;
   subtitle: string;
   color?: string;
   type: 'morning' | 'execution' | 'gameover' | 'generic';
+  voteBreakdown?: VoteBreakdown[];
 }
 
 export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProps) => {
@@ -66,11 +72,40 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
       const victimId = gameState.voted_out_this_round;
       const victim = victimId ? gameState.players[victimId] : null;
 
+      // Group votes by target from the PREVIOUS players (since current state might have cleared them or moved to night)
+      // Actually, GameRoom.tsx delays updating displayedGameState, so we should look at gameState.players
+      // but wait, does the backend clear votes immediately on transition to Night?
+      // Yes, DayState.resolve calls transition_to(GamePhase.NIGHT) which then clears votes in next phase?
+      // No, NightState.on_enter clears night_action_target, but what about vote_target?
+      // DayState.on_enter clears vote_target. NightState.on_enter does NOT clear vote_target.
+      // So votes should still be there in the first state update of the Night phase.
+
+      const votesByTarget: Record<string, string[]> = {};
+      Object.values(gameState.players).forEach((p) => {
+        if (p.vote_target) {
+          const target = gameState.players[p.vote_target];
+          if (target) {
+            if (!votesByTarget[target.nickname]) {
+              votesByTarget[target.nickname] = [];
+            }
+            votesByTarget[target.nickname].push(p.nickname);
+          }
+        }
+      });
+
+      const breakdown = Object.entries(votesByTarget)
+        .map(([targetNickname, voterNicknames]) => ({
+          targetNickname,
+          voterNicknames,
+        }))
+        .sort((a, b) => b.voterNicknames.length - a.voterNicknames.length);
+
       nextAnnouncement = {
         title: 'The Village Has Spoken',
         subtitle: victim ? `${victim.nickname} was executed.` : 'No one was executed.',
         color: victim ? '#ff4d4f' : '#bfbfbf',
         type: 'execution',
+        voteBreakdown: breakdown,
       };
     }
     // GAME OVER
@@ -202,11 +237,71 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
                   fontWeight: 500,
                   display: 'block',
                   textShadow: '0 2px 10px rgba(0,0,0,0.5)',
+                  marginBottom: announcement.voteBreakdown ? '2rem' : 0,
                 }}
               >
                 {announcement.subtitle}
               </Text>
             </motion.div>
+
+            {/* Vote Breakdown Animation */}
+            {announcement.voteBreakdown && announcement.voteBreakdown.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.5, duration: 1 }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  marginTop: '1rem',
+                  maxHeight: '40vh',
+                  overflowY: 'auto',
+                  padding: '0 1rem',
+                }}
+              >
+                {announcement.voteBreakdown.map((vote, idx) => (
+                  <motion.div
+                    key={vote.targetNickname}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 1.8 + idx * 0.2 }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '1rem',
+                      fontSize: 'min(1.2rem, 4vw)',
+                      color: '#ffffffaa',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        color: vote.targetNickname === (gameState.voted_out_this_round ? gameState.players[gameState.voted_out_this_round]?.nickname : '') ? '#ff4d4f' : '#fff',
+                        minWidth: '100px',
+                        textAlign: 'right'
+                      }}
+                    >
+                      {vote.targetNickname}
+                    </div>
+                    <div style={{ color: '#ffffff66' }}>←</div>
+                    <div style={{ textAlign: 'left', flex: 1 }}>
+                      {vote.voterNicknames.join(', ')}
+                    </div>
+                    <div style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '0.9rem',
+                      fontWeight: 600
+                    }}>
+                      {vote.voterNicknames.length}
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
           </div>
         </motion.div>
       )}

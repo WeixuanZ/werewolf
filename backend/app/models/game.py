@@ -235,7 +235,7 @@ class Game:
                 is_spectator=p.role == RoleType.SPECTATOR,
                 # is_online is merged later by service layer
                 is_online=True,
-                vote_target=p.vote_target if is_self else None,
+                vote_target=p.vote_target,
                 night_action_target=p.night_action_target if should_show_action else None,
                 night_action_type=p.night_action_type if should_show_action else None,
                 night_action_confirmed=p.night_action_confirmed,
