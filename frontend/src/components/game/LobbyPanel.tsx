@@ -5,12 +5,30 @@ import { Card, Button, Spin, Typography, message, theme, Switch, Tooltip } from 
 import { useCurrentSession } from '../../store/gameStore';
 import { useUpdateSettings, api } from '../../api/client';
 import { useQuery } from '@tanstack/react-query';
+import { RoleType } from '../../types';
+import type { GameSettings } from '../../types';
 
 const { Text } = Typography;
 const { useToken } = theme;
 
-import { RoleType } from '../../types';
-import type { GameSettings } from '../../types';
+const DEFAULT_SETTINGS: GameSettings = {
+  role_distribution: {
+    [RoleType.WEREWOLF]: 1,
+    [RoleType.SEER]: 1,
+    [RoleType.DOCTOR]: 1,
+    [RoleType.WITCH]: 0,
+    [RoleType.HUNTER]: 0,
+    [RoleType.CUPID]: 0,
+    [RoleType.BODYGUARD]: 0,
+    [RoleType.LYCAN]: 0,
+    [RoleType.TANNER]: 0,
+    [RoleType.VILLAGER]: 0,
+    [RoleType.SPECTATOR]: 0,
+  },
+  phase_duration_seconds: 60,
+  timer_enabled: true,
+  dramatic_tones_enabled: true,
+};
 
 interface LobbyPanelProps {
   isAdmin: boolean;
@@ -25,63 +43,30 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
   const roomId = window.location.pathname.split('/').pop() || '';
   const { mutate: updateSettings } = useUpdateSettings(roomId);
 
-  // Fetch role metadata
   const { data: rolesData } = useQuery({
     queryKey: ['roles'],
     queryFn: api.rooms.getRoles,
     staleTime: Infinity,
   });
 
-  const roleDescriptions: Record<string, string> = {};
-  if (rolesData) {
-    rolesData.forEach((r) => {
-      roleDescriptions[r.type] = r.description;
-    });
-  }
-
-  const [settings, setSettings] = useState<GameSettings>(
-    serverSettings || {
-      role_distribution: {
-        [RoleType.WEREWOLF]: 1,
-        [RoleType.SEER]: 1,
-        [RoleType.DOCTOR]: 1,
-        [RoleType.WITCH]: 0,
-        [RoleType.HUNTER]: 0,
-        [RoleType.CUPID]: 0,
-        [RoleType.BODYGUARD]: 0,
-        [RoleType.LYCAN]: 0,
-        [RoleType.TANNER]: 0,
-        [RoleType.VILLAGER]: 0,
-        [RoleType.SPECTATOR]: 0,
-      },
-      phase_duration_seconds: 60,
-      timer_enabled: true,
-      dramatic_tones_enabled: true,
-    },
+  const roleDescriptions: Record<string, string> = Object.fromEntries(
+    (rolesData ?? []).map((r) => [r.type, r.description]),
   );
+
+  const settings = serverSettings ?? DEFAULT_SETTINGS;
   const [loading, setLoading] = useState(false);
 
-  // Sync with server settings
-  const [prevServerSettings, setPrevServerSettings] = useState(serverSettings);
-  if (serverSettings !== prevServerSettings) {
-    setPrevServerSettings(serverSettings);
-    if (serverSettings) {
-      setSettings(serverSettings);
+  const pushSettings = (next: GameSettings) => {
+    if (session?.playerId) {
+      updateSettings({ playerId: session.playerId, settings: next });
     }
-  }
+  };
 
   const updateRole = (role: RoleType, value: number) => {
-    const newSettings = {
+    pushSettings({
       ...settings,
       role_distribution: { ...settings.role_distribution, [role]: value },
-    };
-    setSettings(newSettings); // Optimistic update
-    if (session?.playerId) {
-      updateSettings({
-        playerId: session.playerId,
-        settings: newSettings,
-      });
-    }
+    });
   };
 
   const totalRoles = Object.values(settings.role_distribution).reduce((a, b) => a + b, 0);
@@ -163,16 +148,9 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
                 <Switch
                   aria-label="Toggle dramatic tones"
                   checked={settings.dramatic_tones_enabled ?? true}
-                  onChange={(checked) => {
-                    const newSettings = { ...settings, dramatic_tones_enabled: checked };
-                    setSettings(newSettings);
-                    if (session?.playerId) {
-                      updateSettings({
-                        playerId: session.playerId,
-                        settings: newSettings,
-                      });
-                    }
-                  }}
+                  onChange={(checked) =>
+                    pushSettings({ ...settings, dramatic_tones_enabled: checked })
+                  }
                 />
               </div>
 
@@ -188,16 +166,7 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
                 <Switch
                   aria-label="Toggle phase timer"
                   checked={settings.timer_enabled}
-                  onChange={(checked) => {
-                    const newSettings = { ...settings, timer_enabled: checked };
-                    setSettings(newSettings);
-                    if (session?.playerId) {
-                      updateSettings({
-                        playerId: session.playerId,
-                        settings: newSettings,
-                      });
-                    }
-                  }}
+                  onChange={(checked) => pushSettings({ ...settings, timer_enabled: checked })}
                 />
               </div>
 
@@ -217,19 +186,9 @@ export function LobbyPanel({ isAdmin, playerCount, onStartGame, serverSettings }
                         key={seconds}
                         size="small"
                         type={settings.phase_duration_seconds === seconds ? 'primary' : 'default'}
-                        onClick={() => {
-                          const newSettings = {
-                            ...settings,
-                            phase_duration_seconds: seconds,
-                          };
-                          setSettings(newSettings);
-                          if (session?.playerId) {
-                            updateSettings({
-                              playerId: session.playerId,
-                              settings: newSettings,
-                            });
-                          }
-                        }}
+                        onClick={() =>
+                          pushSettings({ ...settings, phase_duration_seconds: seconds })
+                        }
                       >
                         {seconds}s
                       </Button>

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from app.core.exceptions import InvalidActionError
@@ -432,25 +433,20 @@ class Spectator(Role):
         return "You are spectating the game."
 
 
+_ROLE_FACTORIES: dict[RoleType, Callable[[], Role]] = {
+    RoleType.WEREWOLF: Werewolf,
+    RoleType.SEER: Seer,
+    RoleType.DOCTOR: Doctor,
+    RoleType.WITCH: Witch,
+    RoleType.HUNTER: Hunter,
+    RoleType.BODYGUARD: Bodyguard,
+    RoleType.CUPID: Cupid,
+    RoleType.LYCAN: Lycan,
+    RoleType.TANNER: Tanner,
+    RoleType.SPECTATOR: Spectator,
+    RoleType.VILLAGER: Villager,
+}
+
+
 def get_role_instance(role_type: RoleType) -> Role:
-    if role_type == RoleType.WEREWOLF:
-        return Werewolf()
-    elif role_type == RoleType.SEER:
-        return Seer()
-    elif role_type == RoleType.DOCTOR:
-        return Doctor()
-    elif role_type == RoleType.WITCH:
-        return Witch()
-    elif role_type == RoleType.HUNTER:
-        return Hunter()
-    elif role_type == RoleType.BODYGUARD:
-        return Bodyguard()
-    elif role_type == RoleType.CUPID:
-        return Cupid()
-    elif role_type == RoleType.LYCAN:
-        return Lycan()
-    elif role_type == RoleType.TANNER:
-        return Tanner()
-    elif role_type == RoleType.SPECTATOR:
-        return Spectator()
-    return Villager()
+    return _ROLE_FACTORIES.get(role_type, Villager)()

@@ -167,8 +167,8 @@ export function DreamAction({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-          gap: 16,
+          gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+          gap: 12,
           marginBottom: token.marginLG,
           flex: 1,
           alignContent: 'start',
@@ -181,37 +181,27 @@ export function DreamAction({
           return (
             <button
               key={emoji}
+              type="button"
+              aria-label={`Dream of ${emoji}`}
+              aria-pressed={isSelected}
               onClick={() => handleEmojiClick(emoji)}
               disabled={isConfirmed}
               style={{
                 display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
                 alignItems: 'center',
-                padding: '16px',
+                justifyContent: 'center',
+                padding: 16,
                 background: isSelected ? `${token.colorPrimary}33` : 'rgba(255, 255, 255, 0.05)',
                 border: `2px solid ${isSelected ? token.colorPrimary : 'transparent'}`,
                 borderRadius: token.borderRadiusLG,
                 color: token.colorText,
-                fontSize: 18,
                 cursor: isConfirmed ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
-                position: 'relative',
-                minHeight: '160px',
+                minHeight: 96,
                 opacity: isConfirmed && !isSelected ? 0.5 : 1,
               }}
             >
-              <span style={{ fontSize: 48, marginBottom: 8 }}>{emoji}</span>
-              <span
-                style={{
-                  fontWeight: 500,
-                  textAlign: 'center',
-                  marginBottom: 12,
-                  lineHeight: 1.2,
-                }}
-              >
-                Dream {DREAM_EMOJIS.indexOf(emoji) + 1}
-              </span>
+              <span style={{ fontSize: 40 }}>{emoji}</span>
             </button>
           );
         })}
