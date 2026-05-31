@@ -23,6 +23,7 @@ import { useJoinRoom, useStartGame, useEndGame, useKickPlayer } from '../api/cli
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import { JoinScreen } from '../components/game/JoinScreen';
 import { PlayerList } from '../components/game/PlayerList';
+import { RoleDistributionPane } from '../components/game/RoleDistributionPane';
 import { NightPanel } from '../components/night/NightPanel';
 import { LobbyPanel } from '../components/game/LobbyPanel';
 import { VotingPanel } from '../components/game/VotingPanel';
@@ -220,6 +221,10 @@ export default function GameRoom() {
           gap: token.margin,
         }}
       >
+        {isGameInProgress && !isGameOver && activeState && (
+          <RoleDistributionPane roleDistribution={activeState.settings.role_distribution} />
+        )}
+
         <PlayerList
           players={players}
           myId={playerId ?? null}
