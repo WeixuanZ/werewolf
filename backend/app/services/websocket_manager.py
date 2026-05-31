@@ -40,6 +40,11 @@ class ConnectionManager:
     async def _listener_loop(self):
         if not self.pubsub:
             return
+
+        async def send_safe(ws: WebSocket, data: str):
+            with contextlib.suppress(Exception):
+                await ws.send_text(data)
+
         async for message in self.pubsub.listen():
             if message["type"] == "message":
                 channel = message["channel"]
@@ -47,9 +52,8 @@ class ConnectionManager:
                 if channel.startswith("room:"):
                     room_id = channel.split(":")[1]
                     if room_id in self.active_connections:
-                        for ws in list(self.active_connections[room_id].values()):
-                            with contextlib.suppress(Exception):
-                                await ws.send_text(data)
+                        connections = list(self.active_connections[room_id].values())
+                        await asyncio.gather(*(send_safe(ws, data) for ws in connections))
 
     async def connect(self, room_id: str, client_id: str, websocket: WebSocket):
         await websocket.accept()
