@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Card, Tag, theme, Button, Modal, Tooltip } from 'antd';
 import { getRoleNameWithEmoji } from '../../utils/roleUtils';
 import { DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import type { Player } from '../../types';
+import type { Player, GameSettings } from '../../types';
+import { RoleDistributionPane } from './RoleDistributionPane';
 
 const { useToken } = theme;
 
@@ -134,16 +135,13 @@ interface PlayerListProps {
   players: Player[];
   myId: string | null;
   onKick?: (targetId: string) => void;
+  roleDistribution?: GameSettings['role_distribution'];
 }
 
-export function PlayerList({ players, myId, onKick }: PlayerListProps) {
+export function PlayerList({ players, myId, onKick, roleDistribution }: PlayerListProps) {
   const me = players.find((p) => p.id === myId);
   const amIAdmin = me?.is_admin ?? false;
   const [kickTarget, setKickTarget] = useState<Player | null>(null);
-
-  const handleKickClick = (player: Player) => {
-    setKickTarget(player);
-  };
 
   const confirmKick = () => {
     if (kickTarget && onKick) {
@@ -154,7 +152,12 @@ export function PlayerList({ players, myId, onKick }: PlayerListProps) {
 
   return (
     <>
-      <Card title={`Players (${players.length})`}>
+      <Card
+        title={`Players (${players.length})`}
+        extra={
+          roleDistribution ? <RoleDistributionPane roleDistribution={roleDistribution} /> : null
+        }
+      >
         <div
           style={{
             display: 'grid',
@@ -168,7 +171,7 @@ export function PlayerList({ players, myId, onKick }: PlayerListProps) {
               player={player}
               isMe={player.id === myId}
               canKick={amIAdmin && player.id !== myId && !!onKick}
-              onKick={() => handleKickClick(player)}
+              onKick={() => setKickTarget(player)}
             />
           ))}
         </div>

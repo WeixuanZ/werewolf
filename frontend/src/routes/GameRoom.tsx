@@ -1,5 +1,5 @@
 import { CopyOutlined, QrcodeOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { useSetCurrentRoomId, useCurrentSession } from '../store/gameStore';
@@ -23,7 +23,6 @@ import { useJoinRoom, useStartGame, useEndGame, useKickPlayer } from '../api/cli
 import { useSoundEffects } from '../hooks/useSoundEffects';
 import { JoinScreen } from '../components/game/JoinScreen';
 import { PlayerList } from '../components/game/PlayerList';
-import { RoleDistributionPane } from '../components/game/RoleDistributionPane';
 import { NightPanel } from '../components/night/NightPanel';
 import { LobbyPanel } from '../components/game/LobbyPanel';
 import { VotingPanel } from '../components/game/VotingPanel';
@@ -56,60 +55,37 @@ export default function GameRoom() {
   // Sound effects (with player context for per-player audio)
   useSoundEffects(gameState, { playerId });
 
-  // UI STATE SUSPENSION LOGIC
-  // We want to keep showing the *old* phase/state while the PhaseTransitionOverlay fades in.
-  // We only update the displayed state after a short delay during dramatic transitions.
-  const [displayedGameState, setDisplayedGameState] = useState<typeof gameState>(gameState);
+  // UI STATE SUSPENSION
+  // Keep showing the *old* state while the PhaseTransitionOverlay fades in over dramatic
+  // transitions. For non-dramatic updates (votes, joins) we render the latest state directly.
+  const [frozenState, setFrozenState] = useState<typeof gameState>();
+  const activeState = frozenState ?? gameState;
+  const lastSeenPhase = useRef(gameState?.phase);
 
   useEffect(() => {
     if (!gameState) return;
-
-    // Initial load or sync if phase matches (standard update)
-    if (!displayedGameState) {
-      const t = setTimeout(() => setDisplayedGameState(gameState), 0);
-      return () => clearTimeout(t);
-    }
-
-    // If phases match, we generally just want to sync the latest state (e.g. new votes, new chat, etc)
-    // We only delay if the PHASE changed dramatically.
-    if (displayedGameState.phase === gameState.phase) {
-      if (displayedGameState !== gameState) {
-        const t = setTimeout(() => setDisplayedGameState(gameState), 0);
-        return () => clearTimeout(t);
-      }
-      return;
-    }
-
+    const prevPhase = lastSeenPhase.current;
     const currentPhase = gameState.phase;
-    const prevPhase = displayedGameState.phase;
+    lastSeenPhase.current = currentPhase;
+    if (!prevPhase || prevPhase === currentPhase) return;
 
-    // Check if a dramatic transition is happening
     const isDramatic =
       (prevPhase === GamePhase.WAITING && currentPhase === GamePhase.NIGHT) ||
       (prevPhase === GamePhase.NIGHT && currentPhase === GamePhase.DAY) ||
       (prevPhase === GamePhase.DAY &&
-        currentPhase !== GamePhase.DAY &&
         currentPhase !== GamePhase.WAITING &&
-        currentPhase !== GamePhase.GAME_OVER) || // Day -> Night (Voting finished)
+        currentPhase !== GamePhase.GAME_OVER) ||
       (currentPhase === GamePhase.GAME_OVER && prevPhase !== GamePhase.GAME_OVER);
 
-    if (isDramatic) {
-      // Delay the UI update to allow the Overlay to cover the screen first.
-      // Overlay fades in over 0.5s. We wait 1.5s to be safe and smooth.
-      const timer = setTimeout(() => {
-        setDisplayedGameState(gameState);
-      }, 1500);
-      return () => clearTimeout(timer);
-    } else {
-      // Immediate update for non-dramatic changes (e.g. someone joining lobby, votes updating)
-      const t = setTimeout(() => setDisplayedGameState(gameState), 0);
-      return () => clearTimeout(t);
-    }
-  }, [gameState, displayedGameState]);
+    if (!isDramatic) return;
 
-  // Use the DISPLAYED state for rendering the board
-  const activeState = displayedGameState || gameState;
-  // Fallback to gameState if displayed is null (first render) but normally handled by effect
+    // Freeze the previous state so the user keeps seeing it while the overlay covers the screen.
+    setFrozenState((current) => current ?? activeState);
+    const timer = setTimeout(() => setFrozenState(undefined), 1500);
+    return () => clearTimeout(timer);
+    // activeState/frozenState intentionally excluded; we only react to gameState changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState]);
 
   useEffect(() => {
     if (error || (!isLoading && !gameState)) {
@@ -222,14 +198,13 @@ export default function GameRoom() {
           gap: token.margin,
         }}
       >
-        {isGameInProgress && !isGameOver && activeState && (
-          <RoleDistributionPane roleDistribution={activeState.settings.role_distribution} />
-        )}
-
         <PlayerList
           players={players}
           myId={playerId ?? null}
           onKick={isLobby || isGameOver ? handleKick : undefined}
+          roleDistribution={
+            isGameInProgress && !isGameOver ? activeState?.settings.role_distribution : undefined
+          }
         />
 
         {isLobby && activeState && (

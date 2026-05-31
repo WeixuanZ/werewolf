@@ -328,6 +328,10 @@ class Game:
     def settings(self) -> GameSettingsSchema:
         return self._state.settings
 
+    @settings.setter
+    def settings(self, value: GameSettingsSchema) -> None:
+        self._state.settings = value
+
     @property
     def turn_count(self) -> int:
         return self._state.turn_count

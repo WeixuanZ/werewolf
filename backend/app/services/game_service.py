@@ -110,7 +110,7 @@ class GameService:
             if not player or not player.is_admin:
                 raise ValueError("Only admin can update settings")
 
-            game._state.settings = settings
+            game.settings = settings
             await self._save_game(game)
             return game.to_schema()
 
@@ -127,14 +127,9 @@ class GameService:
                 raise ValueError("Only admin can start the game")
 
             if settings:
-                game._state.settings = settings
+                game.settings = settings
 
-            # Validate role count
-            total_roles = (
-                sum(settings.role_distribution.values())
-                if settings
-                else sum(game.settings.role_distribution.values())
-            )
+            total_roles = sum(game.settings.role_distribution.values())
             if total_roles != len(game.players):
                 raise ValueError(
                     f"Role count ({total_roles}) must match player count ({len(game.players)})"
