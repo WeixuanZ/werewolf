@@ -240,59 +240,95 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
             {/* Vote Breakdown Animation */}
             {announcement.voteBreakdown && announcement.voteBreakdown.length > 0 && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.5, duration: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2, duration: 0.8 }}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '1rem',
-                  marginTop: '1rem',
+                  gap: '0.75rem',
+                  marginTop: '2rem',
                   maxHeight: '40vh',
                   overflowY: 'auto',
-                  padding: '0 1rem',
+                  padding: '1rem',
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  borderRadius: token.borderRadiusLG,
+                  border: `1px solid ${token.colorBorder}`,
+                  width: 'min(95vw, 600px)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
                 }}
               >
-                {announcement.voteBreakdown.map((vote, idx) => (
-                  <motion.div
-                    key={vote.targetNickname}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.8 + idx * 0.2 }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '1rem',
-                      fontSize: 'min(1.2rem, 4vw)',
-                      color: '#ffffffaa',
-                    }}
-                  >
-                    <div
+                {announcement.voteBreakdown.map((vote, idx) => {
+                  const isVictim = vote.targetNickname === (gameState.voted_out_this_round ? gameState.players[gameState.voted_out_this_round]?.nickname : '');
+                  return (
+                    <motion.div
+                      key={vote.targetNickname}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1.4 + idx * 0.1 }}
                       style={{
-                        fontWeight: 700,
-                        color: vote.targetNickname === (gameState.voted_out_this_round ? gameState.players[gameState.voted_out_this_round]?.nickname : '') ? '#ff4d4f' : '#fff',
-                        minWidth: '100px',
-                        textAlign: 'right'
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '10px 14px',
+                        background: isVictim ? 'rgba(255, 77, 79, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                        borderRadius: token.borderRadius,
+                        border: `1px solid ${isVictim ? 'rgba(255, 77, 79, 0.3)' : 'rgba(255, 255, 255, 0.05)'}`,
                       }}
                     >
-                      {vote.targetNickname}
-                    </div>
-                    <div style={{ color: '#ffffff66' }}>←</div>
-                    <div style={{ textAlign: 'left', flex: 1 }}>
-                      {vote.voterNicknames.join(', ')}
-                    </div>
-                    <div style={{
-                      background: 'rgba(255,255,255,0.1)',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      fontSize: '0.9rem',
-                      fontWeight: 600
-                    }}>
-                      {vote.voterNicknames.length}
-                    </div>
-                  </motion.div>
-                ))}
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          color: isVictim ? '#ff4d4f' : token.colorText,
+                          fontSize: '1rem',
+                          width: '100px',
+                          textAlign: 'left',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {vote.targetNickname}
+                      </div>
+
+                      <div style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{ color: 'rgba(255, 255, 255, 0.25)', fontSize: '0.7rem', fontWeight: 800 }}>
+                          BY
+                        </div>
+                        <div style={{
+                          textAlign: 'left',
+                          color: token.colorTextSecondary,
+                          fontSize: '0.9rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {vote.voterNicknames.join(', ')}
+                        </div>
+                      </div>
+
+                      <div style={{
+                        background: isVictim ? '#ff4d4f' : token.colorPrimary,
+                        color: '#fff',
+                        padding: '2px 10px',
+                        borderRadius: '10px',
+                        fontSize: '0.8rem',
+                        fontWeight: 800,
+                        minWidth: '32px',
+                        textAlign: 'center',
+                        boxShadow: isVictim ? '0 0 12px rgba(255, 77, 79, 0.3)' : 'none',
+                      }}>
+                        {vote.voterNicknames.length}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </motion.div>
             )}
           </div>

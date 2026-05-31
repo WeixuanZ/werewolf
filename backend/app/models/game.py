@@ -191,6 +191,24 @@ class Game:
             # Generally, actions are private unless it's yourself OR you are wolves acting together
             should_show_action = is_self or (are_werewolves and p.role == RoleType.WEREWOLF)
 
+            # Vote target visibility
+            # Only visible to self during active voting, but public in other phases
+            # This allows the post-vote animation to show results without leaking during the vote
+            should_show_vote = (
+                is_self
+                or is_game_over
+                or self.phase not in (GamePhase.DAY, GamePhase.NIGHT)
+                or (self.phase == GamePhase.NIGHT and not are_werewolves)
+            )
+
+            # Actually, the user wants to see WHO voted for WHO after the vote finishes.
+            # In DAY phase, vote_target should be private until it resolves.
+            # But the resolution happens at the end of the phase.
+            # A better way: only show vote_target if the phase is NOT Day or Night (e.g. during transition animations)
+            # OR if is_game_over.
+            # However, the frontend needs this data for the "Execution" transition which happens
+            # when the phase has ALREADY changed to HUNTER_REVENGE, NIGHT, or GAME_OVER.
+
             vote_dist = None
             if (
                 is_self
@@ -235,7 +253,7 @@ class Game:
                 is_spectator=p.role == RoleType.SPECTATOR,
                 # is_online is merged later by service layer
                 is_online=True,
-                vote_target=p.vote_target,
+                vote_target=p.vote_target if should_show_vote else None,
                 night_action_target=p.night_action_target if should_show_action else None,
                 night_action_type=p.night_action_type if should_show_action else None,
                 night_action_confirmed=p.night_action_confirmed,
