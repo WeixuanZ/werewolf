@@ -12,17 +12,25 @@ interface PhaseTransitionOverlayProps {
   playerId?: string | null;
 }
 
+type AnnouncementType = 'role-reveal' | 'morning' | 'execution' | 'gameover' | 'generic';
+
 interface Announcement {
+  eyebrow?: string;
   title: string;
   subtitle: string;
-  color?: string;
-  type: 'morning' | 'execution' | 'gameover' | 'generic';
+  icon?: string;
+  accent: string;
+  type: AnnouncementType;
 }
 
-export const PhaseTransitionOverlay = ({
-  gameState,
-  playerId,
-}: PhaseTransitionOverlayProps) => {
+const ACCENT_NEUTRAL = '#9370db';
+const ACCENT_DANGER = '#ff7875';
+const ACCENT_SUCCESS = '#73d39c';
+const ACCENT_MUTED = '#a89cc8';
+const ACCENT_LOVERS = '#eb2f96';
+const ACCENT_GOLD = '#f6c177';
+
+export const PhaseTransitionOverlay = ({ gameState, playerId }: PhaseTransitionOverlayProps) => {
   const { token } = theme.useToken();
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -30,7 +38,6 @@ export const PhaseTransitionOverlay = ({
   const prevPhase = useRef<GamePhase>(gameState.phase);
   const prevPlayers = useRef(gameState.players);
 
-  // Timer refs to allow persistent animation across re-renders (like player updates)
   const startTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const cleanupTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -43,66 +50,58 @@ export const PhaseTransitionOverlay = ({
 
   const dismiss = () => {
     setIsVisible(false);
-    // Cleanup content after fade out transition
     if (cleanupTimerRef.current !== null) clearTimeout(cleanupTimerRef.current);
-    cleanupTimerRef.current = setTimeout(() => setAnnouncement(null), 1000);
+    cleanupTimerRef.current = setTimeout(() => setAnnouncement(null), 800);
   };
 
-  // Sync refs to current state but keep them for comparison in effect
-  // We use a single effect to handle transitions
   useEffect(() => {
     const currentPhase = gameState.phase;
     const previous = prevPhase.current;
     const previousPlayers = prevPlayers.current;
 
-    // Always update refs for the next run to avoid re-triggering logic
-    // on incidental state changes (like player online/offline status)
     prevPhase.current = currentPhase;
     prevPlayers.current = gameState.players;
 
-    // Skip if phase hasn't changed
-    if (previous === currentPhase) {
-      return;
-    }
+    if (previous === currentPhase) return;
 
-    let nextAnnouncement: Announcement | null = null;
+    let next: Announcement | null = null;
 
     // WAITING -> NIGHT (Game Start / Role Reveal)
     if (previous === GamePhase.WAITING && currentPhase === GamePhase.NIGHT) {
       const me = playerId ? gameState.players[playerId] : null;
       if (me && me.role) {
-        const theme = getRoleTheme(me.role);
-        nextAnnouncement = {
-          title: 'YOU ARE',
-          subtitle: `${getRoleEmoji(me.role)} ${me.role}`,
-          color: theme.primary,
-          type: 'generic',
+        const roleTheme = getRoleTheme(me.role);
+        next = {
+          eyebrow: 'Your role',
+          title: me.role,
+          subtitle: 'Keep it secret. Play your part.',
+          icon: getRoleEmoji(me.role),
+          accent: roleTheme.primary,
+          type: 'role-reveal',
         };
       }
     }
     // NIGHT -> DAY (Morning)
-    if (previous === GamePhase.NIGHT && currentPhase === GamePhase.DAY) {
+    else if (previous === GamePhase.NIGHT && currentPhase === GamePhase.DAY) {
       const newlyDead = Object.values(gameState.players).filter(
         (p) => previousPlayers[p.id]?.is_alive && !p.is_alive,
       );
       const deadNames = newlyDead.map((p) => p.nickname).join(', ');
 
-      // Check Witch actions in previous state
-      const witch = Object.values(prevPlayers.current).find((p) => p.role === RoleType.WITCH);
+      const witch = Object.values(previousPlayers).find((p) => p.role === RoleType.WITCH);
       let witchActionText = '';
       if (witch && witch.night_action_confirmed) {
         if (witch.night_action_type === NightActionType.HEAL) {
-          witchActionText = ' The Witch used her healing potion!';
+          witchActionText = ' The Witch used her healing potion.';
         } else if (witch.night_action_type === NightActionType.POISON) {
-          witchActionText = ' The Witch used her poison!';
+          witchActionText = ' The Witch used her poison.';
         }
       }
 
-      // Check Hunter night revenge
       const deadHunter = newlyDead.find((p) => p.role === RoleType.HUNTER);
       let hunterActionText = '';
       if (deadHunter) {
-        const hunterPrevState = prevPlayers.current[deadHunter.id];
+        const hunterPrevState = previousPlayers[deadHunter.id];
         if (
           hunterPrevState &&
           hunterPrevState.night_action_type === NightActionType.REVENGE &&
@@ -112,20 +111,22 @@ export const PhaseTransitionOverlay = ({
           if (
             revengeTarget &&
             !revengeTarget.is_alive &&
-            prevPlayers.current[revengeTarget.id]?.is_alive
+            previousPlayers[revengeTarget.id]?.is_alive
           ) {
-            hunterActionText = ` ${deadHunter.nickname} took ${revengeTarget.nickname} down with them!`;
+            hunterActionText = ` ${deadHunter.nickname} took ${revengeTarget.nickname} down with them.`;
           }
         }
       }
 
-      nextAnnouncement = {
+      const peaceful = newlyDead.length === 0;
+      next = {
+        eyebrow: 'Dawn',
         title: 'Morning Breaks',
-        subtitle:
-          newlyDead.length > 0
-            ? `...and ${deadNames} was found dead.${witchActionText}${hunterActionText}`
-            : `...and it was a peaceful night.${witchActionText}`,
-        color: newlyDead.length > 0 ? '#ff4d4f' : '#52c41a', // Red or Green
+        subtitle: peaceful
+          ? `It was a peaceful night.${witchActionText}`
+          : `${deadNames} was found dead.${witchActionText}${hunterActionText}`,
+        icon: peaceful ? '🌅' : '🕯️',
+        accent: peaceful ? ACCENT_SUCCESS : ACCENT_DANGER,
         type: 'morning',
       };
     }
@@ -141,70 +142,81 @@ export const PhaseTransitionOverlay = ({
       const victim = victimId ? gameState.players[victimId] : null;
       const isHunter = victim?.role === RoleType.HUNTER;
 
-      nextAnnouncement = {
+      next = {
+        eyebrow: 'Verdict',
         title: isHunter ? "The Hunter's Last Stand" : 'The Village Has Spoken',
         subtitle: victim
-          ? `${victim.nickname} was executed.${isHunter ? ' They are taking someone with them!' : ''}`
+          ? `${victim.nickname} was executed.${isHunter ? ' They are taking someone with them.' : ''}`
           : 'No one was executed.',
-        color: victim ? '#ff4d4f' : '#bfbfbf',
+        icon: victim ? '⚖️' : '🤝',
+        accent: victim ? ACCENT_DANGER : ACCENT_MUTED,
         type: 'execution',
       };
     }
-    // HUNTER_REVENGE -> NIGHT (Hunter revenge resolution)
+    // HUNTER_REVENGE -> NIGHT
     else if (previous === GamePhase.HUNTER_REVENGE && currentPhase === GamePhase.NIGHT) {
       const hunterId = gameState.voted_out_this_round;
       const hunter = hunterId ? gameState.players[hunterId] : null;
       const victimId = hunter?.hunter_revenge_target;
       const victim = victimId ? gameState.players[victimId] : null;
 
-      nextAnnouncement = {
-        title: "Revenge Served",
-        subtitle: (hunter && victim)
-          ? `${hunter.nickname} shot ${victim.nickname}!`
-          : "The hunter's shot missed.",
-        color: '#ff4d4f',
+      next = {
+        eyebrow: 'Final shot',
+        title: 'Revenge Served',
+        subtitle:
+          hunter && victim
+            ? `${hunter.nickname} shot ${victim.nickname}.`
+            : "The hunter's shot missed.",
+        icon: '🎯',
+        accent: ACCENT_DANGER,
         type: 'generic',
       };
     }
     // GAME OVER
     else if (currentPhase === GamePhase.GAME_OVER) {
       const winners = gameState.winners;
-      let winTitle = 'Game Over';
-      let winColor = '#faad14'; // Default Gold
+      let title = 'Game Over';
+      let accent = ACCENT_GOLD;
+      let icon = '🏆';
 
       if (winners === 'WEREWOLVES') {
-        winTitle = 'Werewolves Win!';
-        winColor = '#ff4d4f';
+        title = 'Werewolves Win';
+        accent = ACCENT_DANGER;
+        icon = '🐺';
       } else if (winners === 'VILLAGERS') {
-        winTitle = 'Villagers Win!';
-        winColor = '#52c41a';
+        title = 'Villagers Win';
+        accent = ACCENT_SUCCESS;
+        icon = '🏘️';
       } else if (winners === 'LOVERS') {
-        winTitle = 'Lovers Win!';
-        winColor = '#eb2f96';
+        title = 'Lovers Win';
+        accent = ACCENT_LOVERS;
+        icon = '💘';
       } else if (winners === 'TANNER') {
-        winTitle = 'Tanner Wins!';
-        winColor = '#faad14';
+        title = 'Tanner Wins';
+        accent = ACCENT_GOLD;
+        icon = '🤡';
       }
 
-      nextAnnouncement = {
-        title: winTitle.toUpperCase(),
+      next = {
+        eyebrow: 'Final result',
+        title,
         subtitle: 'The game has ended.',
-        color: winColor,
+        icon,
+        accent,
         type: 'gameover',
       };
     }
 
-    if (nextAnnouncement) {
+    if (next) {
       clearAllTimers();
-
+      const nextAnnouncement = next;
       startTimerRef.current = setTimeout(() => {
         setAnnouncement(nextAnnouncement);
         setIsVisible(true);
       }, 100);
-
       hideTimerRef.current = setTimeout(() => {
         setIsVisible(false);
-        cleanupTimerRef.current = setTimeout(() => setAnnouncement(null), 1000);
+        cleanupTimerRef.current = setTimeout(() => setAnnouncement(null), 800);
       }, 6000);
     }
   }, [
@@ -226,41 +238,112 @@ export const PhaseTransitionOverlay = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
           onClick={dismiss}
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 2000,
             background:
-              'radial-gradient(circle at center, rgba(26, 17, 40, 0.95) 0%, rgba(10, 5, 15, 0.98) 100%)',
-            backdropFilter: 'blur(12px)',
+              'radial-gradient(circle at center, rgba(26, 17, 40, 0.92) 0%, rgba(10, 5, 15, 0.97) 75%)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
             display: 'flex',
-            flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
             pointerEvents: 'auto',
             cursor: 'pointer',
+            padding: '24px',
+            paddingTop: 'calc(24px + env(safe-area-inset-top))',
+            paddingBottom: 'calc(24px + env(safe-area-inset-bottom))',
           }}
         >
-          <div style={{ textAlign: 'center', padding: '0 24px', maxWidth: '800px' }}>
+          {/* Soft accent halo behind the card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 0.55, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2, ease: 'easeOut' }}
+            style={{
+              position: 'absolute',
+              width: 'min(640px, 90vw)',
+              height: 'min(640px, 90vw)',
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${announcement.accent}33 0%, ${announcement.accent}00 60%)`,
+              pointerEvents: 'none',
+            }}
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              position: 'relative',
+              textAlign: 'center',
+              maxWidth: 520,
+              width: '100%',
+              padding: '40px 28px',
+              background: 'rgba(0, 0, 0, 0.3)',
+              border: `1px solid ${announcement.accent}40`,
+              borderRadius: token.borderRadiusLG * 2,
+              boxShadow:
+                '0 24px 80px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.03)',
+            }}
+          >
+            {announcement.icon && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.15, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  fontSize: 'min(72px, 18vw)',
+                  lineHeight: 1,
+                  marginBottom: 20,
+                  filter: `drop-shadow(0 6px 24px ${announcement.accent}55)`,
+                }}
+              >
+                {announcement.icon}
+              </motion.div>
+            )}
+
+            {announcement.eyebrow && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25, duration: 0.5 }}
+              >
+                <Text
+                  style={{
+                    display: 'block',
+                    color: ACCENT_NEUTRAL,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    letterSpacing: '0.32em',
+                    textTransform: 'uppercase',
+                    marginBottom: 14,
+                  }}
+                >
+                  {announcement.eyebrow}
+                </Text>
+              </motion.div>
+            )}
+
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -30, filter: 'blur(15px)' }}
-              animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-              transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             >
               <Title
                 level={1}
                 style={{
-                  color: '#fff',
-                  fontSize: 'min(4.5rem, 12vw)',
-                  fontWeight: 900,
                   margin: 0,
-                  letterSpacing: '0.25em',
-                  textTransform: 'uppercase',
-                  textShadow: `0 0 40px ${announcement.color || token.colorPrimary}88, 0 4px 30px rgba(0,0,0,0.8)`,
-                  marginBottom: '2.5rem',
-                  lineHeight: 1.2,
+                  color: '#f0e6ff',
+                  fontSize: 'min(2.75rem, 9vw)',
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
+                  lineHeight: 1.15,
                 }}
               >
                 {announcement.title}
@@ -269,30 +352,31 @@ export const PhaseTransitionOverlay = ({
 
             <motion.div
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: '100%', maxWidth: 240, opacity: 1 }}
-              transition={{ delay: 0.4, duration: 1.2, ease: 'easeInOut' }}
+              animate={{ width: 56, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.7, ease: 'easeOut' }}
               style={{
-                height: 3,
-                background: `linear-gradient(90deg, transparent, ${announcement.color || token.colorPrimary}, transparent)`,
-                margin: '0 auto 2.5rem',
+                height: 2,
+                background: announcement.accent,
+                margin: '22px auto',
                 borderRadius: 2,
-                boxShadow: `0 0 25px ${announcement.color || token.colorPrimary}`,
+                boxShadow: `0 0 16px ${announcement.accent}88`,
               }}
             />
 
             <motion.div
-              initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              transition={{ delay: 0.7, duration: 1.2, ease: 'easeOut' }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.7 }}
             >
               <Text
                 style={{
-                  color: announcement.color ? `${announcement.color}` : '#f0e6ff',
-                  fontSize: 'min(2.5rem, 8vw)',
-                  fontWeight: 600,
                   display: 'block',
-                  textShadow: '0 2px 15px rgba(0,0,0,0.8)',
-                  letterSpacing: '0.05em',
+                  color: '#a89cc8',
+                  fontSize: 'min(1.1rem, 4.2vw)',
+                  fontWeight: 400,
+                  lineHeight: 1.55,
+                  maxWidth: 420,
+                  margin: '0 auto',
                 }}
               >
                 {announcement.subtitle}
@@ -302,18 +386,19 @@ export const PhaseTransitionOverlay = ({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
-              transition={{ delay: 3, duration: 1 }}
+              transition={{ delay: 2.4, duration: 0.8 }}
               style={{
-                marginTop: '4rem',
-                color: 'rgba(255, 255, 255, 0.3)',
-                fontSize: 12,
+                marginTop: 32,
+                color: 'rgba(168, 156, 200, 0.5)',
+                fontSize: 10,
+                fontWeight: 500,
                 textTransform: 'uppercase',
-                letterSpacing: '0.2em'
+                letterSpacing: '0.24em',
               }}
             >
-              Click to dismiss
+              Tap to dismiss
             </motion.div>
-          </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
