@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { theme, Button, Typography, Tag } from 'antd';
 import { getRoleNameWithEmoji, getRoleTheme } from '../../utils/roleUtils';
 import { PhaseTimer } from '../game/PhaseTimer';
@@ -18,12 +18,66 @@ interface DreamActionProps {
 }
 
 const DREAM_EMOJIS = [
-  '🍕', '🍔', '🍟', '🌭', '🍿', '🥓', '🍳', '🥞', '🥨', '🍩',
-  '🍪', '🍰', '🧁', '🥧', '🍫', '🍬', '🍭', '🍮', '🍯', '🍦',
-  '🍧', '🍨', '🍓', '🍒', '🍑', '🍊', '🍋', '🍍', '🍎', '🍏',
-  '🍐', '🥝', '🍇', '🍉', '🍌', '🌽', '🥕', '🥔', '🍠', '🍄',
-  '🥜', '🌰', '🍞', '🥐', '🥖', '🥪', '🌮', '🌯', '🥗', '🥘',
-  '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🍤', '🍙', '🍚',
+  '🍕',
+  '🍔',
+  '🍟',
+  '🌭',
+  '🍿',
+  '🥓',
+  '🍳',
+  '🥞',
+  '🥨',
+  '🍩',
+  '🍪',
+  '🍰',
+  '🧁',
+  '🥧',
+  '🍫',
+  '🍬',
+  '🍭',
+  '🍮',
+  '🍯',
+  '🍦',
+  '🍧',
+  '🍨',
+  '🍓',
+  '🍒',
+  '🍑',
+  '🍊',
+  '🍋',
+  '🍍',
+  '🍎',
+  '🍏',
+  '🍐',
+  '🥝',
+  '🍇',
+  '🍉',
+  '🍌',
+  '🌽',
+  '🥕',
+  '🥔',
+  '🍠',
+  '🍄',
+  '🥜',
+  '🌰',
+  '🍞',
+  '🥐',
+  '🥖',
+  '🥪',
+  '🌮',
+  '🌯',
+  '🥗',
+  '🥘',
+  '🍝',
+  '🍜',
+  '🍲',
+  '🍛',
+  '🍣',
+  '🍱',
+  '🥟',
+  '🍤',
+  '🍙',
+  '🍚',
 ];
 
 export function DreamAction({
@@ -40,12 +94,9 @@ export function DreamAction({
   const roleTheme = getRoleTheme(myRole);
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(confirmedTargetId || null);
 
-  // Generate a stable target emoji for this phase
-  const targetEmoji = useMemo(() => {
-    const seed = phaseStartTime || 0;
-    const index = Math.floor(Math.abs(Math.sin(seed) * DREAM_EMOJIS.length));
-    return DREAM_EMOJIS[index];
-  }, [phaseStartTime]);
+  const seed = phaseStartTime || 0;
+  const targetEmojiIndex = Math.floor(Math.abs(Math.sin(seed) * DREAM_EMOJIS.length));
+  const targetEmoji = DREAM_EMOJIS[targetEmojiIndex];
 
   const isConfirmed = !!confirmedTargetId;
 
@@ -107,9 +158,9 @@ export function DreamAction({
         phaseDurationSeconds={phaseDurationSeconds}
         timerEnabled={timerEnabled}
         onExpire={() => {
-            if (!isConfirmed) {
-                onSubmit(NightActionType.DREAM, selectedEmoji || targetEmoji);
-            }
+          if (!isConfirmed) {
+            onSubmit(NightActionType.DREAM, selectedEmoji || targetEmoji);
+          }
         }}
       />
 

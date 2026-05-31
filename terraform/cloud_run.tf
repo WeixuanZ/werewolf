@@ -12,6 +12,7 @@ resource "google_cloud_run_v2_service" "backend" {
   deletion_protection = false
 
   template {
+    timeout = "3600s"
     containers {
       image = var.backend_image
 

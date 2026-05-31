@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
 from app.schemas.socket import PingMessage, PongMessage, StateUpdateMessage
 from app.services.game_service import GameService, get_game_service
-from app.services.websocket_manager import manager
+from app.services.websocket_manager import DISCONNECT_GRACE_PERIOD, manager
 
 router = APIRouter()
 
 HEARTBEAT_INTERVAL = 30  # seconds
-HEARTBEAT_TIMEOUT = 30  # seconds to wait for PONG (beyond interval)
+HEARTBEAT_TIMEOUT = 120  # seconds to wait for PONG (beyond interval)
 
 
 @router.websocket("/ws/{room_id}/{client_id}")
@@ -67,7 +67,23 @@ async def websocket_endpoint(
         print(f"WS Exception for {client_id}: {e}")
     finally:
         await manager.disconnect(room_id, client_id)
-        await manager.broadcast_disconnect(room_id, client_id, nickname)
+
+        async def verify_disconnect():
+            await asyncio.sleep(DISCONNECT_GRACE_PERIOD)
+            from app.core.redis import RedisClient
+
+            redis = RedisClient.get_client()
+            ttl = await redis.ttl(f"presence:{room_id}:{client_id}")
+            # If TTL is missing (-2) or <= grace period, they didn't successfully stay connected
+            # Note: if they reconnect, TTL is set to 90. After sleep, TTL would be ~75.
+            if ttl == -2 or (ttl != -1 and ttl <= DISCONNECT_GRACE_PERIOD):
+                if ttl != -2:
+                    await redis.delete(f"presence:{room_id}:{client_id}")
+                await manager.broadcast_disconnect(room_id, client_id, nickname)
+
+        task = asyncio.create_task(verify_disconnect())
+        background_tasks.add(task)
+        task.add_done_callback(background_tasks.discard)
 
 
 # Keep a reference to background tasks to prevent garbage collection
