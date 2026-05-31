@@ -191,6 +191,11 @@ class Game:
             # Generally, actions are private unless it's yourself OR you are wolves acting together
             should_show_action = is_self or (are_werewolves and p.role == RoleType.WEREWOLF)
 
+            # Vote target visibility
+            # Hidden during the active DAY vote to prevent peeking; revealed afterwards
+            # so the post-vote breakdown animation can show who voted for whom.
+            should_show_vote = is_self or self.phase != GamePhase.DAY
+
             vote_dist = None
             if (
                 is_self
@@ -235,7 +240,7 @@ class Game:
                 is_spectator=p.role == RoleType.SPECTATOR,
                 # is_online is merged later by service layer
                 is_online=True,
-                vote_target=p.vote_target if is_self else None,
+                vote_target=p.vote_target if should_show_vote else None,
                 night_action_target=p.night_action_target if should_show_action else None,
                 night_action_type=p.night_action_type if should_show_action else None,
                 night_action_confirmed=p.night_action_confirmed,

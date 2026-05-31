@@ -14,6 +14,12 @@ interface PhaseTransitionOverlayProps {
 
 type AnnouncementType = 'role-reveal' | 'morning' | 'execution' | 'gameover' | 'generic';
 
+interface VoteTally {
+  targetId: string;
+  targetNickname: string;
+  voters: string[];
+}
+
 interface Announcement {
   eyebrow?: string;
   title: string;
@@ -21,6 +27,8 @@ interface Announcement {
   icon?: string;
   accent: string;
   type: AnnouncementType;
+  voteBreakdown?: VoteTally[];
+  executedId?: string | null;
 }
 
 const ACCENT_NEUTRAL = '#9370db';
@@ -29,6 +37,24 @@ const ACCENT_SUCCESS = '#73d39c';
 const ACCENT_MUTED = '#a89cc8';
 const ACCENT_LOVERS = '#eb2f96';
 const ACCENT_GOLD = '#f6c177';
+
+function buildVoteBreakdown(gameState: GameState): VoteTally[] {
+  const tallies = new Map<string, VoteTally>();
+  for (const voter of Object.values(gameState.players)) {
+    const targetId = voter.vote_target;
+    if (!targetId) continue;
+    const target = gameState.players[targetId];
+    if (!target) continue;
+    const tally = tallies.get(targetId) ?? {
+      targetId,
+      targetNickname: target.nickname,
+      voters: [],
+    };
+    tally.voters.push(voter.nickname);
+    tallies.set(targetId, tally);
+  }
+  return [...tallies.values()].sort((a, b) => b.voters.length - a.voters.length);
+}
 
 export const PhaseTransitionOverlay = ({ gameState, playerId }: PhaseTransitionOverlayProps) => {
   const { token } = theme.useToken();
@@ -151,6 +177,8 @@ export const PhaseTransitionOverlay = ({ gameState, playerId }: PhaseTransitionO
         icon: victim ? '⚖️' : '🤝',
         accent: victim ? ACCENT_DANGER : ACCENT_MUTED,
         type: 'execution',
+        executedId: victimId ?? null,
+        voteBreakdown: buildVoteBreakdown(gameState),
       };
     }
     // HUNTER_REVENGE -> NIGHT
@@ -219,13 +247,7 @@ export const PhaseTransitionOverlay = ({ gameState, playerId }: PhaseTransitionO
         cleanupTimerRef.current = setTimeout(() => setAnnouncement(null), 800);
       }, 6000);
     }
-  }, [
-    gameState.phase,
-    gameState.players,
-    gameState.voted_out_this_round,
-    gameState.winners,
-    playerId,
-  ]);
+  }, [gameState, playerId]);
 
   useEffect(() => {
     return () => clearAllTimers();
@@ -383,6 +405,14 @@ export const PhaseTransitionOverlay = ({ gameState, playerId }: PhaseTransitionO
               </Text>
             </motion.div>
 
+            {announcement.voteBreakdown && announcement.voteBreakdown.length > 0 && (
+              <VoteBreakdownList
+                tallies={announcement.voteBreakdown}
+                executedId={announcement.executedId ?? null}
+                accent={announcement.accent}
+              />
+            )}
+
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
@@ -404,3 +434,86 @@ export const PhaseTransitionOverlay = ({ gameState, playerId }: PhaseTransitionO
     </AnimatePresence>
   );
 };
+
+interface VoteBreakdownListProps {
+  tallies: VoteTally[];
+  executedId: string | null;
+  accent: string;
+}
+
+function VoteBreakdownList({ tallies, executedId, accent }: VoteBreakdownListProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 1.4, duration: 0.6 }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        marginTop: 24,
+        maxHeight: '32vh',
+        overflowY: 'auto',
+        padding: '0 4px',
+      }}
+    >
+      {tallies.map((tally, idx) => {
+        const isExecuted = tally.targetId === executedId;
+        return (
+          <motion.div
+            key={tally.targetId}
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1.6 + idx * 0.15, duration: 0.4 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: isExecuted ? `${accent}1a` : 'rgba(255, 255, 255, 0.03)',
+              border: `1px solid ${isExecuted ? `${accent}66` : 'rgba(255, 255, 255, 0.06)'}`,
+            }}
+          >
+            <span
+              style={{
+                fontWeight: 600,
+                color: isExecuted ? accent : '#f0e6ff',
+                minWidth: 96,
+                textAlign: 'left',
+                fontSize: 14,
+              }}
+            >
+              {tally.targetNickname}
+            </span>
+            <span
+              style={{
+                flex: 1,
+                color: '#a89cc8',
+                fontSize: 12,
+                textAlign: 'left',
+                lineHeight: 1.4,
+              }}
+            >
+              {tally.voters.join(', ')}
+            </span>
+            <span
+              style={{
+                fontWeight: 700,
+                color: '#f0e6ff',
+                background: 'rgba(255, 255, 255, 0.08)',
+                padding: '2px 10px',
+                borderRadius: 12,
+                fontSize: 13,
+                minWidth: 28,
+                textAlign: 'center',
+              }}
+            >
+              {tally.voters.length}
+            </span>
+          </motion.div>
+        );
+      })}
+    </motion.div>
+  );
+}
