@@ -67,7 +67,9 @@ class TestFeatures:
         game.players["p1"].role = RoleType.VILLAGER
 
         # Villager uses DREAM action
-        game.process_action("p1", {"action_type": NightActionType.DREAM, "target_id": "🍕", "confirmed": True})
+        game.process_action(
+            "p1", {"action_type": NightActionType.DREAM, "target_id": "🍕", "confirmed": True}
+        )
         assert game.players["p1"].night_action_target == "🍕"
         assert game.players["p1"].night_action_confirmed is True
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { theme, Button, Typography, Tag } from 'antd';
 import { getRoleNameWithEmoji, getRoleTheme } from '../../utils/roleUtils';
 import { PhaseTimer } from '../game/PhaseTimer';
@@ -58,12 +58,6 @@ export function DreamAction({
     if (!selectedEmoji) return;
     onSubmit(NightActionType.DREAM, selectedEmoji);
   };
-
-  useEffect(() => {
-      if (confirmedTargetId) {
-          setSelectedEmoji(confirmedTargetId);
-      }
-  }, [confirmedTargetId]);
 
   return (
     <div

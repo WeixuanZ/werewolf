@@ -114,7 +114,7 @@ class NightState(PhaseState):
         for player in game.players.values():
             if not player.is_alive or not player.role:
                 continue
-            if player.can_act_at_night() or player.role.role_type in [
+            if player.can_act_at_night() or player.role in [
                 RoleType.VILLAGER,
                 RoleType.LYCAN,
                 RoleType.TANNER,

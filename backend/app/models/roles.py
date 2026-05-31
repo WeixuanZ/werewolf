@@ -97,6 +97,7 @@ class Villager(Role):
             actions_available=[NightActionType.DREAM],
         )
 
+
 class Werewolf(Role):
     def __init__(self):
         super().__init__(RoleType.WEREWOLF)
@@ -187,6 +188,7 @@ class Lycan(Role):
             actions_available=[NightActionType.DREAM],
         )
 
+
 class Tanner(Role):
     def __init__(self):
         super().__init__(RoleType.TANNER)
@@ -199,6 +201,7 @@ class Tanner(Role):
             prompt="Choose what you are dreaming about...",
             actions_available=[NightActionType.DREAM],
         )
+
 
 class Witch(Role):
     def __init__(self):
