@@ -20,6 +20,7 @@ from app.schemas.socket import (
 
 logger = logging.getLogger(__name__)
 PRESENCE_TTL = 90  # seconds
+DISCONNECT_GRACE_PERIOD = 15  # seconds
 
 
 class ConnectionManager:
@@ -77,8 +78,9 @@ class ConnectionManager:
                 if self.pubsub:
                     await self.pubsub.unsubscribe(f"room:{room_id}")
 
-        # Remove presence
-        await self.remove_presence(room_id, client_id)
+        # Set a short TTL for grace period instead of removing immediately
+        redis = RedisClient.get_client()
+        await redis.expire(f"presence:{room_id}:{client_id}", DISCONNECT_GRACE_PERIOD)
 
     async def update_presence(self, room_id: str, client_id: str):
         """Update presence key with TTL. Called on connect and heartbeat."""

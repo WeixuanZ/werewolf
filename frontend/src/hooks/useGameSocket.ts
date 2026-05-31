@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import useWebSocket from 'react-use-websocket';
 import { WSMessageType } from '../types';
@@ -91,19 +91,22 @@ export const useGameSocket = (roomId: string) => {
     reconnectInterval: 3000,
   });
 
-  // Also send periodic PONG as keepalive
-  const sendPong = useCallback(() => {
-    if (readyState === 1) {
-      // WebSocket.OPEN
+  // Client-side proactive keepalive (runs automatically)
+  useEffect(() => {
+    if (readyState !== 1) return; // Only if OPEN
+    const interval = setInterval(() => {
       sendJsonMessage({ type: 'PONG' });
-    }
-  }, [sendJsonMessage, readyState]);
+    }, 25000);
+    return () => clearInterval(interval);
+  }, [readyState, sendJsonMessage]);
 
   return {
     gameState,
     error,
     isLoading,
     isConnected: readyState === 1,
-    sendPong,
+    sendPong: () => {
+      if (readyState === 1) sendJsonMessage({ type: 'PONG' });
+    }, // kept for backward compatibility if any components try to call it, though it wasn't
   };
 };
