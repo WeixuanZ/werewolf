@@ -72,14 +72,7 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
       const victimId = gameState.voted_out_this_round;
       const victim = victimId ? gameState.players[victimId] : null;
 
-      // Group votes by target from the PREVIOUS players (since current state might have cleared them or moved to night)
-      // Actually, GameRoom.tsx delays updating displayedGameState, so we should look at gameState.players
-      // but wait, does the backend clear votes immediately on transition to Night?
-      // Yes, DayState.resolve calls transition_to(GamePhase.NIGHT) which then clears votes in next phase?
-      // No, NightState.on_enter clears night_action_target, but what about vote_target?
-      // DayState.on_enter clears vote_target. NightState.on_enter does NOT clear vote_target.
-      // So votes should still be there in the first state update of the Night phase.
-
+      // Group votes by target. Vote data persists into the start of the next phase.
       const votesByTarget: Record<string, string[]> = {};
       Object.values(gameState.players).forEach((p) => {
         if (p.vote_target) {
