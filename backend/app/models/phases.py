@@ -83,7 +83,7 @@ class NightState(PhaseState):
         if not player or not player.is_alive or not player.role:
             return
 
-        if not player.can_act_at_night():
+        if not player.can_act_at_night() and action.get("action_type") != NightActionType.DREAM:
             raise InvalidActionError(f"{player.role} cannot act at night")
 
         target_id = action.get("target_id")
@@ -114,7 +114,11 @@ class NightState(PhaseState):
         for player in game.players.values():
             if not player.is_alive or not player.role:
                 continue
-            if player.can_act_at_night():
+            if player.can_act_at_night() or player.role.role_type in [
+                RoleType.VILLAGER,
+                RoleType.LYCAN,
+                RoleType.TANNER,
+            ]:
                 if player.night_action_target is None:
                     return False
                 if not player.night_action_confirmed:

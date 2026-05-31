@@ -28,6 +28,8 @@ class TestFeatures:
         # Night 1: Wolf attacks Villager, Bodyguard protects Villager
         game.process_action("wolf", {"action_type": NightActionType.KILL, "target_id": "villager"})
         game.process_action("bg", {"action_type": NightActionType.SAVE, "target_id": "villager"})
+        # Villager dreams
+        game.process_action("villager", {"action_type": NightActionType.DREAM, "target_id": "💤"})
 
         # Verify protected in state
         assert game.players["bg"].night_action_target == "villager"
@@ -50,12 +52,24 @@ class TestFeatures:
         game.start_game()
         game.players["p1"].role = RoleType.VILLAGER
 
-        # Villager trying night action
+        # Villager trying night action (other than DREAM)
         try:
             game.process_action("p1", {"action_type": NightActionType.KILL, "target_id": "p1"})
             pytest.fail("Should raise error for Villager acting at night")
         except InvalidActionError as e:
             assert "VILLAGER cannot act at night" in str(e)
+
+    def test_villager_dreaming(self):
+        """Verify that Villager can use DREAM action."""
+        game = Game.create("room_dream")
+        game.add_player("p1", "P1")
+        game.start_game()
+        game.players["p1"].role = RoleType.VILLAGER
+
+        # Villager uses DREAM action
+        game.process_action("p1", {"action_type": NightActionType.DREAM, "target_id": "🍕", "confirmed": True})
+        assert game.players["p1"].night_action_target == "🍕"
+        assert game.players["p1"].night_action_confirmed is True
 
     def test_werewolf_vote_distribution(self):
         """Test that wolves receive vote distribution info."""

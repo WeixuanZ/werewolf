@@ -40,7 +40,7 @@ class Role(ABC):
         expected_action_type: NightActionType | None = None,
     ):
         """Common validation logic for night actions."""
-        if not self.can_act_at_night:
+        if not self.can_act_at_night and action_type != NightActionType.DREAM:
             raise InvalidActionError(f"{self.role_type} cannot act at night")
 
         player = game.players.get(player_id)
@@ -56,15 +56,19 @@ class Role(ABC):
         if expected_action_type and action_type != expected_action_type:
             raise InvalidActionError(f"Invalid action type for {self.role_type}")
 
-        if (not target_id or target_id not in game.players) and self.role_type != RoleType.CUPID:
-            # Cupid handles comma-separated targets separately, so skip this check for Cupid
+        if (
+            (not target_id or target_id not in game.players)
+            and self.role_type != RoleType.CUPID
+            and action_type != NightActionType.DREAM
+        ):
+            # Cupid and DREAM handle targets separately
             raise InvalidActionError("Invalid target")
 
         player.night_action_target = target_id
         player.night_action_type = action_type
 
     def handle_night_action(
-        self, _game: "Game", _player_id: str, _action_type: str, _target_id: str | None
+        self, game: "Game", player_id: str, action_type: str, target_id: str | None
     ) -> None:
         """
         Process the night action for this role.
@@ -72,6 +76,10 @@ class Role(ABC):
         Raises InvalidActionError if action is invalid.
         """
         # Default implementation for non-acting roles
+        if action_type == NightActionType.DREAM:
+            self.validate_night_action(game, player_id, action_type, target_id)
+            return
+
         if not self.can_act_at_night:
             raise InvalidActionError(f"{self.role_type} cannot act at night")
 
@@ -83,6 +91,11 @@ class Villager(Role):
     def get_description(self) -> str:
         return "Find the werewolves and vote them out during the day."
 
+    def get_night_info(self, _game_state, _player_id: str) -> NightInfoSchema | None:
+        return NightInfoSchema(
+            prompt="Choose what you are dreaming about...",
+            actions_available=[NightActionType.DREAM],
+        )
 
 class Werewolf(Role):
     def __init__(self):
@@ -168,6 +181,11 @@ class Lycan(Role):
     def get_description(self) -> str:
         return "You are a Villager, but you appear as a Werewolf to the Seer."
 
+    def get_night_info(self, _game_state, _player_id: str) -> NightInfoSchema | None:
+        return NightInfoSchema(
+            prompt="Choose what you are dreaming about...",
+            actions_available=[NightActionType.DREAM],
+        )
 
 class Tanner(Role):
     def __init__(self):
@@ -176,6 +194,11 @@ class Tanner(Role):
     def get_description(self) -> str:
         return "You hate your life and your job. You win if you get voted out."
 
+    def get_night_info(self, _game_state, _player_id: str) -> NightInfoSchema | None:
+        return NightInfoSchema(
+            prompt="Choose what you are dreaming about...",
+            actions_available=[NightActionType.DREAM],
+        )
 
 class Witch(Role):
     def __init__(self):

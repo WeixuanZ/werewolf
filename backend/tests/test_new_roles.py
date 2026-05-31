@@ -35,6 +35,10 @@ class TestNewRoles:
         # Wolf kills L1
         game.process_action("wolf", {"action_type": NightActionType.KILL, "target_id": "lover1"})
 
+        # Villagers dream
+        game.process_action("lover1", {"action_type": NightActionType.DREAM, "target_id": "💤"})
+        game.process_action("lover2", {"action_type": NightActionType.DREAM, "target_id": "💤"})
+
         # Resolve Night
         game.check_and_advance()
 
