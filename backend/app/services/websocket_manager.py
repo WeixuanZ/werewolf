@@ -19,7 +19,7 @@ from app.schemas.socket import (
 )
 
 logger = logging.getLogger(__name__)
-PRESENCE_TTL = 30  # seconds
+PRESENCE_TTL = 90  # seconds
 
 
 class ConnectionManager:

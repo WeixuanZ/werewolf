@@ -25,15 +25,38 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
   const prevPhase = useRef<GamePhase>(gameState.phase);
   const prevPlayers = useRef(gameState.players);
 
+  // Timer refs to allow persistent animation across re-renders (like player updates)
+  const startTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const cleanupTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  const clearAllTimers = () => {
+    if (startTimerRef.current !== null) clearTimeout(startTimerRef.current);
+    if (hideTimerRef.current !== null) clearTimeout(hideTimerRef.current);
+    if (cleanupTimerRef.current !== null) clearTimeout(cleanupTimerRef.current);
+  };
+
+  const dismiss = () => {
+    setIsVisible(false);
+    // Cleanup content after fade out transition
+    if (cleanupTimerRef.current !== null) clearTimeout(cleanupTimerRef.current);
+    cleanupTimerRef.current = setTimeout(() => setAnnouncement(null), 1000);
+  };
+
   // Sync refs to current state but keep them for comparison in effect
   // We use a single effect to handle transitions
   useEffect(() => {
     const currentPhase = gameState.phase;
     const previous = prevPhase.current;
+    const previousPlayers = prevPlayers.current;
+
+    // Always update refs for the next run to avoid re-triggering logic
+    // on incidental state changes (like player online/offline status)
+    prevPhase.current = currentPhase;
+    prevPlayers.current = gameState.players;
 
     // Skip if phase hasn't changed
     if (previous === currentPhase) {
-      prevPlayers.current = gameState.players;
       return;
     }
 
@@ -42,7 +65,7 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
     // NIGHT -> DAY (Morning)
     if (previous === GamePhase.NIGHT && currentPhase === GamePhase.DAY) {
       const newlyDead = Object.values(gameState.players).filter(
-        (p) => prevPlayers.current[p.id]?.is_alive && !p.is_alive,
+        (p) => previousPlayers[p.id]?.is_alive && !p.is_alive,
       );
       const deadNames = newlyDead.map((p) => p.nickname).join(', ');
 
@@ -104,29 +127,28 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
     // specific transition for Hunter/Witch triggers could be added here if needed
 
     if (nextAnnouncement) {
+      clearAllTimers();
+
       // Trigger sequence - wrap in timeout to avoid set-state-in-effect warning
       // and ensure clean animation start
-      const startTimer = setTimeout(() => {
+      startTimerRef.current = setTimeout(() => {
         setAnnouncement(nextAnnouncement);
         setIsVisible(true);
       }, 100);
 
       // Hide everything after duration
-      const hideTimer = setTimeout(() => {
+      hideTimerRef.current = setTimeout(() => {
         setIsVisible(false);
         // Cleanup content after fade out
-        setTimeout(() => setAnnouncement(null), 1000);
+        cleanupTimerRef.current = setTimeout(() => setAnnouncement(null), 1000);
       }, 6000);
-
-      return () => {
-        clearTimeout(startTimer);
-        clearTimeout(hideTimer);
-      };
     }
-
-    prevPhase.current = currentPhase;
-    prevPlayers.current = gameState.players;
   }, [gameState.phase, gameState.players, gameState.voted_out_this_round, gameState.winners]);
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => clearAllTimers();
+  }, []);
 
   return (
     <AnimatePresence>
@@ -136,6 +158,7 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
+          onClick={dismiss}
           style={{
             position: 'fixed',
             inset: 0,
@@ -148,7 +171,8 @@ export const PhaseTransitionOverlay = ({ gameState }: PhaseTransitionOverlayProp
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            pointerEvents: 'none',
+            pointerEvents: 'auto',
+            cursor: 'pointer',
           }}
         >
           <div style={{ textAlign: 'center', padding: '0 20px', maxWidth: '800px' }}>
