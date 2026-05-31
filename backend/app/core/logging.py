@@ -4,8 +4,6 @@ import sys
 import structlog
 from asgi_correlation_id import correlation_id
 
-from app.core.config import settings
-
 
 def add_correlation(_logger, _log_method, event_dict):
     """Add request correlation ID to log event."""
@@ -43,12 +41,11 @@ def setup_logging():
         structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
     ]
 
-    # Configuration for how to format the final output
-    if settings.DEBUG:
-        # Pretty printing for development
+    # Pretty console output when attached to a terminal (local dev),
+    # JSON otherwise (containers, CI, production).
+    if sys.stderr.isatty():
         renderer = structlog.dev.ConsoleRenderer()
     else:
-        # JSON for production
         renderer = structlog.processors.JSONRenderer()
 
     # Configure structlog
