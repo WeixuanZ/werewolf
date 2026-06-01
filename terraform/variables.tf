@@ -36,3 +36,13 @@ variable "frontend_image" {
   description = "Docker image for the frontend service (e.g. ghcr.io/username/werewolf-frontend:tag)"
   type        = string
 }
+
+variable "github_repository" {
+  description = "GitHub repository in 'owner/name' format used to scope the Workload Identity Federation provider"
+  type        = string
+}
+
+variable "tf_state_bucket" {
+  description = "GCS bucket holding Terraform state. Used to grant the CI service account access."
+  type        = string
+}
