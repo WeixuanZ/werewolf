@@ -1,0 +1,73 @@
+name: Cleanup Preview Environment
+
+on:
+  pull_request:
+    types: [closed]
+
+concurrency:
+  group: preview-env-pr-${{ github.event.number }}
+  cancel-in-progress: false
+
+env:
+  REGION: us-central1
+  GAR_REPO: werewolf-repo
+  PR_NUMBER: ${{ github.event.number }}
+
+jobs:
+  cleanup:
+    # Skip PRs from forks (they never deployed a preview env in the first place).
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      # Checkout the default branch's terraform configs rather than the PR's,
+      # so a PR cannot ship destroy-time hooks that affect prod state.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ./terraform/preview
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.GCP_TF_STATE_BUCKET }}" \
+            -backend-config="prefix=pr-${PR_NUMBER}"
+
+      - name: Terraform Destroy
+        working-directory: ./terraform/preview
+        run: |
+          GAR_PREFIX="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}"
+          terraform destroy -auto-approve \
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="region=${{ env.REGION }}" \
+            -var="backend_image=${GAR_PREFIX}/werewolf-backend:pr-${PR_NUMBER}" \
+            -var="frontend_image=${GAR_PREFIX}/werewolf-frontend:pr-${PR_NUMBER}" \
+            -var="service_suffix=-pr-${PR_NUMBER}"
+
+      - name: Delete PR-tagged images
+        run: |
+          GAR_PREFIX="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}"
+          for svc in werewolf-backend werewolf-frontend; do
+            gcloud artifacts docker images delete \
+              "${GAR_PREFIX}/${svc}:pr-${PR_NUMBER}" \
+              --delete-tags --quiet || echo "${svc} image not found, skipping"
+          done
+
+      - name: Delete preview state
+        run: |
+          gsutil -m rm -rf "gs://${{ secrets.GCP_TF_STATE_BUCKET }}/pr-${PR_NUMBER}" || true

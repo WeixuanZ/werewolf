@@ -1,0 +1,139 @@
+name: Preview Environment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Only one in-flight deploy per PR; cancel superseded runs to save time.
+concurrency:
+  group: preview-env-pr-${{ github.event.number }}
+  cancel-in-progress: true
+
+env:
+  REGION: us-central1
+  GAR_REPO: werewolf-repo
+  PR_NUMBER: ${{ github.event.number }}
+
+jobs:
+  deploy-preview:
+    # Skip PRs from forks: secrets and OIDC tokens are unavailable, so the
+    # deploy would fail anyway. Same-repo PRs only.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure GAR Docker auth
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute image tags
+        id: images
+        run: |
+          GAR_PREFIX="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}"
+          echo "backend=${GAR_PREFIX}/werewolf-backend:pr-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "frontend=${GAR_PREFIX}/werewolf-frontend:pr-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.images.outputs.backend }}
+          cache-from: type=gha,scope=pr-${{ env.PR_NUMBER }}-backend
+          cache-to: type=gha,scope=pr-${{ env.PR_NUMBER }}-backend,mode=max
+          build-args: |
+            COMMIT_SHA=${{ github.event.pull_request.head.sha }}
+            VERSION=pr-${{ env.PR_NUMBER }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          target: production
+          push: true
+          tags: ${{ steps.images.outputs.frontend }}
+          cache-from: type=gha,scope=pr-${{ env.PR_NUMBER }}-frontend
+          cache-to: type=gha,scope=pr-${{ env.PR_NUMBER }}-frontend,mode=max
+          build-args: |
+            COMMIT_SHA=${{ github.event.pull_request.head.sha }}
+            VERSION=pr-${{ env.PR_NUMBER }}
+
+      - name: Terraform Init
+        working-directory: ./terraform/preview
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.GCP_TF_STATE_BUCKET }}" \
+            -backend-config="prefix=pr-${PR_NUMBER}"
+
+      - name: Terraform Apply
+        working-directory: ./terraform/preview
+        run: |
+          terraform apply -auto-approve \
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="region=${{ env.REGION }}" \
+            -var="backend_image=${{ steps.images.outputs.backend }}" \
+            -var="frontend_image=${{ steps.images.outputs.frontend }}" \
+            -var="service_suffix=-pr-${PR_NUMBER}"
+
+      - name: Read URLs
+        id: urls
+        working-directory: ./terraform/preview
+        run: |
+          {
+            echo "frontend=$(terraform output -raw frontend_url)"
+            echo "backend=$(terraform output -raw backend_url)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URLs on PR
+        uses: actions/github-script@v7
+        env:
+          FRONTEND_URL: ${{ steps.urls.outputs.frontend }}
+          BACKEND_URL: ${{ steps.urls.outputs.backend }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const marker = '<!-- werewolf-preview-env -->';
+            const body = [
+              marker,
+              '### Preview environment deployed',
+              '',
+              `- Frontend: ${process.env.FRONTEND_URL}`,
+              `- Backend:  ${process.env.BACKEND_URL}`,
+              `- Commit:   \`${process.env.COMMIT_SHA.slice(0, 7)}\``,
+              '',
+              '_The environment shares Redis with production; do not run destructive commands. It is torn down when this PR closes._',
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number, per_page: 100,
+            });
+            const existing = comments.find(c => c.body && c.body.startsWith(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
